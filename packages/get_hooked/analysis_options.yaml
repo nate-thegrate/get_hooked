@@ -8,6 +8,7 @@ linter:
     # cascade_invocations: true
     # avoid_types_on_closure_parameters: true
     # avoid_print: false
+    prefer_const_constructors: true
 
     annotate_redeclares: true
     avoid_escaping_inner_quotes: true
