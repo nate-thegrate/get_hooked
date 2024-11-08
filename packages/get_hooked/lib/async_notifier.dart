@@ -1,4 +1,4 @@
-part of '../get_hooked.dart';
+import 'package:flutter/widgets.dart';
 
 typedef StreamCallback<T> = Stream<T> Function();
 
@@ -17,7 +17,7 @@ class AsyncNotifier<T> with ChangeNotifier implements ValueNotifier<AsyncSnapsho
   }
 
   @override
-  AsyncSnapshot<T> get value => throw UnimplementedError();
+  AsyncSnapshot<T> get value => _value;
   AsyncSnapshot<T> _value;
   @override
   set value(AsyncSnapshot<T> snapshot) {

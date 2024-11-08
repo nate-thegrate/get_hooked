@@ -1,7 +1,7 @@
 part of '../get_hooked.dart';
 
 @visibleForTesting
-final tickers = <Ticker>{};
+final tickers = <VsyncTicker>{};
 
 class Vsync implements TickerProvider {
   Vsync([this.context]);
@@ -11,12 +11,13 @@ class Vsync implements TickerProvider {
   static void detach(BuildContext context) {
     final detachedContext = context;
 
-    for (final Ticker ticker in tickers) {
-      if (ticker is _VsyncTicker && ticker.vsync.context == detachedContext) {
+    for (final VsyncTicker ticker in tickers) {
+      if (ticker.vsync.context == detachedContext) {
         ticker
+          ..stop(canceled: true)
           ..detach()
           ..vsync.context = null
-          ..muted = true;
+          ..muted = _muted;
       }
     }
   }
@@ -32,7 +33,7 @@ class Vsync implements TickerProvider {
     _muted = newValue;
 
     for (final Ticker ticker in tickers) {
-      if (ticker is! _VsyncTicker) {
+      if (ticker is! VsyncTicker) {
         ticker.muted = newValue;
       }
     }
@@ -53,7 +54,7 @@ class Vsync implements TickerProvider {
       return true;
     }());
 
-    late final _VsyncTicker ticker;
+    late final VsyncTicker ticker;
 
     void tickerCallback(Duration elapsed) {
       if (context case final context?) {
@@ -66,12 +67,13 @@ class Vsync implements TickerProvider {
       onTick(elapsed);
     }
 
-    return ticker = _VsyncTicker(tickerCallback, this);
+    return ticker = VsyncTicker(tickerCallback, this);
   }
 }
 
-class _VsyncTicker extends Ticker {
-  _VsyncTicker(super.onTick, this.vsync) {
+@visibleForTesting
+class VsyncTicker extends Ticker {
+  VsyncTicker(super.onTick, this.vsync) {
     tickers.add(this);
     if (vsync.context case final context? when context.mounted) {
       updateNotifier(context);
@@ -105,7 +107,7 @@ class _VsyncTicker extends Ticker {
         throw FlutterError.fromParts([
           ErrorSummary('Ticker.start() called after dispose().'),
           ErrorHint(
-            'If using a GetItVsync, consider attaching an active BuildContext '
+            'If using a GetVsync, consider attaching an active BuildContext '
             'before starting the ticker.',
           ),
         ]);

@@ -24,14 +24,14 @@ export 'package:flutter/scheduler.dart' show TickerFuture, TickerProvider;
 // late bool dismissed;
 // void setState(VoidCallback fn) { }
 
-extension on AnimationBehavior {
-  /// Whether animations should be enabled, based on the configured behavior
-  /// and the [AccessibilityFeatures.disableAnimations] flag.
-  bool get enableAnimations => switch (this) {
-        AnimationBehavior.normal => !SemanticsBinding.instance.disableAnimations,
-        AnimationBehavior.preserve => true,
-      };
-}
+// extension on AnimationBehavior {
+//   /// Whether animations should be enabled, based on the configured behavior
+//   /// and the [AccessibilityFeatures.disableAnimations] flag.
+//   bool get enableAnimations => switch (this) {
+//         AnimationBehavior.normal => !SemanticsBinding.instance.disableAnimations,
+//         AnimationBehavior.preserve => true,
+//       };
+// }
 
 abstract class _AnimationControllerBase<AnimationType, ThisType> extends Animation<AnimationType>
     with
@@ -329,6 +329,8 @@ class ValueAnimation<T> extends _AnimationControllerBase<T, ValueAnimation<T>> {
     _lastReportedStatus = newStatus;
     notifyStatusListeners(newStatus);
   }
+
+  void stop({bool canceled = true}) => _ticker!.stop(canceled: canceled);
 }
 
 /// An animation controller that toggles between two states.

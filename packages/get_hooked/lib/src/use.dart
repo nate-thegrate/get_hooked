@@ -1,31 +1,28 @@
 part of '../get_hooked.dart';
 
-abstract interface class Use<T, V extends ValueListenable<T>> {
-  /// Returns the same thing as [Get.get],
-  /// but without overlapping [Use.get]'s name!
-  abstract final V _get;
-
-  static V get<T, V extends ValueListenable<T>>(
-    Use<T, V> it, {
+abstract final class Use {
+  /// Don't use it.
+  static V it<T, V extends ValueListenable<T>>(
+    Get<T, V> get, {
     bool listen = false,
     bool attach = true,
   }) {
-    return use(_GetHook(it, listen, attach));
+    return use(_GetHook(get, listen, attach));
   }
 
   static T watch<T>(
-    Use<T, ValueListenable<T>> it, {
+    Get<T, ValueListenable<T>> get, {
     bool checkVsync = true,
   }) {
-    return use(_WatchHook(it, checkVsync));
+    return use(_WatchHook(get, checkVsync));
   }
 
   static Out select<In, Out>(
-    Use<In, ValueListenable<In>> it,
+    Get<In, ValueListenable<In>> get,
     Out Function(In value) selector, {
     bool checkVsync = true,
   }) {
-    return use(_SelectHook(it, selector, checkVsync));
+    return use(_SelectHook(get, selector, checkVsync));
   }
 }
 
@@ -36,7 +33,7 @@ mixin _MarkNeedsBuild<R, H extends Hook<R>> on HookState<R, H> {
 class _GetHook<T, V extends ValueListenable<T>> extends Hook<V> {
   const _GetHook(this.useIt, this.listen, this.attach);
 
-  final Use<T, V> useIt;
+  final Get<T, V> useIt;
   final bool listen, attach;
 
   @override
@@ -45,7 +42,7 @@ class _GetHook<T, V extends ValueListenable<T>> extends Hook<V> {
 
 class _GetState<T, V extends ValueListenable<T>> extends HookState<V, _GetHook<T, V>>
     with _MarkNeedsBuild {
-  V get listenable => hook.useIt._get;
+  V get listenable => hook.useIt.it;
 
   Subscription? subscription;
   void subscribe() {
@@ -87,7 +84,7 @@ class _GetState<T, V extends ValueListenable<T>> extends HookState<V, _GetHook<T
 class _WatchHook<T> extends Hook<T> {
   const _WatchHook(this.useIt, this.checkVsync);
 
-  final Use<T, ValueListenable<T>> useIt;
+  final Get<T, ValueListenable<T>> useIt;
   final bool checkVsync;
 
   @override
@@ -95,7 +92,7 @@ class _WatchHook<T> extends Hook<T> {
 }
 
 class _WatchState<T> extends HookState<T, _WatchHook<T>> with _MarkNeedsBuild {
-  late Use<T, ValueListenable<T>> useIt = hook.useIt;
+  late Get<T, ValueListenable<T>> useIt = hook.useIt;
 
   @override
   void initHook() {
@@ -104,7 +101,7 @@ class _WatchState<T> extends HookState<T, _WatchHook<T>> with _MarkNeedsBuild {
       return true;
     }());
 
-    useIt = hook.useIt.._get.addListener(rebuild);
+    useIt = hook.useIt..it.addListener(rebuild);
   }
 
   @override
@@ -116,16 +113,16 @@ class _WatchState<T> extends HookState<T, _WatchHook<T>> with _MarkNeedsBuild {
   }
 
   @override
-  void dispose() => useIt._get.removeListener(rebuild);
+  void dispose() => useIt.it.removeListener(rebuild);
 
   @override
-  T build(BuildContext context) => useIt._get.value;
+  T build(BuildContext context) => useIt.it.value;
 }
 
 class _SelectHook<In, Out> extends Hook<Out> {
   const _SelectHook(this.useIt, this.selector, this.checkVsync);
 
-  final Use<In, ValueListenable<In>> useIt;
+  final Get<In, ValueListenable<In>> useIt;
   final Out Function(In value) selector;
   final bool checkVsync;
 
@@ -134,7 +131,7 @@ class _SelectHook<In, Out> extends Hook<Out> {
 }
 
 class _SelectState<In, Out> extends HookState<Out, _SelectHook<In, Out>> with _MarkNeedsBuild {
-  late Use<In, ValueListenable<In>> useIt;
+  late Get<In, ValueListenable<In>> useIt;
   Out? previous;
 
   void listener() {
@@ -150,7 +147,7 @@ class _SelectState<In, Out> extends HookState<Out, _SelectHook<In, Out>> with _M
       return true;
     }());
 
-    useIt = hook.useIt.._get.addListener(listener);
+    useIt = hook.useIt..it.addListener(listener);
   }
 
   @override
@@ -162,13 +159,13 @@ class _SelectState<In, Out> extends HookState<Out, _SelectHook<In, Out>> with _M
   }
 
   @override
-  void dispose() => useIt._get.removeListener(listener);
+  void dispose() => useIt.it.removeListener(listener);
 
   @override
-  Out build([BuildContext? context]) => hook.selector(useIt._get.value);
+  Out build([BuildContext? context]) => hook.selector(useIt.it.value);
 }
 
-void _debugCheckVsync(Use useIt, String name) {
+void _debugCheckVsync(Get useIt, String name) {
   assert(() {
     if (useIt case final GetVsync getItVsync when getItVsync._animation == null) {
       throw FlutterError.fromParts([

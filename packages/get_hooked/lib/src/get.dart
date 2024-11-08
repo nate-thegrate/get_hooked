@@ -2,8 +2,9 @@ part of '../get_hooked.dart';
 
 typedef VsyncBuilder<T> = T Function(TickerProvider vsync);
 
-abstract final class Get {
-  ValueListenable get get;
+sealed class Get<T, V extends ValueListenable<T>> {
+  /// Don't get it.
+  V get it;
 
   void update(covariant Function setter);
 
@@ -11,11 +12,14 @@ abstract final class Get {
 
   static GetValue<T> value<T>(T initialValue) => GetValue._(initialValue);
 
-  static GetVsync<T, V> vsync<T, V extends ValueListenable<T>>(VsyncBuilder<V> create) {
-    return GetVsync._(create);
+  static GetCustom<T, L> custom<T, L extends Listenable>(
+    T Function(L) getValue, {
+    required L listenable,
+  }) {
+    return GetCustom._(getValue, listenable: listenable);
   }
 
-  static GetVsync<double, AnimationController> vsyncController({
+  static GetVsync<double, AnimationController> vsync({
     double? initialValue,
     Duration? duration,
     Duration? reverseDuration,
@@ -57,6 +61,10 @@ abstract final class Get {
     );
   }
 
+  static GetVsync<T, V> customVsync<T, V extends ValueListenable<T>>(VsyncBuilder<V> create) {
+    return GetVsync._(create);
+  }
+
   static GetAsync<T> async<T>(AsyncValueGetter<T> futureCallback, {T? initialData}) {
     return GetAsync._(futureCallback: futureCallback, initialData: initialData);
   }
@@ -75,16 +83,11 @@ abstract final class Get {
     );
   }
 
-  static GetGroup<Collection> collection<Collection extends Object>(Collection initialData) {
-    return switch (initialData) {
-      Set() => GetSet._(initialData),
-      Iterable() => GetList._(initialData),
-      Map() => GetMap._(initialData),
-      _ => throw Exception(
-          'GetIt.collection() expected a List, Set, or Map; got $initialData',
-        ),
-    } as GetGroup<Collection>;
-  }
+  static GetList list<T>(Iterable<T> list) => GetList._(list);
+
+  static GetSet set<T>(Iterable<T> set) => GetSet._(set);
+
+  static GetMap map<K, V>(Map<K, V> map) => GetMap._(map);
 }
 
 extension type Subscription._(VoidCallback _dispose) {
@@ -96,78 +99,70 @@ extension type Subscription._(VoidCallback _dispose) {
   void close() => _dispose();
 }
 
-base mixin _Update<T, V extends ValueListenable<T>> on Get implements Use<T, V> {
+mixin _Update<T, V extends ValueListenable<T>> implements Get<T, V> {
   @override
-  V get get;
-
-  @override
-  V get _get => get;
-
-  @override
-  void update(ValueSetter<V> setter) => setter(get);
+  void update(ValueSetter<V> setter) => setter(it);
 }
 
-sealed class GetGroup<Group extends Object> implements Get {}
+mixin _Listen<T, V extends ValueListenable<T>> implements Get<T, V> {
+  @override
+  Subscription listen(ValueChanged<T> listener) {
+    return Subscription(it, () => listener(it.value));
+  }
+}
 
 @visibleForTesting
-final class GetList<E> extends GetGroup<List<E>> with _Update<List<E>, ListNotifier<E>> {
-  GetList._(Iterable<E> list) : get = ListNotifier(list);
+final class GetList<E> with _Update<List<E>, ListNotifier<E>> {
+  GetList._(Iterable<E> list) : it = ListNotifier(list);
 
   @override
-  final ListNotifier<E> get;
+  final ListNotifier<E> it;
 
   @override
   Subscription listen(ValueChanged<List<E>> listener) {
-    return Subscription(get, () => listener(UnmodifiableListView(get)));
+    return Subscription(it, () => listener(UnmodifiableListView(it)));
   }
 }
 
 @visibleForTesting
-final class GetSet<E> extends GetGroup<Set<E>> with _Update<Set<E>, SetNotifier<E>> {
-  GetSet._(Iterable<E> set) : get = SetNotifier(set);
+final class GetSet<E> with _Update<Set<E>, SetNotifier<E>> {
+  GetSet._(Iterable<E> set) : it = SetNotifier(set);
 
   @override
-  final SetNotifier<E> get;
+  final SetNotifier<E> it;
 
   @override
   Subscription listen(ValueChanged<Set<E>> listener) {
-    return Subscription(get, () => listener(UnmodifiableSetView(get)));
+    return Subscription(it, () => listener(UnmodifiableSetView(it)));
   }
 }
 
 @visibleForTesting
-final class GetMap<K, V> extends GetGroup<Map<K, V>> with _Update<Map<K, V>, MapNotifier<K, V>> {
-  GetMap._(Map<K, V> map) : get = MapNotifier(map);
+final class GetMap<K, V> with _Update<Map<K, V>, MapNotifier<K, V>> {
+  GetMap._(Map<K, V> map) : it = MapNotifier(map);
 
   @override
-  final MapNotifier<K, V> get;
+  final MapNotifier<K, V> it;
 
   @override
   Subscription listen(ValueChanged<Map<K, V>> listener) {
-    return Subscription(get, () => listener(UnmodifiableMapView(get)));
+    return Subscription(it, () => listener(UnmodifiableMapView(it)));
   }
 }
 
-final class GetValue<T> extends Get implements Use<T, ValueNotifier<T>> {
-  GetValue._(T initialValue) : get = ValueNotifier(initialValue);
+final class GetValue<T> with _Listen<T, ValueNotifier<T>> {
+  GetValue._(T initialValue) : it = ValueNotifier(initialValue);
 
   @override
-  final ValueNotifier<T> get;
-  @override
-  ValueNotifier<T> get _get => get;
+  final ValueNotifier<T> it;
 
   @override
   void update(T Function(T value) setter) {
-    get.value = setter(get.value);
-  }
-
-  @override
-  Subscription listen(ValueChanged<T> listener) {
-    return Subscription(get, () => listener(get.value));
+    it.value = setter(it.value);
   }
 }
 
-final class GetVsync<T, V extends ValueListenable<T>> extends Get with _Update<T, V> {
+final class GetVsync<T, V extends ValueListenable<T>> with _Update<T, V> {
   GetVsync._(this.create);
 
   final VsyncBuilder<V> create;
@@ -175,23 +170,34 @@ final class GetVsync<T, V extends ValueListenable<T>> extends Get with _Update<T
   Vsync? vsync;
   V? _animation;
   @override
-  V get get => _animation ??= create(vsync = Vsync());
+  V get it => _animation ??= create(vsync = Vsync());
 
-  bool attach(BuildContext context) {
-    if (_animation != null) return false;
+  V attach(BuildContext context) {
+    V? animation = _animation;
+    if (animation == null) {
+      animation = create(vsync = Vsync(context));
+    } else if (vsync case final vsync?) {
+      vsync.context = context;
+    } else {
+      throw StateError('Animation was initialized without a vsync.');
+    }
+    for (final ticker in tickers) {
+      if (ticker.vsync.context == context) {
+        ticker.updateNotifier(context);
+      }
+    }
 
-    _animation = create(vsync = Vsync(context));
-    return true;
+    return animation;
   }
 
   @override
   Subscription listen(ValueChanged<V> listener) {
-    final animation = get;
+    final animation = it;
     return Subscription(animation, () => listener(animation));
   }
 }
 
-final class GetAsync<T> extends Get implements Use<AsyncSnapshot<T>, AsyncNotifier<T>> {
+final class GetAsync<T> implements Get<AsyncSnapshot<T>, AsyncNotifier<T>> {
   GetAsync._({
     this.futureCallback,
     this.streamCallback,
@@ -222,8 +228,8 @@ final class GetAsync<T> extends Get implements Use<AsyncSnapshot<T>, AsyncNotifi
     }
     if (canceled) {
       notify ?? notifyOnCancel
-          ? get.value = get.value.inState(ConnectionState.none)
-          : get.connectionState = ConnectionState.none;
+          ? it.value = it.value.inState(ConnectionState.none)
+          : it.connectionState = ConnectionState.none;
     }
   }
 
@@ -233,9 +239,9 @@ final class GetAsync<T> extends Get implements Use<AsyncSnapshot<T>, AsyncNotifi
     if (stream == null) return;
 
     _subscription = stream.listen(
-      (T data) => get.value = AsyncSnapshot.withData(ConnectionState.active, data),
+      (T data) => it.value = AsyncSnapshot.withData(ConnectionState.active, data),
       onError: (Object error, StackTrace stackTrace) {
-        get.value = AsyncSnapshot.withError(
+        it.value = AsyncSnapshot.withError(
           cancelOnError ? ConnectionState.done : ConnectionState.active,
           error,
           stackTrace,
@@ -243,7 +249,7 @@ final class GetAsync<T> extends Get implements Use<AsyncSnapshot<T>, AsyncNotifi
       },
       cancelOnError: cancelOnError,
       onDone: () {
-        get.value = get.value.inState(ConnectionState.done);
+        it.value = it.value.inState(ConnectionState.done);
       },
     );
   }
@@ -255,26 +261,23 @@ final class GetAsync<T> extends Get implements Use<AsyncSnapshot<T>, AsyncNotifi
 
     future.then<void>((T data) {
       if (_future == future) {
-        get.value = AsyncSnapshot<T>.withData(ConnectionState.done, data);
+        it.value = AsyncSnapshot<T>.withData(ConnectionState.done, data);
       }
     }, onError: (Object error, StackTrace stackTrace) {
       if (_future == future) {
-        get.value = AsyncSnapshot<T>.withError(ConnectionState.done, error, stackTrace);
+        it.value = AsyncSnapshot<T>.withError(ConnectionState.done, error, stackTrace);
       }
     });
 
     // An implementation like `SynchronousFuture` may have already called the
     // .then() closure. Do not overwrite it in that case.
-    if (get.connectionState != ConnectionState.done) {
-      get.connectionState = ConnectionState.waiting;
+    if (it.connectionState != ConnectionState.done) {
+      it.connectionState = ConnectionState.waiting;
     }
   }
 
   @override
-  late final AsyncNotifier<T> get = AsyncNotifier.initialData(initialData, autoDispose: _clear);
-
-  @override
-  AsyncNotifier<T> get _get => get;
+  late final AsyncNotifier<T> it = AsyncNotifier.initialData(initialData, autoDispose: _clear);
 
   AsyncValueGetter<T>? futureCallback;
   StreamCallback<T>? streamCallback;
@@ -283,11 +286,32 @@ final class GetAsync<T> extends Get implements Use<AsyncSnapshot<T>, AsyncNotifi
 
   @override
   void update(AsyncSnapshot<T> Function(AsyncSnapshot<T> snapshot) setter) {
-    get.value = setter(get.value);
+    it.value = setter(it.value);
   }
 
   @override
-  Subscription listen(ValueChanged<AsyncSnapshot<T>> listener) {
-    return Subscription(get, () => listener(get.value));
+  Subscription listen(ValueChanged<AsyncSnapshot<T>> listener, {bool? toStream}) {
+    if (toStream ?? streamCallback != null) {
+      setStream();
+    } else {
+      setFuture();
+    }
+    return Subscription(it, () => listener(it.value));
+  }
+}
+
+final class GetCustom<T, L extends Listenable> with _Listen<T, ProxyNotifier<T, L>> {
+  GetCustom._(T Function(L) getValue, {required this.listenable}) {
+    it = ProxyNotifier(getValue, listenable: listenable);
+  }
+
+  final L listenable;
+
+  @override
+  late final ProxyNotifier<T, L> it;
+
+  @override
+  void update(ValueSetter<L> setter) {
+    setter(listenable);
   }
 }
