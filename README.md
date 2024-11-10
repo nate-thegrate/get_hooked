@@ -1,6 +1,11 @@
-<p align="center">
-  <img alt="Get Hooked! (logo)" src="https://github.com/user-attachments/assets/b60cbbcb-6fe6-424d-9848-85011d156221" width="98px">
-</p>
+<a href="https://pub.dev/">
+  <p align="center">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/462d7034-732e-4fc1-8aa2-110f518151d7">
+      <img alt="Get Hooked! (logo)" src="https://github.com/user-attachments/assets/b60cbbcb-6fe6-424d-9848-85011d156221" width="98px">
+    </picture>
+  </p>
+</a>
 
 <br>
 
@@ -476,6 +481,11 @@ This mimics the setup of the class API.
 
 <br><br>
 
-<p align="center">
-  <img alt="get_hooked: try it once" src="https://github.com/user-attachments/assets/a1affe2a-c2c3-4344-b18b-251c00f03fc1">
-</p>
+<a href="https://pub.dev/">
+  <p align="center">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/e00e34a2-5bb7-4e63-b07c-21734261eaaf">
+      <img alt="get_hooked: try it once" src="https://github.com/user-attachments/assets/a1affe2a-c2c3-4344-b18b-251c00f03fc1">
+    </picture>
+  </p>
+</a>

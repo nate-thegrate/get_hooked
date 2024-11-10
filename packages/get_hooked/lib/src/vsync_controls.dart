@@ -103,7 +103,7 @@ extension type VsyncControls._(AnimationController _controller) implements Anima
     double? max,
     bool reverse = false,
     Duration? period,
-    int? count,
+    // int? count,
   }) {
     // dart format off
     return _controller.repeat(
@@ -111,7 +111,7 @@ extension type VsyncControls._(AnimationController _controller) implements Anima
       max: max,
       reverse: reverse,
       period: period,
-      count: count,
+      // count: count,
     );
     // dart format on
   }
