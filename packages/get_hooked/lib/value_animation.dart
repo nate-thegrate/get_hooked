@@ -172,6 +172,7 @@ class ValueAnimation<T> extends _AnimationControllerBase<T, ValueAnimation<T>> {
 
   // dart format off
 
+  /// Determines the appropriate [LerpCallback] based on the type argument.
   static LerpCallback<T> lerpCallbackOfExactType<T>() => switch (T) {
     const (double) => ui.lerpDouble,
     const (Offset) => Offset.lerp,
@@ -330,6 +331,7 @@ class ValueAnimation<T> extends _AnimationControllerBase<T, ValueAnimation<T>> {
     notifyStatusListeners(newStatus);
   }
 
+  /// Stops the animation.
   void stop({bool canceled = true}) => _ticker!.stop(canceled: canceled);
 }
 

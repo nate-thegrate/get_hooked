@@ -1,3 +1,5 @@
+// ignore_for_file: public_member_api_docs, not gonna do that, sorry :(
+
 extension RecordIterable2<T> on (T, T) {
   Iterable<T> toIterable() sync* {
     yield $1;

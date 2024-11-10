@@ -2,6 +2,7 @@
 
 part of '../get_hooked.dart';
 
+/// A namespace for [Hook] functions.
 abstract final class Use {
   /// Don't use it.
   static V it<T, V extends ValueListenable<T>>(Get<T, V> get, {bool watch = false}) {
@@ -10,6 +11,7 @@ abstract final class Use {
     return it;
   }
 
+  /// Watches a [Get] object and triggers a rebuild when a notification is sent.
   static T watch<T>(Get<T, ValueListenable<T>> get, {bool checkVsync = true}) {
     assert(() {
       useEffect(() => checkVsync ? _debugCheckVsync(get, 'watch') : null, [get, checkVsync]);
@@ -19,6 +21,8 @@ abstract final class Use {
     return useValueListenable(get.it);
   }
 
+  /// Selects a value from a complex [Get] object and triggers a rebuild when
+  /// the selected value changes.
   static Out select<In, Out>(
     Get<In, ValueListenable<In>> get,
     Out Function(In value) selector, {
@@ -27,6 +31,8 @@ abstract final class Use {
     return use(_SelectHook(get, selector, checkVsync));
   }
 
+  /// Provides an interface for controlling a [GetVsync] animation,
+  /// and optionally rebuilds when the animation sends a notification.
   static Controls vsync<Controls>(
     GetVsync<Object?, ValueListenable<Object?>, Controls> get, {
     bool watch = false,

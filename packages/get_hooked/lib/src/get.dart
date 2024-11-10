@@ -1,21 +1,30 @@
 part of '../get_hooked.dart';
 
+/// Creates an object (of type `T`) using a [TickerProvider].
 typedef VsyncBuilder<T> = T Function(TickerProvider vsync);
 
+/// Encapsulates a listenable object with an interface for
+/// easy updates and automatic lifecycle management.
 abstract interface class Get<T, V extends ValueListenable<T>> {
   /// Don't get it.
   V get it;
 
+  /// Updates [it]s value.
   void update(covariant Function setter);
 
+  /// Encapsulates a [ValueNotifier].
   static GetValue<T> value<T>(T initialValue) => GetValue._(initialValue);
 
+  /// Encapsulates a [ListNotifier].
   static GetList<E> list<E>(Iterable<E> list) => GetList._(list);
 
+  /// Encapsulates a [SetNotifier].
   static GetSet<E> set<E>(Iterable<E> set) => GetSet._(set);
 
+  /// Encapsulates a [MapNotifier].
   static GetMap<K, V> map<K, V>(Map<K, V> map) => GetMap._(map);
 
+  /// Encapsulates an [AnimationController].
   static GetVsyncDouble vsync({
     double? initialValue,
     Duration? duration,
@@ -42,6 +51,7 @@ abstract interface class Get<T, V extends ValueListenable<T>> {
     );
   }
 
+  /// Encapsulates a [ValueAnimation].
   static GetVsyncValue<T> vsyncValue<T>(
     T initialValue, {
     Duration? duration,
@@ -64,14 +74,17 @@ abstract interface class Get<T, V extends ValueListenable<T>> {
     );
   }
 
+  /// Encapsulates any [Animation] via the provided [VsyncBuilder].
   static GetVsync<T, V, V> customVsync<T, V extends ValueListenable<T>>(VsyncBuilder<V> create) {
     return GetVsync._(create, _getVsync<V>);
   }
 
+  /// Encapsulates an [AsyncNotifier] with a preconfigured [futureCallback].
   static GetAsync<T> async<T>(AsyncValueGetter<T> futureCallback, {T? initialData}) {
     return GetAsync._(futureCallback: futureCallback, initialData: initialData);
   }
 
+  /// Encapsulates an [AsyncNotifier] with a preconfigured [streamCallback].
   static GetAsync<T> stream<T>(
     StreamCallback<T> streamCallback, {
     T? initialData,
@@ -86,11 +99,13 @@ abstract interface class Get<T, V extends ValueListenable<T>> {
     );
   }
 
+  /// Encapsulates any [Listenable], using a [Function] to retrieve a value.
   static GetCustom<T, L> custom<T, L extends Listenable>(L listenable, T Function(L) getValue) {
     return GetCustom._(listenable, getValue);
   }
 }
 
+/// Encapsulates a [ValueNotifier].
 interface class GetValue<T> implements Get<T, ValueNotifier<T>> {
   GetValue._(T initialValue) : it = ValueNotifier(initialValue);
 
@@ -103,6 +118,7 @@ interface class GetValue<T> implements Get<T, ValueNotifier<T>> {
   }
 }
 
+/// Encapsulates a [ListNotifier].
 interface class GetList<E> implements Get<List<E>, ListNotifier<E>> {
   GetList._(Iterable<E> list) : it = ListNotifier(list);
 
@@ -113,6 +129,7 @@ interface class GetList<E> implements Get<List<E>, ListNotifier<E>> {
   void update(ValueSetter<List<E>> setter) => setter(it);
 }
 
+/// Encapsulates a [SetNotifier].
 interface class GetSet<E> implements Get<Set<E>, SetNotifier<E>> {
   GetSet._(Iterable<E> set) : it = SetNotifier(set);
 
@@ -123,6 +140,7 @@ interface class GetSet<E> implements Get<Set<E>, SetNotifier<E>> {
   void update(ValueSetter<Set<E>> setter) => setter(it);
 }
 
+/// Encapsulates a [MapNotifier].
 interface class GetMap<K, V> implements Get<Map<K, V>, MapNotifier<K, V>> {
   GetMap._(Map<K, V> map) : it = MapNotifier(map);
 
@@ -133,18 +151,23 @@ interface class GetMap<K, V> implements Get<Map<K, V>, MapNotifier<K, V>> {
   void update(ValueSetter<Map<K, V>> setter) => setter(it);
 }
 
+/// Encapsulates an [Animation].
 interface class GetVsync<T, V extends ValueListenable<T>, C> implements Get<T, V> {
   GetVsync._(VsyncBuilder<V> create, C Function(V) getControls) {
     controls = getControls(it = create(vsync));
   }
 
+  /// A [TickerProvider] that functions based on a reconfigurable [BuildContext].
   final vsync = Vsync();
 
   @override
   late final V it;
 
+  /// Intended to store an interface for the listenable that blocks access
+  /// to methods like [Listenable.addListener] and [ChangeNotifier.dispose].
   late final C controls;
 
+  /// Attaches this object to the provided [context].
   V attach(BuildContext context) {
     vsync.context = context;
 
@@ -155,14 +178,17 @@ interface class GetVsync<T, V extends ValueListenable<T>, C> implements Get<T, V
   void update(ValueSetter<C> setter) => setter(controls);
 }
 
-typedef _GetVsyncDouble = GetVsync<double, AnimationController, VsyncControls>;
+/// Encapsulates an [AnimationController].
 extension type GetVsyncDouble._(_GetVsyncDouble _get) implements _GetVsyncDouble {}
+typedef _GetVsyncDouble = GetVsync<double, AnimationController, VsyncControls>;
 
-typedef _GetVsyncValue<T> = GetVsync<T, ValueAnimation<T>, VsyncValueControls<T>>;
+/// Encapsulates a [ValueAnimation].
 extension type GetVsyncValue<T>._(_GetVsyncValue<T> _get) implements _GetVsyncValue<T> {}
+typedef _GetVsyncValue<T> = GetVsync<T, ValueAnimation<T>, VsyncValueControls<T>>;
 
 V _getVsync<V>(V v) => v;
 
+/// Encapsulates an [AsyncNotifier].
 interface class GetAsync<T> implements Get<AsyncSnapshot<T>, AsyncNotifier<T>> {
   GetAsync._({
     this.futureCallback,
@@ -172,12 +198,20 @@ interface class GetAsync<T> implements Get<AsyncSnapshot<T>, AsyncNotifier<T>> {
     this.notifyOnCancel = false,
   });
 
+  /// Can be invoked to update the [AsyncNotifier] based on a [Future].
   AsyncValueGetter<T>? futureCallback;
+
+  /// Can be invoked to update the [AsyncNotifier] based on a [Stream].
   StreamCallback<T>? streamCallback;
 
+  // ignore: public_member_api_docs, good luck lol
   T? initialData;
 
+  /// Whether a [StreamSubscription] should end if it encounters an error.
   bool cancelOnError;
+
+  /// Whether the [AsyncNotifier] should send a notification when
+  /// the connection ends.
   bool notifyOnCancel;
 
   @override
@@ -192,6 +226,7 @@ interface class GetAsync<T> implements Get<AsyncSnapshot<T>, AsyncNotifier<T>> {
   // ignore: cancel_subscriptions, canceled in clear()
   StreamSubscription<T>? _subscription;
 
+  /// Cancels the [StreamSubscription] and ignores the [Future] if applicable.
   void clear({bool? notify}) {
     bool canceled = false;
     if (_future case final future?) {
@@ -211,6 +246,8 @@ interface class GetAsync<T> implements Get<AsyncSnapshot<T>, AsyncNotifier<T>> {
     }
   }
 
+  /// Invokes the stored [StreamCallback], or alternatively can accept a new
+  /// [Stream] object.
   void setStream([Stream<T>? stream]) {
     clear();
     stream ??= streamCallback?.call();
@@ -232,6 +269,8 @@ interface class GetAsync<T> implements Get<AsyncSnapshot<T>, AsyncNotifier<T>> {
     );
   }
 
+  /// Invokes the stored [futureCallback], or alternatively can accept a new
+  /// [Future] object.
   void setFuture([Future<T>? future]) {
     clear();
     _future = future ??= futureCallback?.call();
@@ -258,9 +297,11 @@ interface class GetAsync<T> implements Get<AsyncSnapshot<T>, AsyncNotifier<T>> {
   }
 }
 
+/// Encapsulates any [Listenable], using a [Function] to retrieve a value.
 interface class GetCustom<T, L extends Listenable> implements Get<T, ProxyNotifier<T, L>> {
   GetCustom._(this.listenable, T Function(L) getValue) : it = ProxyNotifier(listenable, getValue);
 
+  /// The input [Listenable] object.
   final L listenable;
 
   @override

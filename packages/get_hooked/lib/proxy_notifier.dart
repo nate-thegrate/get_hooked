@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
 
+/// Transforms any [Listenable] into a [ValueListenable].
 class ProxyNotifier<T, L extends Listenable> with ChangeNotifier implements ValueListenable<T> {
+  /// Transforms any [Listenable] into a [ValueListenable].
   ProxyNotifier(this.listenable, this.getValue) : _value = getValue(listenable);
 
+  /// Retrieves a [value] using the provided [listenable].
   final T Function(L) getValue;
 
+  /// The input [Listenable] object.
   final L listenable;
 
   @override

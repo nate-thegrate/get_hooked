@@ -1,11 +1,17 @@
 part of '../get_hooked.dart';
 
+/// Stores each [Ticker] managed by a [Vsync] instance.
 @visibleForTesting
 final tickers = <VsyncTicker>{};
 
+/// A [TickerProvider] implementation that can arbitrarily
+/// reconfigure its attached [BuildContext].
 class Vsync implements TickerProvider {
+  /// Creates a [TickerProvider] that can arbitrarily
+  /// reconfigure its attached [BuildContext].
   Vsync([this._context]);
 
+  /// The [BuildContext] associated with this `vsync`.
   BuildContext? get context => _context;
   BuildContext? _context;
   set context(BuildContext? newContext) {
@@ -36,11 +42,19 @@ class Vsync implements TickerProvider {
     _context = newContext;
   }
 
+  /// The default [Duration] to apply to `vsync` animations, e.g.
+  /// those created via [Get.vsync].
   static Duration defaultDuration = Durations.medium1;
+
+  /// The default [Curve] to apply to `vsync` animations, e.g.
+  /// those created via [Get.vsync].
   static Curve defaultCurve = Curves.linear;
 
+  /// Whether tickers without an attached [context] should be muted.
   static bool get muted => _muted;
   static bool _muted = false;
+
+  /// Controls the [Ticker.muted] value for each ticker without a [context].
   static set muted(bool newValue) {
     if (newValue == _muted) return;
 
@@ -82,8 +96,10 @@ class Vsync implements TickerProvider {
   }
 }
 
+/// A [Ticker] created by a [Vsync].
 @visibleForTesting
 class VsyncTicker extends Ticker {
+  /// Creates a [VsyncTicker].
   // ignore: matching_super_parameters, super-class param is poorly named
   VsyncTicker(super.onTick, this.vsync) {
     tickers.add(this);
@@ -92,9 +108,14 @@ class VsyncTicker extends Ticker {
     }
   }
 
+  /// The [Vsync] associated with this ticker.
   final Vsync vsync;
+
+  /// A [ValueListenable] that notifies when the [muted] status should change.
   ValueListenable<bool> enabledNotifier = const _UnsetNotifier();
 
+  /// Updates the [enabledNotifier] if its identity changes
+  /// (may happen if an ancestor [TickerMode] is added to/removed from the tree.)
   void updateNotifier(BuildContext context) {
     final ValueListenable<bool> newNotifier = TickerMode.getNotifier(context);
     if (newNotifier != enabledNotifier) {
@@ -104,6 +125,7 @@ class VsyncTicker extends Ticker {
     }
   }
 
+  /// Unsubscribes from the [enabledNotifier].
   void detach() {
     enabledNotifier.removeListener(_listener);
   }

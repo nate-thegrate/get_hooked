@@ -4,13 +4,17 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
+/// Builds a [Widget], given the [Key] from the [ImmutableSubtree.placeholder].
 typedef SubtreeBuilder = Widget Function(BuildContext context, Key? key);
 
+/// Those darn times when 1 widget makes it so the entire thing can't be `const`.
+///
+/// Not anymore!
 sealed class ImmutableSubtree implements Widget {
+  /// Creates an [ImmutableSubtree] object.
+  ///
   /// Consider setting the [placeholderBuilder] as a class method
   /// or via [useCallback] to prevent unnecessary rebuilds.
-  ///
-  /// Using a `static` method would
   const factory ImmutableSubtree({
     Key? key,
     required SubtreeBuilder placeholderBuilder,
@@ -21,11 +25,7 @@ sealed class ImmutableSubtree implements Widget {
 }
 
 class _ImmutableSubtree extends InheritedWidget implements ImmutableSubtree {
-  const _ImmutableSubtree({
-    super.key,
-    required this.placeholderBuilder,
-    required super.child,
-  });
+  const _ImmutableSubtree({super.key, required this.placeholderBuilder, required super.child});
 
   final SubtreeBuilder placeholderBuilder;
 
