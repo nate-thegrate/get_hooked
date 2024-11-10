@@ -28,11 +28,22 @@ abstract final class Use {
     Out Function(In value) selector, {
     bool checkVsync = true,
   }) {
-    return use(_SelectHook(get, selector, checkVsync));
+    assert(() {
+      useEffect(() => checkVsync ? _debugCheckVsync(get, 'watch') : null, [get, checkVsync]);
+      return true;
+    }());
+
+    final ValueListenable<In> it = get.it;
+    return useListenableSelector(it, () => selector(it.value));
   }
 
   /// Provides an interface for controlling a [GetVsync] animation,
   /// and optionally rebuilds when the animation sends a notification.
+  ///
+  ///  * If [watch] is true, each notification sent by the animation
+  ///    triggers a rebuild.
+  ///  * If [attach] is true, the animation will use the current
+  ///    [BuildContext] to determine whether its [Ticker] should be active.
   static Controls vsync<Controls>(
     GetVsync<Object?, ValueListenable<Object?>, Controls> get, {
     bool watch = false,
@@ -93,59 +104,11 @@ class _VsyncAttachState extends HookState<void, _VsyncAttachHook> {
   void build(BuildContext context) {}
 }
 
-class _SelectHook<In, Out> extends Hook<Out> {
-  const _SelectHook(this.useIt, this.selector, this.checkVsync);
-
-  final Get<In, ValueListenable<In>> useIt;
-  final Out Function(In value) selector;
-  final bool checkVsync;
-
-  @override
-  _SelectState<In, Out> createState() => _SelectState();
-}
-
-class _SelectState<In, Out> extends HookState<Out, _SelectHook<In, Out>> {
-  late Get<In, ValueListenable<In>> useIt;
-  Out? previous;
-
-  late final VoidCallback rebuild = (context as Element).markNeedsBuild;
-
-  void listener() {
-    final Out result = build();
-    if (result != previous) rebuild();
-    previous = result;
-  }
-
-  @override
-  void initHook() {
-    assert(() {
-      if (hook.checkVsync) _debugCheckVsync(useIt, 'select');
-      return true;
-    }());
-
-    useIt = hook.useIt..it.addListener(listener);
-  }
-
-  @override
-  void didUpdateHook(_SelectHook<In, Out> oldHook) {
-    if (hook.useIt != useIt) {
-      dispose();
-      initHook();
-    }
-  }
-
-  @override
-  void dispose() => useIt.it.removeListener(listener);
-
-  @override
-  Out build([BuildContext? context]) => hook.selector(useIt.it.value);
-}
-
 // ignore: prefer_void_to_null, to make useEffect() happy
-Null _debugCheckVsync(Get<Object?, ValueListenable<Object?>> useIt, String name) {
+Null _debugCheckVsync(Get<Object?, ValueListenable<Object?>>? get, String name) {
   assert(() {
     // ignore: strict_raw_type, too verbose!
-    if (useIt case final GetVsync getVsync when getVsync.vsync.context == null) {
+    if (get case final GetVsync getVsync when getVsync.vsync.context == null) {
       final method = 'Use.$name';
       throw FlutterError.fromParts([
         ErrorSummary('$method() called with a non-attached Vsync.'),

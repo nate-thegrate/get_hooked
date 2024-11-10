@@ -13,18 +13,23 @@ abstract interface class Get<T, V extends ValueListenable<T>> {
   void update(covariant Function setter);
 
   /// Encapsulates a [ValueNotifier].
+  @factory
   static GetValue<T> value<T>(T initialValue) => GetValue._(initialValue);
 
   /// Encapsulates a [ListNotifier].
+  @factory
   static GetList<E> list<E>(Iterable<E> list) => GetList._(list);
 
   /// Encapsulates a [SetNotifier].
+  @factory
   static GetSet<E> set<E>(Iterable<E> set) => GetSet._(set);
 
   /// Encapsulates a [MapNotifier].
+  @factory
   static GetMap<K, V> map<K, V>(Map<K, V> map) => GetMap._(map);
 
   /// Encapsulates an [AnimationController].
+  @factory
   static GetVsyncDouble vsync({
     double? initialValue,
     Duration? duration,
@@ -52,6 +57,7 @@ abstract interface class Get<T, V extends ValueListenable<T>> {
   }
 
   /// Encapsulates a [ValueAnimation].
+  @factory
   static GetVsyncValue<T> vsyncValue<T>(
     T initialValue, {
     Duration? duration,
@@ -75,16 +81,19 @@ abstract interface class Get<T, V extends ValueListenable<T>> {
   }
 
   /// Encapsulates any [Animation] via the provided [VsyncBuilder].
+  @factory
   static GetVsync<T, V, V> customVsync<T, V extends ValueListenable<T>>(VsyncBuilder<V> create) {
     return GetVsync._(create, _getVsync<V>);
   }
 
   /// Encapsulates an [AsyncNotifier] with a preconfigured [futureCallback].
+  @factory
   static GetAsync<T> async<T>(AsyncValueGetter<T> futureCallback, {T? initialData}) {
     return GetAsync._(futureCallback: futureCallback, initialData: initialData);
   }
 
   /// Encapsulates an [AsyncNotifier] with a preconfigured [streamCallback].
+  @factory
   static GetAsync<T> stream<T>(
     StreamCallback<T> streamCallback, {
     T? initialData,
@@ -100,6 +109,7 @@ abstract interface class Get<T, V extends ValueListenable<T>> {
   }
 
   /// Encapsulates any [Listenable], using a [Function] to retrieve a value.
+  @factory
   static GetCustom<T, L> custom<T, L extends Listenable>(L listenable, T Function(L) getValue) {
     return GetCustom._(listenable, getValue);
   }

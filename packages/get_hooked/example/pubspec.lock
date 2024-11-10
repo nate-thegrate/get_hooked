@@ -34,7 +34,7 @@ packages:
     source: hosted
     version: "1.1.2"
   collection:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: collection
       sha256: a1ace0a119f20aabc852d165077c036cd864315bd99b7eaa10a60100341941bf
@@ -42,7 +42,7 @@ packages:
     source: hosted
     version: "1.19.0"
   collection_notifiers:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: collection_notifiers
       sha256: "229cf831d8ce55537b20fba894d86efb03d667eb44b53ab2f2ec50d068bb4390"
@@ -63,7 +63,7 @@ packages:
     source: sdk
     version: "0.0.0"
   flutter_hooks:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: flutter_hooks
       sha256: cde36b12f7188c85286fba9b38cc5a902e7279f36dd676967106c041dc9dde70
@@ -83,6 +83,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  get_hooked:
+    dependency: "direct main"
+    description:
+      path: ".."
+      relative: true
+    source: path
+    version: "0.0.1"
   leak_tracker:
     dependency: transitive
     description:
@@ -132,7 +139,7 @@ packages:
     source: hosted
     version: "0.11.1"
   meta:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: meta
       sha256: bdb68674043280c3428e9ec998512fb681678676b3c54e773629ffe74419f8c7
@@ -217,5 +224,5 @@ packages:
     source: hosted
     version: "14.3.1"
 sdks:
-  dart: ">=3.6.0-0 <4.0.0"
+  dart: ">=3.7.0-123.0.dev <4.0.0"
   flutter: ">=3.18.0-18.0.pre.54"
