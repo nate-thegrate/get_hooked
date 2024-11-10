@@ -1,6 +1,13 @@
 name: get_hooked
 description: "inspired by get_it, uses flutter_hooks"
 version: 0.0.1
+homepage: https://no-tolls.dev/
+issue_tracker: https://github.com/nate-thegrate/get_hooked/issues
+repository: https://github.com/nate-thegrate/get_hooked/tree/main/packages/get_hooked
+topics:
+  - flutter
+  - animation
+  - state-management
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -11,7 +18,7 @@ dependencies:
   collection: ^1.18.0
   collection_notifiers: ^1.1.0
   flutter_hooks: ">=0.18.5 <1.0.0"
-  meta: ">=1.10.0"
+  meta: ">=1.10.0 <2.0.0"
 
 dev_dependencies:
   flutter_test:
