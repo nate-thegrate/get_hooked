@@ -1,5 +1,5 @@
 name: get_hooked
-description: "inspired by get_it, uses flutter_hooks"
+description: "shared state with flutter_hooks!"
 version: 0.0.1
 homepage: https://no-tolls.dev/
 issue_tracker: https://github.com/nate-thegrate/get_hooked/issues
