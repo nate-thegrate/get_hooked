@@ -474,7 +474,7 @@ Which means it's probably flawless!
 
 <br><br>
 
-<a href="https://pub.dev/">
+<a href="https://pub.dev/packages/get_hooked">
   <p align="center">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/0a4dc595-24c8-4b98-bf93-1ede32b0cf03">
