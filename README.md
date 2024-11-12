@@ -1,9 +1,6 @@
-<a href="https://pub.dev/">
+<a href="https://pub.dev/packages/get_hooked">
   <p align="center">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/462d7034-732e-4fc1-8aa2-110f518151d7">
-      <img alt="Get Hooked! (logo)" src="https://github.com/user-attachments/assets/b60cbbcb-6fe6-424d-9848-85011d156221" width="98px">
-    </picture>
+    <img alt="Get Hooked! (logo)" src="https://github.com/user-attachments/assets/f1fb45f4-069a-4457-902a-4117bd590d46" width="200px">
   </p>
 </a>
 
@@ -168,9 +165,8 @@ final getMyData = Get.value(Data.initial);
 | avoids type overlap                   |        ❌        |    ❌    |  ❌  |   ✅    |   ❌   |    ✅     |
 | no `context` needed                   |        ❌        |    ❌    |  ❌  |   ❌    |   ✅   |    ✅     |
 | no boilerplate/code generation needed |        ❌        |    ✅    |  ❌  |   ❌    |   ✅   |    ✅     |
-| no extra packages needed              |        ✅        |    ❌    |  ❌  |   ❌    |   ❌   |    ❌     |
-| supports lazy-loading                 |        ❌        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
 | supports scoping                      |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ❌     |
+| supports lazy-loading                 |        ❌        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
 | supports auto-dispose                 |        ❌        |    ❌    |  ❌  |   ✅    |   ✅   |    ✅     |
 | supports `Animation`s                 |        ✅        |    ✅    |  ❌  |   ❌    |   ❌   |    ✅     |
 | Flutter & non-Flutter variants        |        ❌        |    ❌    |  ✅  |   ✅    |   ✅   |    ❌     |
@@ -235,7 +231,7 @@ with any issues you run into.
 >
 > The solution is: don't use **get_hooked** for it! Reusable "state" can be achieved with a
 > `StatefulWidget` or `HookWidget`, and reusable "shared state" is possible through `InheritedWidget`s.\
-> <sub>(Using both **get_hooked** and [**provider**](https://pub.dev/packages/provider) is totally fine!)</sub>
+> <sub>(Using both [**get_hooked**](https://pub.dev/packages/get_hooked) and [**provider**](https://pub.dev/packages/provider) is totally fine!)</sub>
 
 <br>
 
@@ -426,18 +422,6 @@ No breakpoints, no print statements. Just type the name.
 
 # Tips for success
 
-### Avoid using `it` directly
-
-Unlike most `StatefulWidget` member variables, Get objects persist throughout changes to the app's state,
-so a couple of missing `removeListener()` calls might create a noticeable performance impact.
-Prefer calling `Use.watch()` to subscribe to updates.
-
-When a `GetAsync` object's listeners are removed, it will automatically end its stream subscription and
-restore the listenable to its default state. A listenable encapulated in a Get object should never call the
-internal `ChangeNotifier.dispose()` method, since the object would be unusable from that point onward.
-
-<br>
-
 ### Follow the rules of Hooks
 
 By convention, Hook function names start with `use`, and they should only be called inside a `HookWidget`'s build method.
@@ -467,13 +451,22 @@ final getAnimation = Get.vsync();
 
 <br>
 
-Consistent Get object names make keeping inventory a lot easier:
+### Avoid using `it` directly
 
-![get objects](https://github.com/user-attachments/assets/c1afd3e6-8f4a-4409-aa4c-d37d0250e8ce)
+Unlike most `StatefulWidget` member variables, Get objects persist throughout changes to the app's state,
+so a couple of missing `removeListener()` calls might create a noticeable performance impact.
+Prefer calling `Use.watch()` to subscribe to updates.
 
-This mimics the setup of the class API.
+When a `GetAsync` object's listeners are removed, it will automatically end its stream subscription and
+restore the listenable to its default state. A listenable encapulated in a Get object should never call the
+internal `ChangeNotifier.dispose()` method, since the object would be unusable from that point onward.
 
-![get autofill](https://github.com/user-attachments/assets/027b855f-6f47-4ded-8ec9-ba5d9f2df1e8)
+<br><br>
+
+# Troubleshooting / FAQs
+
+So far, not a single person has reached out because of a problem with this package.
+Which means it's probably flawless!
 
 <br><br>
 
@@ -484,8 +477,8 @@ This mimics the setup of the class API.
 <a href="https://pub.dev/">
   <p align="center">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/e00e34a2-5bb7-4e63-b07c-21734261eaaf">
-      <img alt="get_hooked: try it once" src="https://github.com/user-attachments/assets/a1affe2a-c2c3-4344-b18b-251c00f03fc1">
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/9c57719d-7316-45ad-b83e-fb6d54b351f9">
+      <img alt="get_hooked: try it once" src="https://github.com/user-attachments/assets/d151e872-028b-43fb-baf2-c5c6a01275f1">
     </picture>
   </p>
 </a>
