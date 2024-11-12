@@ -1,6 +1,6 @@
 <a href="https://pub.dev/packages/get_hooked">
   <p align="center">
-    <img alt="Get Hooked! (logo)" src="https://github.com/user-attachments/assets/f1fb45f4-069a-4457-902a-4117bd590d46" width="200px">
+    <img alt="Get Hooked! (logo)" src="https://github.com/user-attachments/assets/aecf1fbf-280e-4a0f-85ec-f8b24f6bc63e" width="200px">
   </p>
 </a>
 
@@ -477,8 +477,8 @@ Which means it's probably flawless!
 <a href="https://pub.dev/">
   <p align="center">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/9c57719d-7316-45ad-b83e-fb6d54b351f9">
-      <img alt="get_hooked: try it once" src="https://github.com/user-attachments/assets/d151e872-028b-43fb-baf2-c5c6a01275f1">
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/0a4dc595-24c8-4b98-bf93-1ede32b0cf03">
+      <img alt="get_hooked (logo, bottom)" src="https://github.com/user-attachments/assets/c82159f8-142d-4289-9405-a10b50fff259">
     </picture>
   </p>
 </a>
