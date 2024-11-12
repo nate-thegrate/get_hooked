@@ -115,6 +115,13 @@ Null _debugCheckVsync(Get<Object?, ValueListenable<Object?>>? get, String name) 
   }());
 }
 
+/// Calls the [statusListener] whenever the [Animation.status] changes.
+///
+/// If the listener has a returned value, it will be returned by this hook
+/// and updated whenever the status changes.
+///
+/// If `null` is passed as the [animation], the hook will stop listening to
+/// the status.
 T useAnimationStatus<T>(
   Animation<Object?>? animation,
   T Function(AnimationStatus status) statusListener,
@@ -134,12 +141,12 @@ class _AnimationStatusHook<T> extends Hook<T> {
 
 class _AnimationStatusHookState<T> extends HookState<T, _AnimationStatusHook<T>> {
   late Animation<Object?>? animation = hook.animation;
-  late T result = hook.statusListener(animation?.status ?? AnimationStatus.dismissed);
+  late T _result = hook.statusListener(animation?.status ?? AnimationStatus.dismissed);
 
   void statusUpdate(AnimationStatus status) {
-    final T newResult = hook.statusListener(status);
-    if (newResult != result) {
-      setState(() => result = newResult);
+    final T result = hook.statusListener(status);
+    if (result != _result) {
+      setState(() => _result = result);
     }
   }
 
@@ -163,5 +170,5 @@ class _AnimationStatusHookState<T> extends HookState<T, _AnimationStatusHook<T>>
   }
 
   @override
-  T build(BuildContext context) => result;
+  T build(BuildContext context) => _result;
 }
