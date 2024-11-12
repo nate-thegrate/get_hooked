@@ -1,15 +1,11 @@
-// ignore_for_file: avoid_positional_boolean_parameters, makes private hook classes less readable
-
 part of '../get_hooked.dart';
 
-/// A namespace for [Hook] functions.
-abstract final class Use {
-  /// Don't use it.
-  static V it<T, V extends ValueListenable<T>>(Get<T, V> get, {bool watch = false}) {
-    final V it = get.it;
-    useListenable(watch ? it : null);
-    return it;
-  }
+/// A namespace for [Hook] functions that reference a [Get] object.
+abstract final class Ref {
+  /// Reads a [Get] object's value without subscribing to receive notifications.
+  ///
+  /// It's safe to call this method outside of a [HookWidget].
+  static T read<T>(Get<T, ValueListenable<T>> get) => get.it.value;
 
   /// Watches a [Get] object and triggers a rebuild when a notification is sent.
   static T watch<T>(Get<T, ValueListenable<T>> get, {bool checkVsync = true}) {
@@ -47,21 +43,28 @@ abstract final class Use {
   static Controls vsync<Controls>(
     GetVsync<Object?, ValueListenable<Object?>, Controls> get, {
     bool watch = false,
-    bool attach = true,
+    AnimationStatusListener? onStatusChange,
   }) {
-    useListenable(watch ? get.it : null);
-    use(_VsyncAttachHook(get, attach));
+    final ValueListenable<Object?> animation = get.it;
+    useListenable(watch ? animation : null);
+    if (animation is Animation && onStatusChange != null) {
+      useAnimationStatus<void>(animation, onStatusChange);
+    } else {
+      useAnimationStatus<void>(null, _emptyListener);
+    }
+    use(_VsyncAttachHook(get));
     return get.controls;
   }
 }
 
+void _emptyListener(AnimationStatus status) {}
+
 typedef _GetVsync = GetVsync<Object?, ValueListenable<Object?>, Object?>;
 
 class _VsyncAttachHook extends Hook<void> {
-  const _VsyncAttachHook(this.get, this.attach);
+  const _VsyncAttachHook(this.get);
 
   final _GetVsync get;
-  final bool attach;
 
   @override
   _VsyncAttachState createState() => _VsyncAttachState();
@@ -69,31 +72,15 @@ class _VsyncAttachHook extends Hook<void> {
 
 class _VsyncAttachState extends HookState<void, _VsyncAttachHook> {
   late _GetVsync get = hook.get;
-  late bool attach = hook.attach;
-
-  void _attach() {
-    if (attach) get.attach(context);
-  }
-
-  void _detach() {
-    final Vsync vsync = get.vsync;
-    if (vsync.context == context) vsync.context = null;
-  }
-
-  @override
-  void initHook() => _attach();
 
   @override
   void didUpdateHook(_VsyncAttachHook oldHook) {
     final _GetVsync newGet = hook.get;
-    final bool newAttach = hook.attach;
+
     if (newGet != get) {
-      _detach();
-      attach = newAttach;
-      _attach();
-    } else if (newAttach != attach) {
-      attach = newAttach;
-      attach ? _attach() : _detach();
+      final Vsync vsync = get.vsync;
+      if (vsync.context == context) vsync.context = null;
+      get = newGet..vsync.context = context;
     }
   }
 
@@ -109,7 +96,7 @@ Null _debugCheckVsync(Get<Object?, ValueListenable<Object?>>? get, String name) 
   assert(() {
     // ignore: strict_raw_type, too verbose!
     if (get case final GetVsync getVsync when getVsync.vsync.context == null) {
-      final method = 'Use.$name';
+      final method = 'Ref.$name';
       throw FlutterError.fromParts([
         ErrorSummary('$method() called with a non-attached Vsync.'),
         ErrorDescription(
@@ -117,8 +104,8 @@ Null _debugCheckVsync(Get<Object?, ValueListenable<Object?>>? get, String name) 
           'but the $getVsync has not been set up.',
         ),
         ErrorHint(
-          'Consider setting up an ancestor widget with Use.vsync(), '
-          'or calling Use.vsync() here instead of $method().',
+          'Consider setting up an ancestor widget with Ref.vsync(), '
+          'or calling Ref.vsync() here instead of $method().',
         ),
         ErrorHint('Alternatively, call $method(checkVsync: false) to ignore this warning.'),
       ]);
@@ -126,4 +113,55 @@ Null _debugCheckVsync(Get<Object?, ValueListenable<Object?>>? get, String name) 
 
     return true;
   }());
+}
+
+T useAnimationStatus<T>(
+  Animation<Object?>? animation,
+  T Function(AnimationStatus status) statusListener,
+) {
+  return use(_AnimationStatusHook(statusListener, animation));
+}
+
+class _AnimationStatusHook<T> extends Hook<T> {
+  const _AnimationStatusHook(this.statusListener, this.animation);
+
+  final Animation<Object?>? animation;
+  final T Function(AnimationStatus) statusListener;
+
+  @override
+  _AnimationStatusHookState<T> createState() => _AnimationStatusHookState();
+}
+
+class _AnimationStatusHookState<T> extends HookState<T, _AnimationStatusHook<T>> {
+  late Animation<Object?>? animation = hook.animation;
+  late T result = hook.statusListener(animation?.status ?? AnimationStatus.dismissed);
+
+  void statusUpdate(AnimationStatus status) {
+    final T newResult = hook.statusListener(status);
+    if (newResult != result) {
+      setState(() => result = newResult);
+    }
+  }
+
+  @override
+  void initHook() {
+    animation?.addStatusListener(statusUpdate);
+  }
+
+  @override
+  void didUpdateHook(_AnimationStatusHook<T> oldHook) {
+    final Animation<Object?>? newAnimation = hook.animation;
+    if (newAnimation != animation) {
+      animation?.removeStatusListener(statusUpdate);
+      animation = newAnimation?..addStatusListener(statusUpdate);
+    }
+  }
+
+  @override
+  void dispose() {
+    animation?.removeStatusListener(statusUpdate);
+  }
+
+  @override
+  T build(BuildContext context) => result;
 }

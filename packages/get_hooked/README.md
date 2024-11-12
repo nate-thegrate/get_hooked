@@ -147,7 +147,7 @@ final getMyData = Get.value(Data.initial);
 ```
 
 ```dart
-    final data = Use.watch(getMyData);
+    final data = Ref.watch(getMyData);
 ```
 
 <br>
@@ -298,7 +298,7 @@ class CounterButton extends HookWidget {
       onPressed: () {
         getCount.update((int value) => value + 1);
       },
-      child: Text('counter value: ${Use.watch(getCount)}'),
+      child: Text('counter value: ${Ref.watch(getCount)}'),
     );
   }
 }
@@ -326,7 +326,7 @@ class CounterButton extends FilledButton {
   }
 
   static Widget _build(BuildContext context) {
-    return Text('counter value: ${Use.watch(getCount)}');
+    return Text('counter value: ${Ref.watch(getCount)}');
   }
 }
 ```
@@ -363,8 +363,8 @@ class GetValue<T> implements Get<T, ValueNotifier<T>> {
   }
 }
 
-/// The [Use] class is just a namespace for hook functions.
-abstract final class Use {
+/// The [Ref] class is just a namespace for hook functions.
+abstract final class Ref {
   static T watch(Get<T, ValueListenable<T>> getObject) {
     return use(_GetHook(getObject));
   }
@@ -425,7 +425,7 @@ No breakpoints, no print statements. Just type the name.
 
 Unlike most `StatefulWidget` member variables, Get objects persist throughout changes to the app's state,
 so a couple of missing `removeListener()` calls might create a noticeable performance impact.
-Prefer calling `Use.watch()` to subscribe to updates.
+Prefer calling `Ref.watch()` to subscribe to updates.
 
 When a `GetAsync` object's listeners are removed, it will automatically end its stream subscription and
 restore the listenable to its default state. A listenable encapulated in a Get object should never call the
@@ -451,7 +451,7 @@ For a more detailed explanation, see also:
 
 ### `Get` naming conventions
 
-Just like how each Hook function starts with `use`, Get objects should start with `get`.
+Just like how Hook functions generally start with `use`, Get objects generally should start with `get`.
 
 If the object is only intended to be used by widgets in the same `.dart` file, consider marking it with an annotation:
 

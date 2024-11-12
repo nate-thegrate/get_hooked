@@ -12,6 +12,9 @@ class Vsync implements TickerProvider {
   Vsync([this._context]);
 
   /// The [BuildContext] associated with this `vsync`.
+  ///
+  /// Setting a context isn't necessary if the vsync is being managed
+  /// by [Ref.vsync].
   BuildContext? get context => _context;
   BuildContext? _context;
   set context(BuildContext? newContext) {
@@ -82,13 +85,18 @@ class Vsync implements TickerProvider {
     late final VsyncTicker ticker;
 
     void tickerCallback(Duration elapsed) {
-      if (ticker.vsync.context case final context?) {
-        if (!context.mounted) {
+      switch (ticker.vsync.context) {
+        case hooked || null:
+          break;
+
+        case BuildContext(mounted: false):
           return ticker.stop(canceled: true);
-        }
-        ticker.updateNotifier(context);
-        if (ticker.muted) return;
+
+        case final BuildContext context:
+          ticker.updateNotifier(context);
+          if (ticker.muted) return;
       }
+
       onTick(elapsed);
     }
 
@@ -100,7 +108,6 @@ class Vsync implements TickerProvider {
 @visibleForTesting
 class VsyncTicker extends Ticker {
   /// Creates a [VsyncTicker].
-  // ignore: matching_super_parameters, super-class param is poorly named
   VsyncTicker(super.onTick, this.vsync) {
     tickers.add(this);
     if (vsync.context case final context? when context.mounted) {
@@ -170,4 +177,17 @@ class _UnsetNotifier implements ValueListenable<bool> {
 
   @override
   void removeListener(VoidCallback listener) {}
+}
+
+/// A placeholder value, signifying that a [VsyncTicker] is being managed by [Ref.vsync].
+@visibleForTesting
+const BuildContext hooked = _Hooked();
+
+class _Hooked implements BuildContext {
+  const _Hooked();
+
+  @override
+  Never noSuchMethod(Invocation invocation) {
+    throw UnsupportedError('"Hooked" acts as a placeholder value for a Vsync BuildContext.');
+  }
 }

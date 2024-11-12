@@ -35,7 +35,7 @@ class App extends MaterialApp {
 
   static Widget _hookBuilder(BuildContext context) {
     return Text(
-      Use.watch(getCount).toString(),
+      Ref.watch(getCount).toString(),
       style: Theme.of(context).textTheme.headlineMedium,
     );
   }
