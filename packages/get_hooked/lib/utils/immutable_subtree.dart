@@ -10,6 +10,12 @@ typedef SubtreeBuilder = Widget Function(BuildContext context, Key? key);
 /// Those darn times when 1 widget makes it so the entire thing can't be `const`.
 ///
 /// Not anymore!
+///
+/// <br>
+///
+/// # Warning
+///
+/// This class is entirely unrelated to "get_hooked" and will probably be relocated.
 sealed class ImmutableSubtree implements Widget {
   /// Creates an [ImmutableSubtree] object.
   ///

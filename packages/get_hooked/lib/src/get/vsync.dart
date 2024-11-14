@@ -1,8 +1,7 @@
 part of '../get_hooked.dart';
 
-/// Stores each [Ticker] managed by a [Vsync] instance.
-@visibleForTesting
-final tickers = <VsyncTicker>{};
+/// Creates an [Animation] using a [TickerProvider].
+typedef VsyncBuilder<A extends Animation<Object?>> = A Function(TickerProvider vsync);
 
 /// A [TickerProvider] implementation that can arbitrarily
 /// reconfigure its attached [BuildContext].
@@ -11,6 +10,36 @@ class Vsync implements TickerProvider {
   /// reconfigure its attached [BuildContext].
   Vsync([this._context]);
 
+  /// A placeholder value, signifying that a [VsyncTicker]
+  /// is being managed by the [Ref.vsync] hook.
+  static const BuildContext auto = _AutoManaged();
+
+  /// Optionally allows an object to keep track of its [Vsync].
+  ///
+  /// [Animation]s created via [Vsync.build] are automatically registered.
+  @visibleForTesting
+  static final cache = Expando<Vsync>();
+
+  /// Creates an animation using the provided [VsyncBuilder],
+  /// and registers it to the [Vsync.cache].
+  static A build<A extends Animation<Object?>>(VsyncBuilder<A> builder) {
+    final vsync = Vsync();
+    final A animation = builder(vsync);
+    Vsync.cache[animation] = vsync;
+    return animation;
+  }
+
+  /// Whether a [VsyncTicker] is currently assigned.
+  bool get hasTicker => _ticker != null;
+
+  /// The [VsyncTicker] being managed by this ticker provider.
+  VsyncTicker get ticker => _ticker!;
+  VsyncTicker? _ticker;
+  set ticker(VsyncTicker newTicker) {
+    _ticker?.dispose();
+    _ticker = newTicker;
+  }
+
   /// The [BuildContext] associated with this `vsync`.
   ///
   /// Setting a context isn't necessary if the vsync is being managed
@@ -18,28 +47,13 @@ class Vsync implements TickerProvider {
   BuildContext? get context => _context;
   BuildContext? _context;
   set context(BuildContext? newContext) {
-    if (newContext == _context) return;
-
-    if (newContext != null) {
-      for (final VsyncTicker ticker in tickers) {
-        final Vsync vsync = ticker.vsync;
-        if (vsync._context == _context) {
-          vsync._context = newContext;
-        } else if (vsync._context != newContext) {
-          continue;
-        }
-        ticker.updateNotifier(newContext);
-      }
-    } else {
-      for (final VsyncTicker ticker in tickers) {
-        if (ticker.vsync._context == _context) {
-          ticker
-            ..stop(canceled: true)
-            ..detach()
-            ..vsync.context = null
-            ..muted = _muted;
-        }
-      }
+    switch (newContext) {
+      case Vsync.auto:
+        break;
+      case null:
+        _ticker?.detach();
+      default:
+        _ticker?.updateNotifier(newContext);
     }
 
     _context = newContext;
@@ -52,23 +66,6 @@ class Vsync implements TickerProvider {
   /// The default [Curve] to apply to `vsync` animations, e.g.
   /// those created via [Get.vsync].
   static Curve defaultCurve = Curves.linear;
-
-  /// Whether tickers without an attached [context] should be muted.
-  static bool get muted => _muted;
-  static bool _muted = false;
-
-  /// Controls the [Ticker.muted] value for each ticker without a [context].
-  static set muted(bool newValue) {
-    if (newValue == _muted) return;
-
-    _muted = newValue;
-
-    for (final Ticker ticker in tickers) {
-      if (ticker is! VsyncTicker) {
-        ticker.muted = newValue;
-      }
-    }
-  }
 
   @override
   Ticker createTicker(TickerCallback onTick) {
@@ -86,7 +83,7 @@ class Vsync implements TickerProvider {
 
     void tickerCallback(Duration elapsed) {
       switch (ticker.vsync.context) {
-        case hooked || null:
+        case auto || null:
           break;
 
         case BuildContext(mounted: false):
@@ -109,7 +106,7 @@ class Vsync implements TickerProvider {
 class VsyncTicker extends Ticker {
   /// Creates a [VsyncTicker].
   VsyncTicker(super.onTick, this.vsync) {
-    tickers.add(this);
+    vsync._ticker = this;
     if (vsync.context case final context? when context.mounted) {
       updateNotifier(context);
     }
@@ -126,14 +123,16 @@ class VsyncTicker extends Ticker {
   void updateNotifier(BuildContext context) {
     final ValueListenable<bool> newNotifier = TickerMode.getNotifier(context);
     if (newNotifier != enabledNotifier) {
-      detach();
+      enabledNotifier.removeListener(_listener);
       enabledNotifier = newNotifier..addListener(_listener);
       _listener();
     }
   }
 
-  /// Unsubscribes from the [enabledNotifier].
+  /// Sets the ticker as "no longer managed by a [BuildContext]".
   void detach() {
+    muted = false;
+    stop(canceled: true);
     enabledNotifier.removeListener(_listener);
   }
 
@@ -160,8 +159,8 @@ class VsyncTicker extends Ticker {
   @override
   void dispose() {
     enabledNotifier.removeListener(_listener);
-    tickers.remove(this);
     super.dispose();
+    vsync._ticker = null;
   }
 }
 
@@ -179,12 +178,8 @@ class _UnsetNotifier implements ValueListenable<bool> {
   void removeListener(VoidCallback listener) {}
 }
 
-/// A placeholder value, signifying that a [VsyncTicker] is being managed by [Ref.vsync].
-@visibleForTesting
-const BuildContext hooked = _Hooked();
-
-class _Hooked implements BuildContext {
-  const _Hooked();
+class _AutoManaged implements BuildContext {
+  const _AutoManaged();
 
   @override
   Never noSuchMethod(Invocation invocation) {

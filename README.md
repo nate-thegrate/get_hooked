@@ -149,7 +149,7 @@ final getMyData = Get.value(Data.initial);
 ```
 
 ```dart
-    final data = Use.watch(getMyData);
+    final data = Ref.watch(getMyData);
 ```
 
 <br>
@@ -159,17 +159,20 @@ final getMyData = Get.value(Data.initial);
 |                                       | `InheritedWidget` | provider | bloc | riverpod | get_it | get_hooked |
 |---------------------------------------|:-----------------:|:--------:|:----:|:--------:|:------:|:----------:|
 | shared state between widgets          |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
+| supports scoping                      |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
 | optimized for performance             |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
 | optimized for testability             |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
+| supports conditional subscriptions    |        ❌        |    ❌    |  ❌  |   ✅    |   ❌   |    ✅     |
 | integrated with Hooks                 |        ❌        |    ❌    |  ❌  |   ✅    |   ❌   |    ✅     |
 | avoids type overlap                   |        ❌        |    ❌    |  ❌  |   ✅    |   ❌   |    ✅     |
 | no `context` needed                   |        ❌        |    ❌    |  ❌  |   ❌    |   ✅   |    ✅     |
 | no boilerplate/code generation needed |        ❌        |    ✅    |  ❌  |   ❌    |   ✅   |    ✅     |
-| supports scoping                      |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ❌     |
 | supports lazy-loading                 |        ❌        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
 | supports auto-dispose                 |        ❌        |    ❌    |  ❌  |   ✅    |   ✅   |    ✅     |
 | supports `Animation`s                 |        ✅        |    ✅    |  ❌  |   ❌    |   ❌   |    ✅     |
 | Flutter & non-Flutter variants        |        ❌        |    ❌    |  ✅  |   ✅    |   ✅   |    ❌     |
+| Has a stable release                  |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ❌     |
+| Tailored for Dart 3                   |        ❌        |    ❌    |  ❌  |   ❌    |   ❌   |    ✅     |
 
 <br>
 
@@ -185,56 +188,6 @@ Until the 1.0.0 release, you can expect breaking changes without prior warning.
 
 <br>
 
-### No scoping
-
-Here, "scoping" is defined as a form of dependency injection, where a subset of widgets
-(typically descendants of an `InheritedWidget`) receive data by different means.
-
-```dart
-  testWidgets('my test', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [myDataProvider.overrideWith(TestData.new)],
-        child: MyWidget(),
-      ),
-    );
-  });
-```
-
-Even though **get_hooked** does not support this, widgets can be effectively tested via
-global dependency injection.
-
-```dart
-  setUp(() {
-    reconfigureMyData();
-  });
-
-  testWidgets('my test', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      child: MyWidget(),
-    );
-  });
-```
-<sup>
-  (This code snippet was written for the purpose of instruction;
-  please disregard the glaring lack of a <a href="https://dart.dev/lints/unnecessary_lambdas"><b>tear-off</b></a>.)
-</sup>
-
-<br><br>
-
-Testability is super important—please don't hesitate to [reach out](https://github.com/nate-thegrate/get_hooked/issues)
-with any issues you run into.
-
-> [!TIP]
-> Global dependency injection is great for test coverage, but in some cases, a scoping mechanism
-> might be desired as part of the app structure.
->
-> The solution is: don't use **get_hooked** for it! Reusable "state" can be achieved with a
-> `StatefulWidget` or `HookWidget`, and reusable "shared state" is possible through `InheritedWidget`s.\
-> <sub>(Using both [**get_hooked**](https://pub.dev/packages/get_hooked) and [**provider**](https://pub.dev/packages/provider) is totally fine!)</sub>
-
-<br>
-
 ### Flutter only
 
 Many packages on [pub.dev](https://pub.dev/) have both a Flutter and a non-Flutter variant.
@@ -245,7 +198,7 @@ Many packages on [pub.dev](https://pub.dev/) have both a Flutter and a non-Flutt
 | [**flutter_bloc**](https://pub.dev/packages/flutter_bloc) | [**bloc**](https://pub.dev/packages/bloc) |
 | [**watch_it**](https://pub.dev/packages/watch_it) | [**get_it**](https://pub.dev/packages/get_it) |
 
-If you want a non-Flutter version of **get_hooked**, please [open an issue](https://github.com/nate-thegrate/get_hooked/issues)
+If you want a non-Flutter version of [**get_hooked**]((https://pub.dev/packages/get_hooked)), please [open an issue](https://github.com/nate-thegrate/get_hooked/issues)
 and describe your use case.
 
 <br>
@@ -253,10 +206,8 @@ and describe your use case.
 # Overview
 
 ```dart
-abstract class Get {
-  ValueListenable get it;
-
-  void update(Function function);
+extension type Get(Listenable hooked) {
+  // ...
 }
 ```
 
@@ -299,7 +250,7 @@ class CounterButton extends HookWidget {
       onPressed: () {
         getCount.update((int value) => value + 1);
       },
-      child: Text('counter value: ${Use.watch(getCount)}'),
+      child: Text('counter value: ${Ref.watch(getCount)}'),
     );
   }
 }
@@ -327,7 +278,7 @@ class CounterButton extends FilledButton {
   }
 
   static Widget _build(BuildContext context) {
-    return Text('counter value: ${Use.watch(getCount)}');
+    return Text('counter value: ${Ref.watch(getCount)}');
   }
 }
 ```
@@ -339,10 +290,8 @@ class CounterButton extends FilledButton {
 Here's a (less oversimplified) rundown of the Get API:
 
 ```dart
-abstract interface class Get<T, V extends ValueListenable<T>> {
-  /// [Get.value] is a pseudo-constructor: it creates a [Get] object,
-  /// but it's structured as a `static` method instead of a `factory`
-  /// so that it can expose the [GetValue<T>] return type.
+extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) {
+  @factory
   static GetValue<T> value<T>(T initial) {
     return GetValue<T>(initial);
   }
@@ -364,8 +313,7 @@ class GetValue<T> implements Get<T, ValueNotifier<T>> {
   }
 }
 
-/// The [Use] class is just a namespace for hook functions.
-abstract final class Use {
+class Ref {
   static T watch(Get<T, ValueListenable<T>> getObject) {
     return use(_GetHook(getObject));
   }
@@ -373,19 +321,21 @@ abstract final class Use {
 ```
 
 > [!CAUTION]
-> **Do not access** `it` **directly:** get it through a Hook instead.\
+> **Do not access** `hooked` **directly:** get it through a Hook instead.\
 > If a listener is added without automatically being removed, it can result in memory leaks,
-> and calling `it.dispose()` would create problems for other widgets that are still using it.
+> and calling `dispose()` would create problems for other widgets that are still using it.
 >
 > <br>
 >
-> Only use `it` in the following situations:
+> Only use `hooked` in the following situations:
 > - If another API accepts a `Listenable` object (and takes care of the listener automatically).
 > - If you feel like it.
 
 <br>
 
 # Highlights
+
+
 
 ### Animations
 
@@ -400,11 +350,44 @@ hooking them straight up to `RenderObject`s.
 final getAnimation = Get.vsync();
 
 class _RenderMyAnimation extends RenderSliverAnimatedOpacity {
-  _RenderMyAnimation() : super(opacity: getAnimation.it);
+  _RenderMyAnimation() : super(opacity: getAnimation.hooked);
 }
 ```
 
 <br>
+
+### Optional scoping
+
+Here, "scoping" is defined as a form of dependency injection, where a subset of widgets
+(typically descendants of an `InheritedWidget`) receive data by different means.
+
+```dart
+ProviderScope(
+  overrides: [myDataProvider.overrideWith(OtherDataClass.new)],
+  child: Consumer(builder: (context, ref, child) {
+    final data = ref.watch(myDataProvider);
+    // ...
+  }),
+),
+```
+
+`Ref.watch()` will watch a different Get object if an `Override` is found in
+an ancestor `Ref` widget.
+
+```dart
+Ref(
+  overrides: [Override(getMyData, overrideWith: OtherDataClass.new)],
+  child: HookBuilder(builder: (context) {
+    final data = Ref.watch(getMyData);
+    // ...
+  }),
+),
+```
+
+<br>
+
+Testability is super important—please don't hesitate to [reach out](https://github.com/nate-thegrate/get_hooked/issues)
+with any issues you run into.
 
 ### No boilerplate, no magic curtain
 
@@ -424,7 +407,8 @@ No breakpoints, no print statements. Just type the name.
 
 ### Follow the rules of Hooks
 
-By convention, Hook function names start with `use`, and they should only be called inside a `HookWidget`'s build method.
+By convention, Hook function names start with `use`, and they should only
+be called inside a `HookWidget`'s build method.
 
 The `HookWidget`'s `context` keeps track of:
 1. How many hook functions the build method calls, and
@@ -440,9 +424,11 @@ For a more detailed explanation, see also:
 
 ### `Get` naming conventions
 
-Just like how each Hook function starts with `use`, Get objects should start with `get`.
+Just like how Hook functions generally start with `use`, Get objects should start
+with `get`.
 
-If the object is only intended to be used by widgets in the same `.dart` file, consider marking it with an annotation:
+If the object is only intended to be used by widgets in the same `.dart` file,
+consider marking it with an annotation to avoid cluttering autofill suggestions:
 
 ```dart
 @visibleForTesting
@@ -451,15 +437,18 @@ final getAnimation = Get.vsync();
 
 <br>
 
-### Avoid using `it` directly
+### Avoid using `hooked` directly
 
-Unlike most `StatefulWidget` member variables, Get objects persist throughout changes to the app's state,
-so a couple of missing `removeListener()` calls might create a noticeable performance impact.
-Prefer calling `Use.watch()` to subscribe to updates.
+Unlike most `StatefulWidget` member variables, Get objects persist throughout
+changes to the app's state, so a couple of missing `removeListener()` calls
+might create a noticeable performance impact.
+Prefer calling `Ref.watch()` to subscribe to updates.
 
-When a `GetAsync` object's listeners are removed, it will automatically end its stream subscription and
-restore the listenable to its default state. A listenable encapulated in a Get object should never call the
-internal `ChangeNotifier.dispose()` method, since the object would be unusable from that point onward.
+When a `GetAsync` object's listeners are removed, it will automatically end its
+stream subscription and restore the listenable to its default state.
+A listenable encapulated in a Get object should avoid calling the internal
+`ChangeNotifier.dispose()` method, since the object would be unusable
+from that point onward.
 
 <br><br>
 

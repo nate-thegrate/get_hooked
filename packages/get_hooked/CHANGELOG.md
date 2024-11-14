@@ -1,3 +1,10 @@
+## 0.1.0
+- Scoping!
+  - It bothered me to just not have this feature :)
+  - Plus, now the `Ref` class is actually more than just a namespace!
+- Import/directory organization
+
+
 ## 0.0.2
 - Grinding out those pub points!
   - Fix a syntax error (`AnimationController.repeat` doesn't have a `count` param in stable yet)
