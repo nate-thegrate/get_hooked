@@ -125,7 +125,7 @@ extension type GetValue<T>._(ValueNotifier<T> _hooked) implements Get<T, ValueNo
   }
 
   /// Use the notifier's current value to [emit] a new one.
-  void modify(T Function(T) modifier) => emit(modifier(_hooked.value));
+  void modify(T Function(T value) modifier) => emit(modifier(_hooked.value));
 }
 
 /// Toggles a boolean [GetValue].

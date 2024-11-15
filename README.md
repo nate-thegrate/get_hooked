@@ -145,7 +145,7 @@ GetIt.I.registerSingleton(MyData(Data.initial));
 ### get_hooked
 
 ```dart
-final getMyData = Get.value(Data.initial);
+final getMyData = Get.it(Data.initial);
 ```
 
 ```dart
@@ -162,6 +162,8 @@ final getMyData = Get.value(Data.initial);
 | supports scoping                      |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
 | optimized for performance             |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
 | optimized for testability             |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
+| Tailored for Dart 3                   |        ❌        |    ❌    |  ❌  |   ❌    |   ❌   |    ✅     |
+| Has a stable release                  |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ❌     |
 | supports conditional subscriptions    |        ❌        |    ❌    |  ❌  |   ✅    |   ❌   |    ✅     |
 | integrated with Hooks                 |        ❌        |    ❌    |  ❌  |   ✅    |   ❌   |    ✅     |
 | avoids type overlap                   |        ❌        |    ❌    |  ❌  |   ✅    |   ❌   |    ✅     |
@@ -171,8 +173,6 @@ final getMyData = Get.value(Data.initial);
 | supports auto-dispose                 |        ❌        |    ❌    |  ❌  |   ✅    |   ✅   |    ✅     |
 | supports `Animation`s                 |        ✅        |    ✅    |  ❌  |   ❌    |   ❌   |    ✅     |
 | Flutter & non-Flutter variants        |        ❌        |    ❌    |  ✅  |   ✅    |   ✅   |    ❌     |
-| Has a stable release                  |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ❌     |
-| Tailored for Dart 3                   |        ❌        |    ❌    |  ❌  |   ❌    |   ❌   |    ✅     |
 
 <br>
 
@@ -184,7 +184,7 @@ Let's start with the bad news.
 
 ### "Early Alpha" stage
 
-Until the 1.0.0 release, you can expect breaking changes without prior warning.
+Until version 1.0.0, you can expect breaking changes without prior warning.
 
 <br>
 
@@ -239,7 +239,7 @@ class CounterButton extends HookWidget {
 
 But the following change would allow any widget to access this value:
 ```dart
-final getCount = Get.value(0);
+final getCount = Get.it(0);
 
 class CounterButton extends HookWidget {
   const CounterButton({super.key});
@@ -248,7 +248,7 @@ class CounterButton extends HookWidget {
   Widget build(BuildContext context) {
     return FilledButton(
       onPressed: () {
-        getCount.update((int value) => value + 1);
+        getCount.modify((int value) => value + 1);
       },
       child: Text('counter value: ${Ref.watch(getCount)}'),
     );
@@ -267,14 +267,14 @@ creating huge potential for rebuild-optimization.
 The following example supports the same functionality as before, but the `Text` widget updates based on
 `getCount` without the outer button widget ever being rebuilt:
 ```dart
-final getCount = Get.value(0);
+final getCount = Get.it(0);
 
 class CounterButton extends FilledButton {
   const CounterButton({super.key})
-    : super(onPressed: _update, child: const HookBuilder(builder: _build));
+    : super(onPressed: _increment, child: const HookBuilder(builder: _build));
 
-  static void _update() {
-    getCount.update((int value) => value + 1);
+  static void _increment() {
+    getCount.modify((int value) => value + 1);
   }
 
   static Widget _build(BuildContext context) {
@@ -290,32 +290,22 @@ class CounterButton extends FilledButton {
 Here's a (less oversimplified) rundown of the Get API:
 
 ```dart
-extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) {
+extension type Get<T, V extends ValueListenable<T>>.custom(V hooked) {
   @factory
-  static GetValue<T> value<T>(T initial) {
-    return GetValue<T>(initial);
-  }
+  static GetValue<T> it<T>(T initial) => GetValue<T>._(initial);
 
-  V get it;
-
-  void update(covariant Function updateFunction);
+  T get value => hooked.value
 }
 
-class GetValue<T> implements Get<T, ValueNotifier<T>> {
-  GetValue(T initial) : it = ValueNotifier(initial);
+extension type GetValue<T>._(ValueNotifier<T> hooked) implements Get<T, ValueNotifier<T>> {
+  void emit(T newValue) => hooked.value = newValue;
 
-  @override
-  final ValueNotifier<T> it;
-
-  @override
-  void update(T Function(T previous) updateFunction) {
-    it.value = updateFunction(it.value);
-  }
+  void modify(T Function(T value) modifier) => emit(modifier(hooked.value));
 }
 
 class Ref {
   static T watch(Get<T, ValueListenable<T>> getObject) {
-    return use(_GetHook(getObject));
+    return use(_RefHook(getObject));
   }
 }
 ```
@@ -375,7 +365,7 @@ ProviderScope(
 an ancestor `Ref` widget.
 
 ```dart
-Ref(
+GetScope(
   overrides: [Override(getMyData, overrideWith: OtherDataClass.new)],
   child: HookBuilder(builder: (context) {
     final data = Ref.watch(getMyData);

@@ -1,6 +1,7 @@
-part of '../ref.dart';
+// ignore_for_file: invalid_use_of_visible_for_testing_member, these hooks are meant to access internal stuff :)
+// ignore_for_file: avoid_positional_boolean_parameters, private hook functions are more readable this way
 
-// ignore_for_file: avoid_positional_boolean_parameters, private hook functions
+part of '../ref.dart';
 
 T _selectAll<T>(T value) => value;
 void _emptyListener(AnimationStatus status) {}
@@ -18,22 +19,29 @@ class _SelectHook<T, Result> extends Hook<Result> {
 
 class _SelectState<T, Result> extends HookState<Result, _SelectHook<T, Result>> {
   late ValueListenable<T> listenable = hook.listenable;
+  late bool watching = hook.watching;
   late Result previous = result;
   Result get result => hook.selector(listenable.value);
 
   @override
   void initHook() {
-    listenable.addListener(markMayNeedRebuild);
+    if (watching) listenable.addListener(markMayNeedRebuild);
   }
 
   @override
   void didUpdateHook(_SelectHook<T, Result> oldHook) {
-    assert(
-      listenable != hook.listenable,
-      'didUpdateHook should only be called when the listenable changes.',
-    );
-    listenable.removeListener(markMayNeedRebuild);
-    listenable = hook.listenable..addListener(markMayNeedRebuild);
+    final ValueListenable<T> newListenable = hook.listenable;
+    final bool newWatching = hook.watching;
+    if (newListenable != listenable) {
+      listenable.removeListener(markMayNeedRebuild);
+      listenable = newListenable;
+      if (newWatching) listenable.addListener(markMayNeedRebuild);
+    } else if (!newWatching) {
+      listenable.removeListener(markMayNeedRebuild);
+    } else if (!watching) {
+      listenable.addListener(markMayNeedRebuild);
+    }
+    watching = newWatching;
   }
 
   @override
@@ -57,10 +65,11 @@ class _VsyncAttachHook extends Hook<void> {
 
 class _VsyncAttachState extends HookState<void, _VsyncAttachHook> {
   late GetVsyncAny get = hook.get;
+  late Vsync vsync = get.vsync;
 
   @override
   void initHook() {
-    get.vsync.context = Vsync.auto;
+    vsync.context = Vsync.auto;
   }
 
   @override
@@ -69,18 +78,21 @@ class _VsyncAttachState extends HookState<void, _VsyncAttachHook> {
 
     if (newGet != get) {
       dispose();
-      get = newGet..vsync.context = Vsync.auto;
+      get = newGet;
+      vsync = get.vsync;
+      initHook();
     }
   }
 
   @override
   void dispose() {
-    final Vsync vsync = get.vsync;
     if (vsync.context == context) vsync.context = null;
   }
 
   @override
-  void build(BuildContext context) {}
+  void build(BuildContext context) {
+    vsync.ticker?.updateNotifier(context);
+  }
 }
 
 /// Calls the [statusListener] whenever the [Animation.status] changes.

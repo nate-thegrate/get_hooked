@@ -33,9 +33,10 @@ class Vsync implements TickerProvider {
   bool get hasTicker => _ticker != null;
 
   /// The [VsyncTicker] being managed by this ticker provider.
-  VsyncTicker get ticker => _ticker!;
+  VsyncTicker? get ticker => _ticker;
   VsyncTicker? _ticker;
-  set ticker(VsyncTicker newTicker) {
+  set ticker(VsyncTicker? newTicker) {
+    if (newTicker == _ticker) return;
     _ticker?.dispose();
     _ticker = newTicker;
   }
