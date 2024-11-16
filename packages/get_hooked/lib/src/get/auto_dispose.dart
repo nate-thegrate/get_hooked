@@ -31,4 +31,15 @@ class _MapNotifier<K, V> = MapNotifier<K, V> with AutoDispose;
 class _AnimationController = AnimationController with AutoDispose;
 class _ValueAnimation<T> = ValueAnimation<T> with AutoDispose;
 class _AsyncController<T> = AsyncController<T> with AutoDispose;
-class _ProxyNotifier<T, L extends Listenable> = ProxyNotifier<T, L> with AutoDispose;
+
+// dart format off
+class _ProxyNotifier<T, L extends Listenable>                = ProxyNotifier<T, L> with AutoDispose;
+class _ProxyNotifier2<T, L1, L2>                             = ProxyNotifier2<T, L1, L2> with AutoDispose;
+class _ProxyNotifier3<T, L1, L2, L3>                         = ProxyNotifier3<T, L1, L2, L3> with AutoDispose;
+class _ProxyNotifier4<T, L1, L2, L3, L4>                     = ProxyNotifier4<T, L1, L2, L3, L4> with AutoDispose;
+class _ProxyNotifier5<T, L1, L2, L3, L4, L5>                 = ProxyNotifier5<T, L1, L2, L3, L4, L5> with AutoDispose;
+class _ProxyNotifier6<T, L1, L2, L3, L4, L5, L6>             = ProxyNotifier6<T, L1, L2, L3, L4, L5, L6> with AutoDispose;
+class _ProxyNotifier7<T, L1, L2, L3, L4, L5, L6, L7>         = ProxyNotifier7<T, L1, L2, L3, L4, L5, L6, L7> with AutoDispose;
+class _ProxyNotifier8<T, L1, L2, L3, L4, L5, L6, L7, L8>     = ProxyNotifier8<T, L1, L2, L3, L4, L5, L6, L7, L8> with AutoDispose;
+class _ProxyNotifier9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9> = ProxyNotifier9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9> with AutoDispose;
+// dart format on

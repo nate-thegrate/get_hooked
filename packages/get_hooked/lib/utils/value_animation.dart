@@ -113,12 +113,14 @@ typedef LerpCallback<T> = T? Function(T a, T b, double t);
 /// A [ValueListenable] whose [value] updates each frame
 /// over the specified [duration] to create a continuous visual transition.
 ///
-/// This class is similar to `AnimatedValue`: [AnimatedValue] is a [StatefulWidget]
-/// whereas [ValueAnimation] is an [Animation].
+// /// This class is similar to `AnimatedValue`: [AnimatedValue] is a [StatefulWidget]
+// /// whereas [ValueAnimation] is an [Animation].
 ///
-/// Unlike [Transition] and [AnimatedValue], a `ValueAnimation`
+/// A `ValueAnimation`
 /// can animate to and from `null`, if [T] is configured as nullable and
 /// the appropriate [lerp] callback is provided.
+/// Otherwise, the appropriate transition is configured automatically
+/// via [ValueAnimation.lerpCallbackOfExactType].
 class ValueAnimation<T> extends _AnimationControllerBase<T, ValueAnimation<T>> {
   /// Creates a [ValueListenable] that smoothly animates between values.
   ///

@@ -5,10 +5,31 @@ typedef VsyncBuilder<A extends Animation<Object?>> = A Function(TickerProvider v
 
 /// A [TickerProvider] implementation that can arbitrarily
 /// reconfigure its attached [BuildContext].
+///
+/// `Vsync` has 3 modes:
+///
+/// 1. No context: its [ticker] will always be unmuted.
+/// 2. Any context: attaching to an arbitrary [BuildContext] will
+///    subscribe this Vsync to its ancestor [TickerMode] notifier,
+///    and verify that it has the correct notifier each animation frame.
+/// 3. [Vsync.auto]: The ticker is automatically managed by [Ref.vsync], which
+///    functions similarly to [useSingleTickerProvider].
+///
+/// ### Reliability Consideration
+///
+/// The "any context" mode is nearly always guaranteed to accurately manage
+/// the ticker's muted status, except in rare cases where the ticker is muted
+/// and then a change to the widget tree (e.g. a [GlobalKey] causing the
+/// [BuildContext] to be transported to another location) results in the [context]
+/// inheriting from a different [TickerMode].
+///
+/// Should this edge case arise, the ticker could be updated by calling
+/// [VsyncTicker.updateNotifier] inside [State.activate] or [StatelessWidget.build],
+/// or by using [Ref.vsync] instead.
 class Vsync implements TickerProvider {
   /// Creates a [TickerProvider] that can arbitrarily
   /// reconfigure its attached [BuildContext].
-  Vsync([this._context]);
+  Vsync([BuildContext? context]) : _context = context;
 
   /// A placeholder value, signifying that a [VsyncTicker]
   /// is being managed by the [Ref.vsync] hook.

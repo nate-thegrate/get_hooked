@@ -80,13 +80,13 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
     return GetVsync._(Vsync.build(builder));
   }
 
-  /// Encapsulates an [AsyncNotifier] with a preconfigured [futureCallback].
+  /// Encapsulates an [AsyncController] with a preconfigured [futureCallback].
   @factory
   static GetAsync<T> async<T>(AsyncValueGetter<T> futureCallback, {T? initialData}) {
     return GetAsync._(_AsyncController(futureCallback: futureCallback, initialData: initialData));
   }
 
-  /// Encapsulates an [AsyncNotifier] with a preconfigured [streamCallback].
+  /// Encapsulates an [AsyncController] with a preconfigured [streamCallback].
   @factory
   static GetAsync<T> stream<T>(
     StreamCallback<T> streamCallback, {
@@ -104,10 +104,139 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
     );
   }
 
-  /// Encapsulates any [Listenable], using a [Function] to retrieve a value.
+  /// Encapsulates a [ProxyNotifier], using the provided callback to retrieve a value.
   @factory
-  static GetFrom<T, L> from<T, L extends Listenable>(L listenable, T Function(L) getValue) {
-    return GetFrom._(_ProxyNotifier(listenable, getValue));
+  static GetProxy<T, L> proxy<T, L extends Listenable>(L listenable, T Function(L) getValue) {
+    return GetProxy._(_ProxyNotifier(listenable, getValue));
+  }
+
+  /// Encapsulates a [ProxyNotifier2], using the provided callback to retrieve a value.
+  ///
+  /// At least one of these two values should be a [Listenable] or [Get] object,
+  /// so that the proxy knows when to send its own notifications.
+  @factory
+  static GetProxy2<T, L1, L2> proxy2<T, L1, L2>(L1 l1, L2 l2, T Function(L1 l1, L2 l2) getValue) {
+    return GetProxy2._(_ProxyNotifier2(l1, l2, getValue));
+  }
+
+  /// Encapsulates a [ProxyNotifier3], using the provided callback to retrieve a value.
+  ///
+  /// At least one of these three values should be a [Listenable] or [Get] object,
+  /// so that the proxy knows when to send its own notifications.
+  @factory
+  static GetProxy3<T, L1, L2, L3> proxy3<T, L1, L2, L3>(
+    L1 l1,
+    L2 l2,
+    L3 l3,
+    T Function(L1 l1, L2 l2, L3 l3) getValue,
+  ) {
+    return GetProxy3._(_ProxyNotifier3(l1, l2, l3, getValue));
+  }
+
+  /// Encapsulates a [ProxyNotifier4], using the provided callback to retrieve a value.
+  ///
+  /// At least one of these four values should be a [Listenable] or [Get] object,
+  /// so that the proxy knows when to send its own notifications.
+  @factory
+  static GetProxy4<T, L1, L2, L3, L4> proxy4<T, L1, L2, L3, L4>(
+    L1 l1,
+    L2 l2,
+    L3 l3,
+    L4 l4,
+    T Function(L1 l1, L2 l2, L3 l3, L4 l4) getValue,
+  ) {
+    return GetProxy4._(_ProxyNotifier4(l1, l2, l3, l4, getValue));
+  }
+
+  /// Encapsulates a [ProxyNotifier5], using the provided callback to retrieve a value.
+  ///
+  /// At least one of these five values should be a [Listenable] or [Get] object,
+  /// so that the proxy knows when to send its own notifications.
+  @factory
+  static GetProxy5<T, L1, L2, L3, L4, L5> proxy5<T, L1, L2, L3, L4, L5>(
+    L1 l1,
+    L2 l2,
+    L3 l3,
+    L4 l4,
+    L5 l5,
+    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5) getValue,
+  ) {
+    return GetProxy5._(_ProxyNotifier5(l1, l2, l3, l4, l5, getValue));
+  }
+
+  /// Encapsulates a [ProxyNotifier6], using the provided callback to retrieve a value.
+  ///
+  /// At least one of these six values should be a [Listenable] or [Get] object,
+  /// so that the proxy knows when to send its own notifications.
+  @factory
+  static GetProxy6<T, L1, L2, L3, L4, L5, L6> proxy6<T, L1, L2, L3, L4, L5, L6>(
+    L1 l1,
+    L2 l2,
+    L3 l3,
+    L4 l4,
+    L5 l5,
+    L6 l6,
+    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6) getValue,
+  ) {
+    return GetProxy6._(_ProxyNotifier6(l1, l2, l3, l4, l5, l6, getValue));
+  }
+
+  /// Encapsulates a [ProxyNotifier7], using the provided callback to retrieve a value.
+  ///
+  /// At least one of these seven values should be a [Listenable] or [Get] object,
+  /// so that the proxy knows when to send its own notifications.
+  @factory
+  static GetProxy7<T, L1, L2, L3, L4, L5, L6, L7> proxy7<T, L1, L2, L3, L4, L5, L6, L7>(
+    L1 l1,
+    L2 l2,
+    L3 l3,
+    L4 l4,
+    L5 l5,
+    L6 l6,
+    L7 l7,
+    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7) getValue,
+  ) {
+    return GetProxy7._(_ProxyNotifier7(l1, l2, l3, l4, l5, l6, l7, getValue));
+  }
+
+  /// Encapsulates a [ProxyNotifier8], using the provided callback to retrieve a value.
+  ///
+  /// At least one of these eight values should be a [Listenable] or [Get] object,
+  /// so that the proxy knows when to send its own notifications.
+  @factory
+  static GetProxy8<T, L1, L2, L3, L4, L5, L6, L7, L8> proxy8<T, L1, L2, L3, L4, L5, L6, L7, L8>(
+    L1 l1,
+    L2 l2,
+    L3 l3,
+    L4 l4,
+    L5 l5,
+    L6 l6,
+    L7 l7,
+    L8 l8,
+    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7, L8 l8) getValue,
+  ) {
+    return GetProxy8._(_ProxyNotifier8(l1, l2, l3, l4, l5, l6, l7, l8, getValue));
+  }
+
+  /// Encapsulates a [ProxyNotifier9], using the provided callback to retrieve a value.
+  ///
+  /// At least one of these nine values should be a [Listenable] or [Get] object,
+  /// so that the proxy knows when to send its own notifications.
+  @factory
+  static GetProxy9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9>
+  proxy9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9>(
+    L1 l1,
+    L2 l2,
+    L3 l3,
+    L4 l4,
+    L5 l5,
+    L6 l6,
+    L7 l7,
+    L8 l8,
+    L9 l9,
+    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7, L8 l8, L9 l9) getValue,
+  ) {
+    return GetProxy9._(_ProxyNotifier9(l1, l2, l3, l4, l5, l6, l7, l8, l9, getValue));
   }
 }
 
@@ -119,40 +248,44 @@ typedef GetVsyncAny = GetVsync<Object?, Animation<Object?>>;
 
 /// Encapsulates a [ValueNotifier].
 extension type GetValue<T>._(ValueNotifier<T> _hooked) implements Get<T, ValueNotifier<T>> {
+  set value(T newValue) => emit(newValue);
+
   /// Sets a new value and emits a notification.
   void emit(T newValue) {
     _hooked.value = newValue;
   }
-
-  /// Use the notifier's current value to [emit] a new one.
-  void modify(T Function(T value) modifier) => emit(modifier(_hooked.value));
 }
 
 /// Toggles a boolean [GetValue].
 extension ToggleValue on GetValue<bool> {
   /// Convenience method for toggling a [bool] value back and forth.
-  void toggle() => emit(!value);
+  ///
+  /// The optional positional parameter allows it to be used in e.g. [Switch.onChanged].
+  void toggle([_]) => emit(!value);
 }
 
-/// Encapsulates a [ListNotifier].
+/// Encapsulates a [ListNotifier] and can be used as a [List] directly.
 extension type GetList<E>._(ListNotifier<E> _hooked)
     implements List<E>, Get<List<E>, ListNotifier<E>> {
+  /// Returns an [UnmodifiableListView] of this object.
   @redeclare
-  List<E> get value => UnmodifiableListView(_hooked);
+  List<E> get value => UnmodifiableListView(this);
 }
 
-/// Encapsulates a [SetNotifier].
+/// Encapsulates a [SetNotifier] and can be used as a [Set] directly.
 extension type GetSet<E>._(SetNotifier<E> _hooked)
     implements Set<E>, Get<Set<E>, SetNotifier<E>> {
+  /// Returns an [UnmodifiableSetView] of this object.
   @redeclare
-  Set<E> get value => UnmodifiableSetView(_hooked);
+  Set<E> get value => UnmodifiableSetView(this);
 }
 
-/// Encapsulates a [MapNotifier].
+/// Encapsulates a [MapNotifier] and can be used as a [Map] directly.
 extension type GetMap<K, V>._(MapNotifier<K, V> _hooked)
     implements Map<K, V>, Get<Map<K, V>, MapNotifier<K, V>> {
+  /// Returns an [UnmodifiableMapView] of this object.
   @redeclare
-  Map<K, V> get value => UnmodifiableMapView(_hooked);
+  Map<K, V> get value => UnmodifiableMapView(this);
 }
 
 /// Encapsulates an [Animation].
@@ -333,31 +466,7 @@ extension type GetVsyncDouble._(AnimationController _hooked)
   /// derivative future completes with a [TickerCanceled] error.
   TickerFuture toggle({double? from}) => _hooked.toggle(from: from);
 
-  /// Starts running this animation in the forward direction, and
-  /// restarts the animation when it completes.
-  ///
-  /// Defaults to repeating between the [lowerBound] and [upperBound] of the
-  /// [AnimationController] when no explicit value is set for [min] and [max].
-  ///
-  /// With [reverse] set to true, instead of always starting over at [min]
-  /// the starting value will alternate between [min] and [max] values on each
-  /// repeat. The [status] will be reported as [AnimationStatus.reverse] when
-  /// the animation runs from [max] to [min].
-  ///
-  /// Each run of the animation will have a duration of `period`. If `period` is not
-  /// provided, [duration] will be used instead, which has to be set before [repeat] is
-  /// called either in the constructor or later by using the [duration] setter.
-  ///
-  /// If a value is passed to [count], the animation will perform that many
-  /// iterations before stopping. Otherwise, the animation repeats indefinitely.
-  ///
-  /// Returns a [TickerFuture] that never completes, unless a [count] is specified.
-  /// The [TickerFuture.orCancel] future completes with an error when the animation is
-  /// stopped (e.g. with [stop]).
-  ///
-  /// The most recently returned [TickerFuture], if any, is marked as having been
-  /// canceled, meaning the future never completes and its [TickerFuture.orCancel]
-  /// derivative future completes with a [TickerCanceled] error.
+  /// See [AnimationController.repeat].
   TickerFuture repeat({
     double? min,
     double? max,
@@ -493,6 +602,46 @@ extension type GetVsyncValue<T>._(ValueAnimation<T> _hooked)
 extension type GetAsync<T>._(AsyncController<T> _hooked)
     implements Get<AsyncSnapshot<T>, AsyncController<T>> {}
 
-/// Encapsulates any [Listenable], using a [Function] to retrieve a value.
-extension type GetFrom<T, L extends Listenable>._(ProxyNotifier<T, L> _hooked)
+/// Encapsulates any [Listenable], using the provided callback to retrieve a value.
+extension type GetProxy<T, L extends Listenable>._(ProxyNotifier<T, L> _hooked)
     implements Get<T, ProxyNotifier<T, L>> {}
+
+/// Encapsulates a [ProxyNotifier2], using the provided callback to retrieve a value.
+extension type GetProxy2<T, L1, L2>._(ProxyNotifier2<T, L1, L2> _hooked)
+    implements Get<T, ProxyNotifier2<T, L1, L2>> {}
+
+/// Encapsulates a [ProxyNotifier3], using the provided callback to retrieve a value.
+extension type GetProxy3<T, L1, L2, L3>._(ProxyNotifier3<T, L1, L2, L3> _hooked)
+    implements Get<T, ProxyNotifier3<T, L1, L2, L3>> {}
+
+/// Encapsulates a [ProxyNotifier4], using the provided callback to retrieve a value.
+extension type GetProxy4<T, L1, L2, L3, L4>._(ProxyNotifier4<T, L1, L2, L3, L4> _hooked)
+    implements Get<T, ProxyNotifier4<T, L1, L2, L3, L4>> {}
+
+/// Encapsulates a [ProxyNotifier5], using the provided callback to retrieve a value.
+extension type GetProxy5<T, L1, L2, L3, L4, L5>._(ProxyNotifier5<T, L1, L2, L3, L4, L5> _hooked)
+    implements Get<T, ProxyNotifier5<T, L1, L2, L3, L4, L5>> {}
+
+/// Encapsulates a [ProxyNotifier6], using the provided callback to retrieve a value.
+extension type GetProxy6<T, L1, L2, L3, L4, L5, L6>._(
+  ProxyNotifier6<T, L1, L2, L3, L4, L5, L6> _hooked
+)
+    implements Get<T, ProxyNotifier6<T, L1, L2, L3, L4, L5, L6>> {}
+
+/// Encapsulates a [ProxyNotifier7], using the provided callback to retrieve a value.
+extension type GetProxy7<T, L1, L2, L3, L4, L5, L6, L7>._(
+  ProxyNotifier7<T, L1, L2, L3, L4, L5, L6, L7> _hooked
+)
+    implements Get<T, ProxyNotifier7<T, L1, L2, L3, L4, L5, L6, L7>> {}
+
+/// Encapsulates a [ProxyNotifier8], using the provided callback to retrieve a value.
+extension type GetProxy8<T, L1, L2, L3, L4, L5, L6, L7, L8>._(
+  ProxyNotifier8<T, L1, L2, L3, L4, L5, L6, L7, L8> _hooked
+)
+    implements Get<T, ProxyNotifier8<T, L1, L2, L3, L4, L5, L6, L7, L8>> {}
+
+/// Encapsulates a [ProxyNotifier9], using the provided callback to retrieve a value.
+extension type GetProxy9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9>._(
+  ProxyNotifier9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9> _hooked
+)
+    implements Get<T, ProxyNotifier9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9>> {}

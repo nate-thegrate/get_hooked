@@ -342,15 +342,14 @@ class _OverrideContainerElement extends InheritedElement {
     if (value is! Map<ValueRef, ValueRef>) {
       assert(
         throw ArgumentError(
-          'GetScope expected a set of overrides, got ${value.runtimeType}',
+          'GetScope expected a map of overrides, got ${value.runtimeType}',
           'value',
         ),
       );
       return;
     }
-    clientOverrides
-      ..remove(dependent)
-      ..[dependent] = value;
+    final Map<ValueRef, ValueRef> map = {...?clientOverrides.remove(dependent), ...value};
+    clientOverrides[dependent] = map;
   }
 
   @override

@@ -100,10 +100,50 @@ final class Ref extends InheritedModel<ValueRef> {
           ]);
         }
         return true;
-      }, [get, checkVsync]),
+      }, [if (checkVsync) get]),
     );
 
     return use(_SelectHook(get.hooked, selector, watching));
+  }
+
+  /// Overrides the [Get] object accessed by [Ref.watch] with a new value
+  /// using the object returned by calling the [factory].
+  static G override<G extends GetAny>(
+    G get,
+    ValueGetter<Object> factory, {
+    bool watching = false,
+  }) {
+    final BuildContext context = useContext();
+    final G result = useMemoized(() {
+      switch (factory()) {
+        case final G g:
+          assert(() {
+            if (GetScope.maybeOf(context, get) != null) {
+              return true;
+            }
+            throw FlutterError.fromParts([
+              ErrorSummary(
+                'Ref.override() called inside a BuildContext without an ancestor GetScope.',
+              ),
+              ErrorDescription(
+                'Without a GetScope higher up in the widget tree, '
+                'there is no place to store the override.',
+              ),
+              ErrorHint('Consider adding a GetScope widget, or removing this override.'),
+            ]);
+          }());
+          GetScope.add(context, getObjects: {get: g});
+          return g;
+
+        case final Object invalid:
+          throw ArgumentError(
+            'Invalid factory passed to Ref.override() – '
+            'expected $G, got ${invalid.runtimeType}',
+          );
+      }
+    });
+    useListenable(watching ? result.hooked : null);
+    return result;
   }
 
   /// Provides an interface for controlling a [GetVsync] animation,
@@ -135,12 +175,12 @@ final class Ref extends InheritedModel<ValueRef> {
     _ => null,
   };
 
-  @override
+  // ignore: annotate_overrides, name overlap
   bool updateShouldNotify(Ref oldWidget) {
     return !mapEquals(map, oldWidget.map);
   }
 
-  @override
+  // ignore: annotate_overrides, name overlap
   bool updateShouldNotifyDependent(Ref oldWidget, Set<ValueRef> dependencies) {
     for (final ValueRef dependency in dependencies) {
       final Get<Object?, ValueRef> get = Get.custom(dependency);

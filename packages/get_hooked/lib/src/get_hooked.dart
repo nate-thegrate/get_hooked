@@ -1,5 +1,6 @@
 /// Get hooked!
 ///
+/// @docImport 'dart:ui';
 /// @docImport 'ref.dart';
 library;
 

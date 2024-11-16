@@ -16,7 +16,6 @@
 
 <br><br>
 
-
 Given a generic `Data` class, let's see how different state management options compare.
 
 ```dart
@@ -24,10 +23,10 @@ Given a generic `Data` class, let's see how different state management options c
 class Data {
   const Data(this.firstItem, [this.secondItem]);
 
-  static const initial = Data('initial data');
-
   final Object firstItem;
   final Object? secondItem;
+
+  static const initial = Data('initial data');
 }
 ```
 <sup>(The `==`/`hashCode` overrides could be added manually, or with a [**fancy macro**](https://dart.dev/language/macros)!)</sup>
@@ -156,31 +155,28 @@ final getMyData = Get.it(Data.initial);
 
 # Comparison
 
-|                                       | `InheritedWidget` | provider | bloc | riverpod | get_it | get_hooked |
-|---------------------------------------|:-----------------:|:--------:|:----:|:--------:|:------:|:----------:|
-| shared state between widgets          |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
-| supports scoping                      |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
-| optimized for performance             |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
-| optimized for testability             |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
-| Tailored for Dart 3                   |        ❌        |    ❌    |  ❌  |   ❌    |   ❌   |    ✅     |
-| Has a stable release                  |        ✅        |    ✅    |  ✅  |   ✅    |   ✅   |    ❌     |
-| supports conditional subscriptions    |        ❌        |    ❌    |  ❌  |   ✅    |   ❌   |    ✅     |
-| integrated with Hooks                 |        ❌        |    ❌    |  ❌  |   ✅    |   ❌   |    ✅     |
-| avoids type overlap                   |        ❌        |    ❌    |  ❌  |   ✅    |   ❌   |    ✅     |
-| no `context` needed                   |        ❌        |    ❌    |  ❌  |   ❌    |   ✅   |    ✅     |
-| no boilerplate/code generation needed |        ❌        |    ✅    |  ❌  |   ❌    |   ✅   |    ✅     |
-| supports lazy-loading                 |        ❌        |    ✅    |  ✅  |   ✅    |   ✅   |    ✅     |
-| supports auto-dispose                 |        ❌        |    ❌    |  ❌  |   ✅    |   ✅   |    ✅     |
-| supports `Animation`s                 |        ✅        |    ✅    |  ❌  |   ❌    |   ❌   |    ✅     |
-| Flutter & non-Flutter variants        |        ❌        |    ❌    |  ✅  |   ✅    |   ✅   |    ❌     |
+| | [`InheritedWidget`](https://api.flutter.dev/flutter/widgets/InheritedWidget-class.html) | [provider](https://pub.dev/packages/provider) | [bloc](https://bloclibrary.dev) | [riverpod](https://riverpod.dev) | [get_it](https://pub.dev/packages/get_it) | [get_hooked](https://pub.dev/packages/get_hooked) |
+|---------------------------------------|:--:|:---:|:--:|:---:|:--:|:---:| 
+| shared state between widgets          | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| supports scoping                      | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| optimized for performance             | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| optimized for testability             | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Tailored for Dart 3                   | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Has a stable release                  | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| supports conditional subscriptions    | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| integrated with Hooks                 | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| avoids type overlap                   | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| no `context` needed                   | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| no boilerplate/code generation needed | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ |
+| supports lazy-loading                 | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| supports auto-dispose                 | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| supports `Animation`s                 | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Flutter & non-Flutter variants        | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ |
+<!-- Gotta love emojis being 1.5 characters wide! -->
 
 <br>
 
 # Drawbacks
-
-Let's start with the bad news.
-
-<br>
 
 ### "Early Alpha" stage
 
@@ -203,13 +199,123 @@ and describe your use case.
 
 <br>
 
-# Overview
+# Highlights
+
+### Zero-cost interface
+
+In April 2021, [flutter/flutter#71947](https://github.com/flutter/flutter/pull/71947#issuecomment-820568540)
+added a huge performance optimization to the [`ChangeNotifier`](https://github.com/flutter/flutter/blob/d6918a48d3bb8c247efabea04b3361e1c4a40e02/packages/flutter/lib/src/foundation/change_notifier.dart#L138)
+API.
+
+This boosted `Listenable` objects throughout the Flutter framework,
+and the effects have stretched into other packages:
+
+- **flutter_hooks** includes built-in support for Flutter's `Listenable` objects.
+- **riverpod** has adopted [the same strategy as ChangeNotifier](https://github.com/rrousselGit/riverpod/blob/9e62837a9fb6741dc40728c6e28d0fd9d62452e3/packages/riverpod/lib/src/listenable.dart#L53) in its internal logic.
+
+<br>
+
+Then in February 2024, Dart introduced [**extension types**](https://dart.dev/language/extension-types),
+allowing for complete control of an API surface without incurring
+runtime performance costs.
+
+<br>
+
+November 2024: **get_hooked** is born.
 
 ```dart
 extension type Get(Listenable hooked) {
   // ...
 }
 ```
+
+<br>
+
+### Animations
+
+This package makes it easier than ever before for a multitude of widgets to subscribe to a single
+[`Animation`](https://main-api.flutter.dev/flutter/animation/Animation-class.html).
+
+A tailor-made `TickerProvider` allows animations to repeatedly attach & detach from `BuildContext`s
+based on how they're being used. A developer could prevent widget rebuilding entirely by
+hooking them straight up to `RenderObject`s.
+
+```dart
+final getAnimation = Get.vsync();
+
+class _RenderMyAnimation extends RenderSliverAnimatedOpacity {
+  _RenderMyAnimation() : super(opacity: getAnimation.hooked);
+}
+```
+
+<br>
+
+### Optional scoping
+
+Here, "scoping" is defined as a form of dependency injection, where a subset of widgets
+(typically descendants of an `InheritedWidget`) receive data by different means.
+
+```dart
+ProviderScope(
+  overrides: [myDataProvider.overrideWith(OtherDataClass.new)],
+  child: Consumer(builder: (context, ref, child) {
+    final data = ref.watch(myDataProvider);
+    // ...
+  }),
+),
+```
+
+`Ref.watch()` will watch a different Get object if an `Override` is found in
+an ancestor `GetScope` widget.
+
+```dart
+GetScope(
+  overrides: [Override(getMyData, overrideWith: OtherDataClass.new)],
+  child: HookBuilder(builder: (context) {
+    final data = Ref.watch(getMyData);
+    // ...
+  }),
+),
+```
+
+If the current `context` has an ancestor `GetScope`, building another scope
+isn't necessary:
+
+```dart
+class MyWidget extends HookWidget {
+  const MyWidget({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final newData = useState(Data.initial);
+    Ref.override(getMyData, () => newData); // Adds newData to the scope.
+
+    return Row(
+      children: [Text('$newData'), child],
+    );
+  }
+}
+```
+
+If the child widget uses `Ref.watch(getMyData)`, it will watch
+the `newData` by default.
+
+<br>
+
+### No magic curtain
+
+Want to find out what's going on?\
+No breakpoints, no print statements. Just type the name.
+
+![getFade](https://github.com/user-attachments/assets/9dbb65b3-c2c2-44eb-9870-28defeede0ad)
+
+<br>
+
+# Overview
+
+
 
 "Get" encapsulates a listenable object with an interface for easy updates and automatic lifecycle management.
 
@@ -248,7 +354,7 @@ class CounterButton extends HookWidget {
   Widget build(BuildContext context) {
     return FilledButton(
       onPressed: () {
-        getCount.modify((int value) => value + 1);
+        getCount.value += 1;
       },
       child: Text('counter value: ${Ref.watch(getCount)}'),
     );
@@ -323,86 +429,30 @@ class Ref {
 
 <br>
 
-# Highlights
-
-
-
-### Animations
-
-This package makes it easier than ever before for a multitude of widgets to subscribe to a single
-[`Animation`](https://main-api.flutter.dev/flutter/animation/Animation-class.html).
-
-A tailor-made `TickerProvider` allows animations to repeatedly attach & detach from `BuildContext`s
-based on how they're being used. A developer could prevent widget rebuilding entirely by
-hooking them straight up to `RenderObject`s.
-
-```dart
-final getAnimation = Get.vsync();
-
-class _RenderMyAnimation extends RenderSliverAnimatedOpacity {
-  _RenderMyAnimation() : super(opacity: getAnimation.hooked);
-}
-```
-
-<br>
-
-### Optional scoping
-
-Here, "scoping" is defined as a form of dependency injection, where a subset of widgets
-(typically descendants of an `InheritedWidget`) receive data by different means.
-
-```dart
-ProviderScope(
-  overrides: [myDataProvider.overrideWith(OtherDataClass.new)],
-  child: Consumer(builder: (context, ref, child) {
-    final data = ref.watch(myDataProvider);
-    // ...
-  }),
-),
-```
-
-`Ref.watch()` will watch a different Get object if an `Override` is found in
-an ancestor `Ref` widget.
-
-```dart
-GetScope(
-  overrides: [Override(getMyData, overrideWith: OtherDataClass.new)],
-  child: HookBuilder(builder: (context) {
-    final data = Ref.watch(getMyData);
-    // ...
-  }),
-),
-```
-
-<br>
-
-Testability is super important—please don't hesitate to [reach out](https://github.com/nate-thegrate/get_hooked/issues)
-with any issues you run into.
-
-### No boilerplate, no magic curtain
-
-**get_hooked** is powered by Flutter's [ChangeNotifier](https://github.com/flutter/flutter/blob/d6918a48d3bb8c247efabea04b3361e1c4a40e02/packages/flutter/lib/src/foundation/change_notifier.dart#L138)
-API (**riverpod** [does the same thing](https://github.com/rrousselGit/riverpod/blob/9e62837a9fb6741dc40728c6e28d0fd9d62452e3/packages/riverpod/lib/src/listenable.dart#L53)
-under the hood) along with the concept of "Hooks" introduced by [React](https://react.dev/reference/react/hooks).
-
-Want to find out what's going on?\
-No breakpoints, no print statements. Just type the name.
-
-![getFade](https://github.com/user-attachments/assets/9dbb65b3-c2c2-44eb-9870-28defeede0ad)
-
-
-<br>
-
 # Tips for success
 
 ### Follow the rules of Hooks
 
-By convention, Hook function names start with `use`, and they should only
-be called inside a `HookWidget`'s build method.
+`Ref` functions, along with any function name starting with `use`,
+should only be called inside a `HookWidget`'s build method.
 
-The `HookWidget`'s `context` keeps track of:
-1. How many hook functions the build method calls, and
-2. the order they were called in.
+```dart
+// BAD
+Builder(builder: (context) {
+  final focusNode = useFocusNode();
+  final data = Ref.watch(useMyData);
+})
+
+// GOOD
+HookBuilder(builder: (context) {
+  final focusNode = useFocusNode();
+  final data = Ref.watch(useMyData);
+})
+```
+
+A `HookWidget`'s `context` keeps track of:
+1. how many hook functions are called, and
+2. the order they're called in.
 
 Neither of these should change throughout the widget's lifetime.
 
@@ -418,7 +468,7 @@ Just like how Hook functions generally start with `use`, Get objects should star
 with `get`.
 
 If the object is only intended to be used by widgets in the same `.dart` file,
-consider marking it with an annotation to avoid cluttering autofill suggestions:
+consider marking it with an annotation, to avoid cluttering autofill suggestions:
 
 ```dart
 @visibleForTesting

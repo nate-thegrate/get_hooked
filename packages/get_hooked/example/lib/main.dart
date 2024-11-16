@@ -1,3 +1,5 @@
+// dart format width=80
+
 import 'package:flutter/material.dart';
 import 'package:get_hooked/get_hooked.dart';
 
@@ -6,7 +8,8 @@ void main() => runApp(const App());
 final getCount = Get.it(0);
 
 class App extends MaterialApp {
-  const App({super.key}) : super(debugShowCheckedModeBanner: false, home: _home);
+  const App({super.key})
+    : super(debugShowCheckedModeBanner: false, home: _home);
 
   static const _home = Scaffold(
     appBar: PreferredSize(
@@ -29,6 +32,7 @@ class App extends MaterialApp {
     ),
   );
 
+  /// Maybe someday, [AppBar] will have a `const` constructor.
   static Widget _builder(BuildContext context) {
     return AppBar(title: const Text('"Get Hooked" Demo'));
   }
@@ -40,7 +44,5 @@ class App extends MaterialApp {
     );
   }
 
-  static void incrementCounter() {
-    getCount.modify((value) => value + 1);
-  }
+  static void incrementCounter() => getCount.value += 1;
 }
