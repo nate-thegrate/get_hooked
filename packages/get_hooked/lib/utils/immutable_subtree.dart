@@ -1,6 +1,3 @@
-/// @docImport 'package:flutter_hooks/flutter_hooks.dart';
-library;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
@@ -20,7 +17,7 @@ sealed class ImmutableSubtree implements Widget {
   /// Creates an [ImmutableSubtree] object.
   ///
   /// Consider setting the [placeholderBuilder] as a class method
-  /// or via [useCallback] to prevent unnecessary rebuilds.
+  /// or via `useCallback` to prevent unnecessary rebuilds.
   const factory ImmutableSubtree({
     Key? key,
     required SubtreeBuilder placeholderBuilder,
