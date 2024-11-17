@@ -1,6 +1,6 @@
 // ignore_for_file: use_setters_to_change_properties, avoid_setters_without_getters, intentional design :)
 
-part of '../get_hooked.dart';
+part of '../get.dart';
 
 /// Encapsulates a [ValueListenable] object with an interface for
 /// easy updates and automatic lifecycle management.
@@ -12,15 +12,15 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
   @factory
   static GetValue<T> it<T>(T initialValue) => GetValue._(_ValueNotifier(initialValue));
 
-  /// Encapsulates a [ListNotifier].
+  /// Encapsulates a [ListNotifier], and can be used as a [List] directly.
   @factory
   static GetList<E> list<E>(Iterable<E> list) => GetList._(_ListNotifier(list));
 
-  /// Encapsulates a [SetNotifier].
+  /// Encapsulates a [SetNotifier], and can be used as a [Set] directly.
   @factory
   static GetSet<E> set<E>(Iterable<E> set) => GetSet._(_SetNotifier(set));
 
-  /// Encapsulates a [MapNotifier].
+  /// Encapsulates a [MapNotifier], and can be used as a [Map] directly.
   @factory
   static GetMap<K, V> map<K, V>(Map<K, V> map) => GetMap._(_MapNotifier(map));
 
@@ -248,6 +248,7 @@ typedef GetVsyncAny = GetVsync<Object?, Animation<Object?>>;
 
 /// Encapsulates a [ValueNotifier].
 extension type GetValue<T>._(ValueNotifier<T> _hooked) implements Get<T, ValueNotifier<T>> {
+  // ignore: annotate_redeclares, false positive
   set value(T newValue) => emit(newValue);
 
   /// Sets a new value and emits a notification.
@@ -315,6 +316,7 @@ extension type GetVsync<T, A extends Animation<T>>._(A _hooked)
 /// Encapsulates an [AnimationController].
 extension type GetVsyncDouble._(AnimationController _hooked)
     implements GetVsync<double, AnimationController> {
+  // ignore: annotate_redeclares, false positive
   set value(double newValue) {
     _hooked.value = newValue;
   }
@@ -539,6 +541,7 @@ extension type GetVsyncDouble._(AnimationController _hooked)
 /// Encapsulates a [ValueAnimation].
 extension type GetVsyncValue<T>._(ValueAnimation<T> _hooked)
     implements GetVsync<T, ValueAnimation<T>> {
+  // ignore: annotate_redeclares, false positive
   set value(T newValue) {
     _hooked.value = newValue;
   }

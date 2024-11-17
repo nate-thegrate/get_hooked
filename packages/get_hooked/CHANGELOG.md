@@ -2,7 +2,13 @@
 - Scoping!
   - It bothered me to just not have this feature :)
   - Plus, now the `Ref` class is actually more than just a namespace!
-- Import/directory organization
+- In-house hooks!
+  - New API needs 1 class declaration instead of 2
+  - No need for list equality, thanks to [`Record`](https://dart.dev/language/records) types!
+- Proxies!
+  - Multiple values can be combined into a single Get object…
+  - ***and*** multiple values can be combined using a `Ref.select()` hook.
+- Almost certainly introduced one or more bugs, plus there are many Hooks that I have yet to add :)
 
 
 ## 0.0.2

@@ -3,8 +3,9 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+import '../utils/proxy_notifier.dart';
 import '../utils/value_animation.dart';
-import 'get_hooked.dart';
+import 'get.dart';
 
 part 'ref/get_scope.dart';
 part 'ref/ref_hooks.dart';
@@ -70,40 +71,355 @@ final class Ref extends InheritedModel<ValueRef> {
   /// Multiple values can be selected by returning a [Record] type.
   ///
   /// {@macro get_hooked.Ref.watch}
-  static Out select<In, Out>(
-    Get<In, ValueListenable<In>> get,
-    Out Function(In value) selector, {
+  static Result select<Result, T>(
+    Get<T, ValueListenable<T>> get,
+    Result Function(T value) selector, {
     bool watching = true,
     bool checkVsync = true,
     bool useScope = true,
   }) {
+    const label = 'Ref.select';
     final BuildContext context = useContext();
     if (useScope) get = GetScope.of(context, get);
 
-    assert(
-      useMemoized(() {
-        if (!checkVsync) return true;
-        // ignore: strict_raw_type, too verbose!
-        if (get case final GetVsyncAny getVsync when getVsync.vsync.context == null) {
-          final method = 'Ref.${selector == (_selectAll<In>) ? 'watch' : 'select'}';
-          throw FlutterError.fromParts([
-            ErrorSummary('$method() called with a non-attached Vsync.'),
-            ErrorDescription(
-              '$method() is intended to listen to an existing value, '
-              'but the $getVsync has not been set up.',
-            ),
-            ErrorHint(
-              'Consider setting up an ancestor widget with Ref.vsync(), '
-              'or calling Ref.vsync() here instead of $method().',
-            ),
-            ErrorHint('Alternatively, call $method(checkVsync: false) to ignore this warning.'),
-          ]);
-        }
-        return true;
-      }, [if (checkVsync) get]),
-    );
+    _useVsyncValidation(get, checkVsync, label);
 
-    return use(_SelectHook(get.hooked, selector, watching));
+    return HookData.use(
+      _Select1<Result, T>(get.hooked, selector, watching: watching),
+      debugLabel: label,
+    );
+  }
+
+  /// Computes a value by selecting from 2 complex objects,
+  /// and triggers a rebuild when the result changes.
+  ///
+  /// Multiple values can be selected by returning a [Record] type.
+  ///
+  /// {@macro get_hooked.Ref.watch}
+  static Result select2<Result, L1, L2>(
+    L1 l1,
+    L2 l2,
+    Result Function(L1 l1, L2 l2) selector, {
+    bool watching = true,
+    bool checkVsync = true,
+    bool useScope = true,
+  }) {
+    const label = 'select2';
+
+    final BuildContext context = useContext();
+    if (useScope) {
+      if (l1 is GetAny) l1 = GetScope.of(context, l1);
+      if (l2 is GetAny) l2 = GetScope.of(context, l2);
+    }
+
+    _useVsyncValidation(l1, checkVsync, label);
+    _useVsyncValidation(l2, checkVsync, label);
+
+    return HookData.use(
+      _Select2<Result, L1, L2>(l1, l2, selector, watching: watching),
+      debugLabel: label,
+    );
+  }
+
+  /// Computes a value by selecting from 3 complex objects,
+  /// and triggers a rebuild when the result changes.
+  ///
+  /// Multiple values can be selected by returning a [Record] type.
+  ///
+  /// {@macro get_hooked.Ref.watch}
+  static Result select3<Result, L1, L2, L3>(
+    L1 l1,
+    L2 l2,
+    L3 l3,
+    Result Function(L1 l1, L2 l2, L3 l3) selector, {
+    bool watching = true,
+    bool checkVsync = true,
+    bool useScope = true,
+  }) {
+    const label = 'select3';
+
+    final BuildContext context = useContext();
+    if (useScope) {
+      if (l1 is GetAny) l1 = GetScope.of(context, l1);
+      if (l2 is GetAny) l2 = GetScope.of(context, l2);
+      if (l3 is GetAny) l3 = GetScope.of(context, l3);
+    }
+
+    _useVsyncValidation(l1, checkVsync, label);
+    _useVsyncValidation(l2, checkVsync, label);
+    _useVsyncValidation(l3, checkVsync, label);
+
+    return HookData.use(
+      _Select3<Result, L1, L2, L3>(l1, l2, l3, selector, watching: watching),
+      debugLabel: label,
+    );
+  }
+
+  /// Computes a value by selecting from 4 complex objects,
+  /// and triggers a rebuild when the result changes.
+  ///
+  /// Multiple values can be selected by returning a [Record] type.
+  ///
+  /// {@macro get_hooked.Ref.watch}
+  static Result select4<Result, L1, L2, L3, L4>(
+    L1 l1,
+    L2 l2,
+    L3 l3,
+    L4 l4,
+    Result Function(L1 l1, L2 l2, L3 l3, L4 l4) selector, {
+    bool watching = true,
+    bool checkVsync = true,
+    bool useScope = true,
+  }) {
+    const label = 'select4';
+
+    final BuildContext context = useContext();
+    if (useScope) {
+      if (l1 is GetAny) l1 = GetScope.of(context, l1);
+      if (l2 is GetAny) l2 = GetScope.of(context, l2);
+      if (l3 is GetAny) l3 = GetScope.of(context, l3);
+      if (l4 is GetAny) l4 = GetScope.of(context, l4);
+    }
+
+    _useVsyncValidation(l1, checkVsync, label);
+    _useVsyncValidation(l2, checkVsync, label);
+    _useVsyncValidation(l3, checkVsync, label);
+    _useVsyncValidation(l4, checkVsync, label);
+
+    return HookData.use(
+      _Select4(l1, l2, l3, l4, selector, watching: watching),
+      debugLabel: label,
+    );
+  }
+
+  /// Computes a value by selecting from 5 complex objects,
+  /// and triggers a rebuild when the result changes.
+  ///
+  /// Multiple values can be selected by returning a [Record] type.
+  ///
+  /// {@macro get_hooked.Ref.watch}
+  static Result select5<Result, L1, L2, L3, L4, L5>(
+    L1 l1,
+    L2 l2,
+    L3 l3,
+    L4 l4,
+    L5 l5,
+    Result Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5) selector, {
+    bool watching = true,
+    bool checkVsync = true,
+    bool useScope = true,
+  }) {
+    const label = 'select5';
+
+    final BuildContext context = useContext();
+    if (useScope) {
+      if (l1 is GetAny) l1 = GetScope.of(context, l1);
+      if (l2 is GetAny) l2 = GetScope.of(context, l2);
+      if (l3 is GetAny) l3 = GetScope.of(context, l3);
+      if (l4 is GetAny) l4 = GetScope.of(context, l4);
+      if (l5 is GetAny) l5 = GetScope.of(context, l5);
+    }
+
+    _useVsyncValidation(l1, checkVsync, label);
+    _useVsyncValidation(l2, checkVsync, label);
+    _useVsyncValidation(l3, checkVsync, label);
+    _useVsyncValidation(l4, checkVsync, label);
+    _useVsyncValidation(l5, checkVsync, label);
+
+    return HookData.use(
+      _Select5(l1, l2, l3, l4, l5, selector, watching: watching),
+      debugLabel: label,
+    );
+  }
+
+  /// Computes a value by selecting from 6 complex objects,
+  /// and triggers a rebuild when the result changes.
+  ///
+  /// Multiple values can be selected by returning a [Record] type.
+  ///
+  /// {@macro get_hooked.Ref.watch}
+  static Result select6<Result, L1, L2, L3, L4, L5, L6>(
+    L1 l1,
+    L2 l2,
+    L3 l3,
+    L4 l4,
+    L5 l5,
+    L6 l6,
+    Result Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6) selector, {
+    bool watching = true,
+    bool checkVsync = true,
+    bool useScope = true,
+  }) {
+    const label = 'select6';
+
+    final BuildContext context = useContext();
+    if (useScope) {
+      if (l1 is GetAny) l1 = GetScope.of(context, l1);
+      if (l2 is GetAny) l2 = GetScope.of(context, l2);
+      if (l3 is GetAny) l3 = GetScope.of(context, l3);
+      if (l4 is GetAny) l4 = GetScope.of(context, l4);
+      if (l5 is GetAny) l5 = GetScope.of(context, l5);
+      if (l6 is GetAny) l6 = GetScope.of(context, l6);
+    }
+
+    _useVsyncValidation(l1, checkVsync, label);
+    _useVsyncValidation(l2, checkVsync, label);
+    _useVsyncValidation(l3, checkVsync, label);
+    _useVsyncValidation(l4, checkVsync, label);
+    _useVsyncValidation(l5, checkVsync, label);
+    _useVsyncValidation(l6, checkVsync, label);
+
+    return HookData.use(
+      _Select6(l1, l2, l3, l4, l5, l6, selector, watching: watching),
+      debugLabel: label,
+    );
+  }
+
+  /// Computes a value by selecting from 7 complex objects,
+  /// and triggers a rebuild when the result changes.
+  ///
+  /// Multiple values can be selected by returning a [Record] type.
+  ///
+  /// {@macro get_hooked.Ref.watch}
+  static Result select7<Result, L1, L2, L3, L4, L5, L6, L7>(
+    L1 l1,
+    L2 l2,
+    L3 l3,
+    L4 l4,
+    L5 l5,
+    L6 l6,
+    L7 l7,
+    Result Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7) selector, {
+    bool watching = true,
+    bool checkVsync = true,
+    bool useScope = true,
+  }) {
+    const label = 'select7';
+
+    final BuildContext context = useContext();
+    if (useScope) {
+      if (l1 is GetAny) l1 = GetScope.of(context, l1);
+      if (l2 is GetAny) l2 = GetScope.of(context, l2);
+      if (l3 is GetAny) l3 = GetScope.of(context, l3);
+      if (l4 is GetAny) l4 = GetScope.of(context, l4);
+      if (l5 is GetAny) l5 = GetScope.of(context, l5);
+      if (l6 is GetAny) l6 = GetScope.of(context, l6);
+      if (l7 is GetAny) l7 = GetScope.of(context, l7);
+    }
+
+    _useVsyncValidation(l1, checkVsync, label);
+    _useVsyncValidation(l2, checkVsync, label);
+    _useVsyncValidation(l3, checkVsync, label);
+    _useVsyncValidation(l4, checkVsync, label);
+    _useVsyncValidation(l5, checkVsync, label);
+    _useVsyncValidation(l6, checkVsync, label);
+    _useVsyncValidation(l7, checkVsync, label);
+
+    return HookData.use(
+      _Select7(l1, l2, l3, l4, l5, l6, l7, selector, watching: watching),
+      debugLabel: label,
+    );
+  }
+
+  /// Computes a value by selecting from 8 complex objects,
+  /// and triggers a rebuild when the result changes.
+  ///
+  /// Multiple values can be selected by returning a [Record] type.
+  ///
+  /// {@macro get_hooked.Ref.watch}
+  static Result select8<Result, L1, L2, L3, L4, L5, L6, L7, L8>(
+    L1 l1,
+    L2 l2,
+    L3 l3,
+    L4 l4,
+    L5 l5,
+    L6 l6,
+    L7 l7,
+    L8 l8,
+    Result Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7, L8 l8) selector, {
+    bool watching = true,
+    bool checkVsync = true,
+    bool useScope = true,
+  }) {
+    const label = 'select8';
+
+    final BuildContext context = useContext();
+    if (useScope) {
+      if (l1 is GetAny) l1 = GetScope.of(context, l1);
+      if (l2 is GetAny) l2 = GetScope.of(context, l2);
+      if (l3 is GetAny) l3 = GetScope.of(context, l3);
+      if (l4 is GetAny) l4 = GetScope.of(context, l4);
+      if (l5 is GetAny) l5 = GetScope.of(context, l5);
+      if (l6 is GetAny) l6 = GetScope.of(context, l6);
+      if (l7 is GetAny) l7 = GetScope.of(context, l7);
+      if (l8 is GetAny) l8 = GetScope.of(context, l8);
+    }
+
+    _useVsyncValidation(l1, checkVsync, label);
+    _useVsyncValidation(l2, checkVsync, label);
+    _useVsyncValidation(l3, checkVsync, label);
+    _useVsyncValidation(l4, checkVsync, label);
+    _useVsyncValidation(l5, checkVsync, label);
+    _useVsyncValidation(l6, checkVsync, label);
+    _useVsyncValidation(l7, checkVsync, label);
+    _useVsyncValidation(l8, checkVsync, label);
+
+    return HookData.use(
+      _Select8(l1, l2, l3, l4, l5, l6, l7, l8, selector, watching: watching),
+      debugLabel: label,
+    );
+  }
+
+  /// Computes a value by selecting from 9 complex objects,
+  /// and triggers a rebuild when the result changes.
+  ///
+  /// Multiple values can be selected by returning a [Record] type.
+  ///
+  /// {@macro get_hooked.Ref.watch}
+  static Result select9<Result, L1, L2, L3, L4, L5, L6, L7, L8, L9>(
+    L1 l1,
+    L2 l2,
+    L3 l3,
+    L4 l4,
+    L5 l5,
+    L6 l6,
+    L7 l7,
+    L8 l8,
+    L9 l9,
+    Result Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7, L8 l8, L9 l9) selector, {
+    bool watching = true,
+    bool checkVsync = true,
+    bool useScope = true,
+  }) {
+    const label = 'select8';
+
+    final BuildContext context = useContext();
+    if (useScope) {
+      if (l1 is GetAny) l1 = GetScope.of(context, l1);
+      if (l2 is GetAny) l2 = GetScope.of(context, l2);
+      if (l3 is GetAny) l3 = GetScope.of(context, l3);
+      if (l4 is GetAny) l4 = GetScope.of(context, l4);
+      if (l5 is GetAny) l5 = GetScope.of(context, l5);
+      if (l6 is GetAny) l6 = GetScope.of(context, l6);
+      if (l7 is GetAny) l7 = GetScope.of(context, l7);
+      if (l8 is GetAny) l8 = GetScope.of(context, l8);
+      if (l9 is GetAny) l9 = GetScope.of(context, l9);
+    }
+
+    _useVsyncValidation(l1, checkVsync, label);
+    _useVsyncValidation(l2, checkVsync, label);
+    _useVsyncValidation(l3, checkVsync, label);
+    _useVsyncValidation(l4, checkVsync, label);
+    _useVsyncValidation(l5, checkVsync, label);
+    _useVsyncValidation(l6, checkVsync, label);
+    _useVsyncValidation(l7, checkVsync, label);
+    _useVsyncValidation(l8, checkVsync, label);
+    _useVsyncValidation(l9, checkVsync, label);
+
+    return HookData.use(
+      _Select9(l1, l2, l3, l4, l5, l6, l7, l8, l9, selector, watching: watching),
+      debugLabel: label,
+    );
   }
 
   /// Overrides the [Get] object accessed by [Ref.watch] with a new value
@@ -163,10 +479,9 @@ final class Ref extends InheritedModel<ValueRef> {
 
     onStatusChange != null
         ? useAnimationStatus(animation, onStatusChange)
-        : useAnimationStatus(null, _emptyListener);
+        : useAnimationStatus(const AlwaysStoppedAnimation(null), _emptyListener);
 
-    use(_VsyncAttachHook(get));
-
+    use(_VsyncAttachHook<Controls>.new, data: get, key: get, debugLabel: 'Ref.vsync');
     return get;
   }
 
@@ -188,4 +503,28 @@ final class Ref extends InheritedModel<ValueRef> {
     }
     return false;
   }
+}
+
+void _useVsyncValidation(Object? get, bool checkVsync, String debugLabel) {
+  assert(
+    useMemoized(() {
+      if (!checkVsync) return true;
+      // ignore: strict_raw_type, too verbose!
+      if (get case final GetVsyncAny getVsync when getVsync.vsync.context == null) {
+        throw FlutterError.fromParts([
+          ErrorSummary('$debugLabel() called with a non-attached Vsync.'),
+          ErrorDescription(
+            '$debugLabel() is intended to listen to an existing value, '
+            'but the $getVsync has not been set up.',
+          ),
+          ErrorHint(
+            'Consider setting up an ancestor widget with Ref.vsync(), '
+            'or calling Ref.vsync() here instead of $debugLabel().',
+          ),
+          ErrorHint('Alternatively, call $debugLabel(checkVsync: false) to ignore this warning.'),
+        ]);
+      }
+      return true;
+    }, key: checkVsync ? get : null),
+  );
 }

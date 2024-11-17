@@ -1,4 +1,4 @@
-part of '../get_hooked.dart';
+part of '../get.dart';
 
 /// Creates an [Animation] using a [TickerProvider].
 typedef VsyncBuilder<A extends Animation<Object?>> = A Function(TickerProvider vsync);

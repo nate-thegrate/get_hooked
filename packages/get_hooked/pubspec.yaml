@@ -17,7 +17,6 @@ dependencies:
     sdk: flutter
   collection: ^1.18.0
   collection_notifiers: ^1.1.0
-  flutter_hooks: ">=0.18.5 <1.0.0"
   meta: ">=1.10.0 <2.0.0"
 
 dev_dependencies:

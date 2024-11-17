@@ -2,19 +2,20 @@
 
 import 'package:flutter/foundation.dart';
 
-// ignore: inference_failure_on_untyped_parameter, they're dynamic
-Listenable _proxyListenable([l1, l2, l3, l4, l5, l6, l7, l8, l9]) {
-  return Listenable.merge(() sync* {
-    if (l1 is Listenable) yield l1;
-    if (l2 is Listenable) yield l2;
-    if (l3 is Listenable) yield l3;
-    if (l4 is Listenable) yield l4;
-    if (l5 is Listenable) yield l5;
-    if (l6 is Listenable) yield l6;
-    if (l7 is Listenable) yield l7;
-    if (l8 is Listenable) yield l8;
-    if (l9 is Listenable) yield l9;
-  }());
+extension type ProxyListenable._(Listenable listenable) implements Listenable {
+  // ignore: inference_failure_on_untyped_parameter, they're dynamic
+  ProxyListenable([l1, l2, l3, l4, l5, l6, l7, l8, l9])
+    : listenable = Listenable.merge(() sync* {
+        if (l1 is Listenable) yield l1;
+        if (l2 is Listenable) yield l2;
+        if (l3 is Listenable) yield l3;
+        if (l4 is Listenable) yield l4;
+        if (l5 is Listenable) yield l5;
+        if (l6 is Listenable) yield l6;
+        if (l7 is Listenable) yield l7;
+        if (l8 is Listenable) yield l8;
+        if (l9 is Listenable) yield l9;
+      }());
 }
 
 abstract class ProxyNotifierBase<T> with ChangeNotifier implements ValueListenable<T> {
@@ -71,7 +72,7 @@ class ProxyNotifier2<T, L1, L2> extends ProxyNotifierBase<T> {
   /// At least 1 of these two values should be a [Listenable],
   /// so that the `ProxyNotifier` knows when to send its own notifications.
   ProxyNotifier2(this.l1, this.l2, this.getValue)
-    : super(_proxyListenable(l1, l2), value: getValue(l1, l2));
+    : super(ProxyListenable(l1, l2), value: getValue(l1, l2));
 
   /// Retrieves a [value] using the provided [getValue] function with the three values.
   final T Function(L1 l1, L2 l2) getValue;
@@ -93,7 +94,7 @@ class ProxyNotifier3<T, L1, L2, L3> extends ProxyNotifierBase<T> {
   /// At least 1 of these three values should be a [Listenable],
   /// so that the `ProxyNotifier` knows when to send its own notifications.
   ProxyNotifier3(this.l1, this.l2, this.l3, this.getValue)
-    : super(_proxyListenable(l1, l2, l3), value: getValue(l1, l2, l3));
+    : super(ProxyListenable(l1, l2, l3), value: getValue(l1, l2, l3));
 
   /// Retrieves a [value] using the provided [getValue] function with the three values.
   final T Function(L1 l1, L2 l2, L3 l3) getValue;
@@ -116,7 +117,7 @@ class ProxyNotifier4<T, L1, L2, L3, L4> extends ProxyNotifierBase<T> {
   /// At least 1 of these four values should be a [Listenable],
   /// so that the `ProxyNotifier` knows when to send its own notifications.
   ProxyNotifier4(this.l1, this.l2, this.l3, this.l4, this.getValue)
-    : super(_proxyListenable(l1, l2, l3, l4), value: getValue(l1, l2, l3, l4));
+    : super(ProxyListenable(l1, l2, l3, l4), value: getValue(l1, l2, l3, l4));
 
   /// Retrieves a [value] using the provided [getValue] function with four values.
   final T Function(L1 l1, L2 l2, L3 l3, L4 l4) getValue;
@@ -140,7 +141,7 @@ class ProxyNotifier5<T, L1, L2, L3, L4, L5> extends ProxyNotifierBase<T> {
   /// At least 1 of these five values should be a [Listenable],
   /// so that the `ProxyNotifier` knows when to send its own notifications.
   ProxyNotifier5(this.l1, this.l2, this.l3, this.l4, this.l5, this.getValue)
-    : super(_proxyListenable(l1, l2, l3, l4, l5), value: getValue(l1, l2, l3, l4, l5));
+    : super(ProxyListenable(l1, l2, l3, l4, l5), value: getValue(l1, l2, l3, l4, l5));
 
   /// Retrieves a [value] using the provided [getValue] function with five values.
   final T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5) getValue;
@@ -165,7 +166,7 @@ class ProxyNotifier6<T, L1, L2, L3, L4, L5, L6> extends ProxyNotifierBase<T> {
   /// At least 1 of these six values should be a [Listenable],
   /// so that the `ProxyNotifier` knows when to send its own notifications.
   ProxyNotifier6(this.l1, this.l2, this.l3, this.l4, this.l5, this.l6, this.getValue)
-    : super(_proxyListenable(l1, l2, l3, l4, l5, l6), value: getValue(l1, l2, l3, l4, l5, l6));
+    : super(ProxyListenable(l1, l2, l3, l4, l5, l6), value: getValue(l1, l2, l3, l4, l5, l6));
 
   /// Retrieves a [value] using the provided [getValue] function with six values.
   final T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6) getValue;
@@ -192,7 +193,7 @@ class ProxyNotifier7<T, L1, L2, L3, L4, L5, L6, L7> extends ProxyNotifierBase<T>
   /// so that the `ProxyNotifier` knows when to send its own notifications.
   ProxyNotifier7(this.l1, this.l2, this.l3, this.l4, this.l5, this.l6, this.l7, this.getValue)
     : super(
-        _proxyListenable(l1, l2, l3, l4, l5, l6, l7),
+        ProxyListenable(l1, l2, l3, l4, l5, l6, l7),
         value: getValue(l1, l2, l3, l4, l5, l6, l7),
       );
 
@@ -231,7 +232,7 @@ class ProxyNotifier8<T, L1, L2, L3, L4, L5, L6, L7, L8> extends ProxyNotifierBas
     this.l8,
     this.getValue,
   ) : super(
-        _proxyListenable(l1, l2, l3, l4, l5, l6, l7, l8),
+        ProxyListenable(l1, l2, l3, l4, l5, l6, l7, l8),
         value: getValue(l1, l2, l3, l4, l5, l6, l7, l8),
       );
 
@@ -272,7 +273,7 @@ class ProxyNotifier9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9> extends ProxyNotifie
     this.l9,
     this.getValue,
   ) : super(
-        _proxyListenable(l1, l2, l3, l4, l5, l6, l7, l8, l9),
+        ProxyListenable(l1, l2, l3, l4, l5, l6, l7, l8, l9),
         value: getValue(l1, l2, l3, l4, l5, l6, l7, l8, l9),
       );
 

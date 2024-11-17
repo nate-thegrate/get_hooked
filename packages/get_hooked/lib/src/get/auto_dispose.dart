@@ -1,4 +1,4 @@
-part of '../get_hooked.dart';
+part of '../get.dart';
 
 /// Mixin for [Get] objects with a [dispose] method.
 ///
