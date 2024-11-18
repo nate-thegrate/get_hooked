@@ -5,7 +5,7 @@
 include: ../analysis_options.yaml
 
 formatter:
-  page_width: 98
+  page_width: 80
 
 linter:
   rules:

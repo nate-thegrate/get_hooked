@@ -1,5 +1,3 @@
-// dart format width=80
-
 import 'package:flutter/material.dart';
 import 'package:get_hooked/get_hooked.dart';
 

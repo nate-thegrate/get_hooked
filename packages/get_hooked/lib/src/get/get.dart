@@ -605,46 +605,40 @@ extension type GetVsyncValue<T>._(ValueAnimation<T> _hooked)
 extension type GetAsync<T>._(AsyncController<T> _hooked)
     implements Get<AsyncSnapshot<T>, AsyncController<T>> {}
 
+// dart format off
 /// Encapsulates any [Listenable], using the provided callback to retrieve a value.
 extension type GetProxy<T, L extends Listenable>._(ProxyNotifier<T, L> _hooked)
-    implements Get<T, ProxyNotifier<T, L>> {}
+implements Get<T, ProxyNotifier<T, L>> {}
 
 /// Encapsulates a [ProxyNotifier2], using the provided callback to retrieve a value.
 extension type GetProxy2<T, L1, L2>._(ProxyNotifier2<T, L1, L2> _hooked)
-    implements Get<T, ProxyNotifier2<T, L1, L2>> {}
+implements Get<T, ProxyNotifier2<T, L1, L2>> {}
 
 /// Encapsulates a [ProxyNotifier3], using the provided callback to retrieve a value.
 extension type GetProxy3<T, L1, L2, L3>._(ProxyNotifier3<T, L1, L2, L3> _hooked)
-    implements Get<T, ProxyNotifier3<T, L1, L2, L3>> {}
+implements Get<T, ProxyNotifier3<T, L1, L2, L3>> {}
 
 /// Encapsulates a [ProxyNotifier4], using the provided callback to retrieve a value.
 extension type GetProxy4<T, L1, L2, L3, L4>._(ProxyNotifier4<T, L1, L2, L3, L4> _hooked)
-    implements Get<T, ProxyNotifier4<T, L1, L2, L3, L4>> {}
+implements Get<T, ProxyNotifier4<T, L1, L2, L3, L4>> {}
 
 /// Encapsulates a [ProxyNotifier5], using the provided callback to retrieve a value.
 extension type GetProxy5<T, L1, L2, L3, L4, L5>._(ProxyNotifier5<T, L1, L2, L3, L4, L5> _hooked)
-    implements Get<T, ProxyNotifier5<T, L1, L2, L3, L4, L5>> {}
+implements Get<T, ProxyNotifier5<T, L1, L2, L3, L4, L5>> {}
 
 /// Encapsulates a [ProxyNotifier6], using the provided callback to retrieve a value.
-extension type GetProxy6<T, L1, L2, L3, L4, L5, L6>._(
-  ProxyNotifier6<T, L1, L2, L3, L4, L5, L6> _hooked
-)
-    implements Get<T, ProxyNotifier6<T, L1, L2, L3, L4, L5, L6>> {}
+extension type GetProxy6<T, L1, L2, L3, L4, L5, L6>._(ProxyNotifier6<T, L1, L2, L3, L4, L5, L6> _hooked)
+implements Get<T, ProxyNotifier6<T, L1, L2, L3, L4, L5, L6>> {}
 
 /// Encapsulates a [ProxyNotifier7], using the provided callback to retrieve a value.
-extension type GetProxy7<T, L1, L2, L3, L4, L5, L6, L7>._(
-  ProxyNotifier7<T, L1, L2, L3, L4, L5, L6, L7> _hooked
-)
-    implements Get<T, ProxyNotifier7<T, L1, L2, L3, L4, L5, L6, L7>> {}
+extension type GetProxy7<T, L1, L2, L3, L4, L5, L6, L7>._(ProxyNotifier7<T, L1, L2, L3, L4, L5, L6, L7> _hooked)
+implements Get<T, ProxyNotifier7<T, L1, L2, L3, L4, L5, L6, L7>> {}
 
 /// Encapsulates a [ProxyNotifier8], using the provided callback to retrieve a value.
-extension type GetProxy8<T, L1, L2, L3, L4, L5, L6, L7, L8>._(
-  ProxyNotifier8<T, L1, L2, L3, L4, L5, L6, L7, L8> _hooked
-)
-    implements Get<T, ProxyNotifier8<T, L1, L2, L3, L4, L5, L6, L7, L8>> {}
+extension type GetProxy8<T, L1, L2, L3, L4, L5, L6, L7, L8>._(ProxyNotifier8<T, L1, L2, L3, L4, L5, L6, L7, L8> _hooked)
+implements Get<T, ProxyNotifier8<T, L1, L2, L3, L4, L5, L6, L7, L8>> {}
 
 /// Encapsulates a [ProxyNotifier9], using the provided callback to retrieve a value.
-extension type GetProxy9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9>._(
-  ProxyNotifier9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9> _hooked
-)
-    implements Get<T, ProxyNotifier9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9>> {}
+extension type GetProxy9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9>._(ProxyNotifier9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9> _hooked)
+implements Get<T, ProxyNotifier9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9>> {}
+// dart format on

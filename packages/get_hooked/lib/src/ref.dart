@@ -509,7 +509,6 @@ void _useVsyncValidation(Object? get, bool checkVsync, String debugLabel) {
   assert(
     useMemoized(() {
       if (!checkVsync) return true;
-      // ignore: strict_raw_type, too verbose!
       if (get case final GetVsyncAny getVsync when getVsync.vsync.context == null) {
         throw FlutterError.fromParts([
           ErrorSummary('$debugLabel() called with a non-attached Vsync.'),
