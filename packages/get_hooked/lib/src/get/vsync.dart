@@ -165,15 +165,14 @@ class VsyncTicker extends Ticker {
   @override
   TickerFuture start() {
     assert(() {
-      if (vsync.context case BuildContext(mounted: false)) {
-        throw FlutterError.fromParts([
-          ErrorSummary('Ticker.start() called after dispose().'),
-          ErrorHint(
-            'Consider setting an active context for its vsync before starting the ticker.',
-          ),
-        ]);
+      if (vsync.context case null || Vsync.auto || BuildContext(mounted: true)) {
+        return true;
       }
-      return true;
+
+      throw FlutterError.fromParts([
+        ErrorSummary('Ticker.start() called after dispose().'),
+        ErrorHint('Consider setting an active context for its vsync before starting the ticker.'),
+      ]);
     }());
     return super.start();
   }

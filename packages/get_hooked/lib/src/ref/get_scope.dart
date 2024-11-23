@@ -127,7 +127,7 @@ class _GetScopeState extends State<GetScope> {
       }());
 
       final ValueRef? removed = map.remove(key);
-      if (!autoDispose && removed is! AutoDispose?) {
+      if (!autoDispose && removed is! DisposeGuard?) {
         removed._dispose();
       }
       if (newOverrides[key] case final factory?) {
@@ -144,7 +144,7 @@ class _GetScopeState extends State<GetScope> {
             (removedNotifiers ??= {}).add(notifier);
             return true;
           }());
-          if (!autoDispose && notifier is! AutoDispose) notifier._dispose();
+          if (!autoDispose && notifier is! DisposeGuard) notifier._dispose();
         }
         newMap[key] = factory();
       }
@@ -172,7 +172,7 @@ class _GetScopeState extends State<GetScope> {
                 'Ensure that any listeners added to the object are removed '
                 "when it's disposed of.",
               ),
-              if (notifier is AutoDispose)
+              if (notifier is DisposeGuard)
                 ErrorHint(
                   'Alternatively, instead of using one of the "Get" constructors, '
                   'extend the $type type directly, and use an Override(autoDispose: false).',
@@ -254,7 +254,7 @@ final class Override<T, V extends ValueListenable<T>> with Diagnosticable {
 
   /// Whether the [GetScope] widget should skip disposing the modified value.
   ///
-  /// If the [factory]'s output is a subtype of [AutoDispose], this value is ignored
+  /// If the [factory]'s output is a subtype of [DisposeGuard], this value is ignored
   /// and disposing is always skipped.
   final bool autoDispose;
 
@@ -364,7 +364,7 @@ class _OverrideContainerElement extends InheritedElement {
 extension on ValueRef {
   void _dispose() {
     switch (this) {
-      case AutoDispose():
+      case DisposeGuard():
         assert(() {
           final String suggestion = switch (this) {
             ValueAnimation() => 'a ValueAnimation instance',

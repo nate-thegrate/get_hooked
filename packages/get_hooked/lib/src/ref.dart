@@ -6,9 +6,19 @@ import 'package:flutter/widgets.dart';
 import '../utils/proxy_notifier.dart';
 import '../utils/value_animation.dart';
 import 'get.dart';
+import 'hooked.dart';
 
 part 'ref/get_scope.dart';
 part 'ref/ref_hooks.dart';
+
+extension<T> on T {
+  T of(BuildContext context) {
+    if (this case final GetAny get) {
+      if (GetScope.of<GetAny>(context, get) case final T result) return result;
+    }
+    return this;
+  }
+}
 
 /// An [InheritedModel] used by [Ref] to store its [Override]s
 /// and notify dependent widgets.
@@ -23,6 +33,24 @@ final class Ref extends InheritedModel<ValueRef> {
   ///
   /// The key is the original object; the value is the new object.
   final Map<ValueRef, ValueRef> map;
+
+  /// This hook function returns a copy of the provided [Get] object,
+  /// overriding it with any replacement in an ancestor [GetScope] if applicable.
+  ///
+  /// Unlike [Ref.watch], this method does not subscribe to any notifications
+  /// from the object.
+  static G read<G extends GetAny>(
+    G get, {
+    bool createDependency = true,
+    bool throwIfMissing = false,
+  }) {
+    return GetScope.of(
+      useContext(),
+      get,
+      createDependency: createDependency,
+      throwIfMissing: throwIfMissing,
+    );
+  }
 
   /// This hook function watches a [Get] object
   /// and triggers a rebuild when it sends a notification.
@@ -81,6 +109,9 @@ final class Ref extends InheritedModel<ValueRef> {
     const label = 'Ref.select';
     final BuildContext context = useContext();
     if (useScope) get = GetScope.of(context, get);
+    if (Hooked.active case final hooked?) {
+      return hooked.select(get.hooked, () => selector(get.value));
+    }
 
     _useVsyncValidation(get, checkVsync, label);
 
@@ -108,8 +139,11 @@ final class Ref extends InheritedModel<ValueRef> {
 
     final BuildContext context = useContext();
     if (useScope) {
-      if (l1 is GetAny) l1 = GetScope.of(context, l1);
-      if (l2 is GetAny) l2 = GetScope.of(context, l2);
+      l1 = l1.of(context);
+      l2 = l2.of(context);
+    }
+    if (Hooked.active case final hooked?) {
+      return hooked.select(ProxyListenable(l1, l2), () => selector(l1, l2));
     }
 
     _useVsyncValidation(l1, checkVsync, label);
@@ -140,9 +174,12 @@ final class Ref extends InheritedModel<ValueRef> {
 
     final BuildContext context = useContext();
     if (useScope) {
-      if (l1 is GetAny) l1 = GetScope.of(context, l1);
-      if (l2 is GetAny) l2 = GetScope.of(context, l2);
-      if (l3 is GetAny) l3 = GetScope.of(context, l3);
+      l1 = l1.of(context);
+      l2 = l2.of(context);
+      l3 = l3.of(context);
+    }
+    if (Hooked.active case final hooked?) {
+      return hooked.select(ProxyListenable(l1, l2, l3), () => selector(l1, l2, l3));
     }
 
     _useVsyncValidation(l1, checkVsync, label);
@@ -175,10 +212,13 @@ final class Ref extends InheritedModel<ValueRef> {
 
     final BuildContext context = useContext();
     if (useScope) {
-      if (l1 is GetAny) l1 = GetScope.of(context, l1);
-      if (l2 is GetAny) l2 = GetScope.of(context, l2);
-      if (l3 is GetAny) l3 = GetScope.of(context, l3);
-      if (l4 is GetAny) l4 = GetScope.of(context, l4);
+      l1 = l1.of(context);
+      l2 = l2.of(context);
+      l3 = l3.of(context);
+      l4 = l4.of(context);
+    }
+    if (Hooked.active case final hooked?) {
+      return hooked.select(ProxyListenable(l1, l2, l3, l4), () => selector(l1, l2, l3, l4));
     }
 
     _useVsyncValidation(l1, checkVsync, label);
@@ -213,11 +253,17 @@ final class Ref extends InheritedModel<ValueRef> {
 
     final BuildContext context = useContext();
     if (useScope) {
-      if (l1 is GetAny) l1 = GetScope.of(context, l1);
-      if (l2 is GetAny) l2 = GetScope.of(context, l2);
-      if (l3 is GetAny) l3 = GetScope.of(context, l3);
-      if (l4 is GetAny) l4 = GetScope.of(context, l4);
-      if (l5 is GetAny) l5 = GetScope.of(context, l5);
+      l1 = l1.of(context);
+      l2 = l2.of(context);
+      l3 = l3.of(context);
+      l4 = l4.of(context);
+      l5 = l5.of(context);
+    }
+    if (Hooked.active case final hooked?) {
+      return hooked.select(
+        ProxyListenable(l1, l2, l3, l4, l5),
+        () => selector(l1, l2, l3, l4, l5),
+      );
     }
 
     _useVsyncValidation(l1, checkVsync, label);
@@ -254,12 +300,18 @@ final class Ref extends InheritedModel<ValueRef> {
 
     final BuildContext context = useContext();
     if (useScope) {
-      if (l1 is GetAny) l1 = GetScope.of(context, l1);
-      if (l2 is GetAny) l2 = GetScope.of(context, l2);
-      if (l3 is GetAny) l3 = GetScope.of(context, l3);
-      if (l4 is GetAny) l4 = GetScope.of(context, l4);
-      if (l5 is GetAny) l5 = GetScope.of(context, l5);
-      if (l6 is GetAny) l6 = GetScope.of(context, l6);
+      l1 = l1.of(context);
+      l2 = l2.of(context);
+      l3 = l3.of(context);
+      l4 = l4.of(context);
+      l5 = l5.of(context);
+      l6 = l6.of(context);
+    }
+    if (Hooked.active case final hooked?) {
+      return hooked.select(
+        ProxyListenable(l1, l2, l3, l4, l5, l6),
+        () => selector(l1, l2, l3, l4, l5, l6),
+      );
     }
 
     _useVsyncValidation(l1, checkVsync, label);
@@ -298,13 +350,19 @@ final class Ref extends InheritedModel<ValueRef> {
 
     final BuildContext context = useContext();
     if (useScope) {
-      if (l1 is GetAny) l1 = GetScope.of(context, l1);
-      if (l2 is GetAny) l2 = GetScope.of(context, l2);
-      if (l3 is GetAny) l3 = GetScope.of(context, l3);
-      if (l4 is GetAny) l4 = GetScope.of(context, l4);
-      if (l5 is GetAny) l5 = GetScope.of(context, l5);
-      if (l6 is GetAny) l6 = GetScope.of(context, l6);
-      if (l7 is GetAny) l7 = GetScope.of(context, l7);
+      l1 = l1.of(context);
+      l2 = l2.of(context);
+      l3 = l3.of(context);
+      l4 = l4.of(context);
+      l5 = l5.of(context);
+      l6 = l6.of(context);
+      l7 = l7.of(context);
+    }
+    if (Hooked.active case final hooked?) {
+      return hooked.select(
+        ProxyListenable(l1, l2, l3, l4, l5, l6, l7),
+        () => selector(l1, l2, l3, l4, l5, l6, l7),
+      );
     }
 
     _useVsyncValidation(l1, checkVsync, label);
@@ -345,14 +403,20 @@ final class Ref extends InheritedModel<ValueRef> {
 
     final BuildContext context = useContext();
     if (useScope) {
-      if (l1 is GetAny) l1 = GetScope.of(context, l1);
-      if (l2 is GetAny) l2 = GetScope.of(context, l2);
-      if (l3 is GetAny) l3 = GetScope.of(context, l3);
-      if (l4 is GetAny) l4 = GetScope.of(context, l4);
-      if (l5 is GetAny) l5 = GetScope.of(context, l5);
-      if (l6 is GetAny) l6 = GetScope.of(context, l6);
-      if (l7 is GetAny) l7 = GetScope.of(context, l7);
-      if (l8 is GetAny) l8 = GetScope.of(context, l8);
+      l1 = l1.of(context);
+      l2 = l2.of(context);
+      l3 = l3.of(context);
+      l4 = l4.of(context);
+      l5 = l5.of(context);
+      l6 = l6.of(context);
+      l7 = l7.of(context);
+      l8 = l8.of(context);
+    }
+    if (Hooked.active case final hooked?) {
+      return hooked.select(
+        ProxyListenable(l1, l2, l3, l4, l5, l6, l7, l8),
+        () => selector(l1, l2, l3, l4, l5, l6, l7, l8),
+      );
     }
 
     _useVsyncValidation(l1, checkVsync, label);
@@ -395,15 +459,21 @@ final class Ref extends InheritedModel<ValueRef> {
 
     final BuildContext context = useContext();
     if (useScope) {
-      if (l1 is GetAny) l1 = GetScope.of(context, l1);
-      if (l2 is GetAny) l2 = GetScope.of(context, l2);
-      if (l3 is GetAny) l3 = GetScope.of(context, l3);
-      if (l4 is GetAny) l4 = GetScope.of(context, l4);
-      if (l5 is GetAny) l5 = GetScope.of(context, l5);
-      if (l6 is GetAny) l6 = GetScope.of(context, l6);
-      if (l7 is GetAny) l7 = GetScope.of(context, l7);
-      if (l8 is GetAny) l8 = GetScope.of(context, l8);
-      if (l9 is GetAny) l9 = GetScope.of(context, l9);
+      l1 = l1.of(context);
+      l2 = l2.of(context);
+      l3 = l3.of(context);
+      l4 = l4.of(context);
+      l5 = l5.of(context);
+      l6 = l6.of(context);
+      l7 = l7.of(context);
+      l8 = l8.of(context);
+      l9 = l9.of(context);
+    }
+    if (Hooked.active case final hooked?) {
+      return hooked.select(
+        ProxyListenable(l1, l2, l3, l4, l5, l6, l7, l8, l9),
+        () => selector(l1, l2, l3, l4, l5, l6, l7, l8, l9),
+      );
     }
 
     _useVsyncValidation(l1, checkVsync, label);
@@ -465,24 +535,18 @@ final class Ref extends InheritedModel<ValueRef> {
   /// Provides an interface for controlling a [GetVsync] animation,
   /// and optionally rebuilds when the animation sends a notification.
   ///
-  ///  * If [watch] is true, each notification sent by the animation
-  ///    triggers a rebuild.
-  ///  * If a callback for [onStatusChange] is provided, it will run each time
-  ///    the [AnimationStatus] changes.
-  static Controls vsync<Controls extends GetVsyncAny>(
-    Controls get, {
-    bool watch = false,
-    AnimationStatusListener? onStatusChange,
-  }) {
-    final Animation<Object?> animation = get.hooked;
-    useListenable(watch ? animation : null);
+  /// If [watch] is true, each notification sent by the animation
+  /// triggers a rebuild.
+  static Controls vsync<Controls extends GetVsyncAny>(Controls get, {bool watch = false}) {
+    final Controls scoped = GetScope.of(useContext(), get);
+    if (Hooked.active case final hooked?) {
+      hooked.vsync(scoped.vsync);
+      return scoped;
+    }
+    useListenable(watch ? scoped.hooked : null);
 
-    onStatusChange != null
-        ? useAnimationStatus(animation, onStatusChange)
-        : useAnimationStatus(const AlwaysStoppedAnimation(null), _emptyListener);
-
-    use(_VsyncAttachHook<Controls>.new, data: get, key: get, debugLabel: 'Ref.vsync');
-    return get;
+    use(_VsyncHook<Controls>.new, data: scoped, key: scoped, debugLabel: 'Ref.vsync');
+    return scoped;
   }
 
   G? _select<G extends GetAny>(G get) => switch (map[get.hooked]) {

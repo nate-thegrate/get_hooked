@@ -4,7 +4,6 @@
 part of '../ref.dart';
 
 T _selectAll<T>(T value) => value;
-void _emptyListener(AnimationStatus status) {}
 
 abstract class _DataSelect<Result> extends HookData<Result> {
   const _DataSelect({super.key, required this.watching});
@@ -262,7 +261,7 @@ class _SelectHook<Result> extends Hook<Result, _DataSelect<Result>> {
   Result build() => previous = data.result;
 }
 
-class _VsyncAttachHook<Controls extends GetVsyncAny> extends Hook<void, Controls> {
+class _VsyncHook<Controls extends GetVsyncAny> extends Hook<void, Controls> {
   late GetVsyncAny get = data;
   late Vsync vsync = get.vsync;
 
@@ -285,7 +284,7 @@ class _VsyncAttachHook<Controls extends GetVsyncAny> extends Hook<void, Controls
 
   @override
   void dispose() {
-    if (vsync.context == context) vsync.context = null;
+    if (vsync.context == Vsync.auto) vsync.context = null;
   }
 
   @override
@@ -325,14 +324,10 @@ class _AnimationStatusHook<T> extends Hook<T, _AnimationStatusData<T>> {
   }
 
   @override
-  void initHook() {
-    animation.addStatusListener(statusUpdate);
-  }
+  void initHook() => animation.addStatusListener(statusUpdate);
 
   @override
-  void dispose() {
-    animation.removeStatusListener(statusUpdate);
-  }
+  void dispose() => animation.removeStatusListener(statusUpdate);
 
   @override
   T build() => _result;

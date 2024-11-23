@@ -270,8 +270,10 @@ base mixin HookElement on ComponentElement {
   @override
   Widget build() {
     // Check whether we can cancel the rebuild (caused by HookState.mayNeedRebuild).
-    final bool mustRebuild =
-        (_isOptionalRebuild ?? false) || _shouldRebuildQueue.any((cb) => cb.value());
+    final bool mustRebuild = switch (_isOptionalRebuild) {
+      false || null => true,
+      true => _shouldRebuildQueue.any((cb) => cb.value()),
+    };
 
     _isOptionalRebuild = null;
     _shouldRebuildQueue.clear();

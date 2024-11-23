@@ -115,8 +115,13 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
   /// At least one of these two values should be a [Listenable] or [Get] object,
   /// so that the proxy knows when to send its own notifications.
   @factory
-  static GetProxy2<T, L1, L2> proxy2<T, L1, L2>(L1 l1, L2 l2, T Function(L1 l1, L2 l2) getValue) {
-    return GetProxy2._(_ProxyNotifier2(l1, l2, getValue));
+  static GetProxy2<T, L1, L2> proxy2<T, L1, L2>(
+    L1 l1,
+    L2 l2,
+    T Function(L1 l1, L2 l2) getValue, {
+    bool concurrent = false,
+  }) {
+    return GetProxy2._(_ProxyNotifier2(l1, l2, getValue, concurrent: concurrent));
   }
 
   /// Encapsulates a [ProxyNotifier3], using the provided callback to retrieve a value.
@@ -128,9 +133,10 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
     L1 l1,
     L2 l2,
     L3 l3,
-    T Function(L1 l1, L2 l2, L3 l3) getValue,
-  ) {
-    return GetProxy3._(_ProxyNotifier3(l1, l2, l3, getValue));
+    T Function(L1 l1, L2 l2, L3 l3) getValue, {
+    bool concurrent = false,
+  }) {
+    return GetProxy3._(_ProxyNotifier3(l1, l2, l3, getValue, concurrent: concurrent));
   }
 
   /// Encapsulates a [ProxyNotifier4], using the provided callback to retrieve a value.
@@ -143,9 +149,10 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
     L2 l2,
     L3 l3,
     L4 l4,
-    T Function(L1 l1, L2 l2, L3 l3, L4 l4) getValue,
-  ) {
-    return GetProxy4._(_ProxyNotifier4(l1, l2, l3, l4, getValue));
+    T Function(L1 l1, L2 l2, L3 l3, L4 l4) getValue, {
+    bool concurrent = false,
+  }) {
+    return GetProxy4._(_ProxyNotifier4(l1, l2, l3, l4, getValue, concurrent: concurrent));
   }
 
   /// Encapsulates a [ProxyNotifier5], using the provided callback to retrieve a value.
@@ -159,9 +166,10 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
     L3 l3,
     L4 l4,
     L5 l5,
-    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5) getValue,
-  ) {
-    return GetProxy5._(_ProxyNotifier5(l1, l2, l3, l4, l5, getValue));
+    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5) getValue, {
+    bool concurrent = false,
+  }) {
+    return GetProxy5._(_ProxyNotifier5(l1, l2, l3, l4, l5, getValue, concurrent: concurrent));
   }
 
   /// Encapsulates a [ProxyNotifier6], using the provided callback to retrieve a value.
@@ -176,9 +184,10 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
     L4 l4,
     L5 l5,
     L6 l6,
-    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6) getValue,
-  ) {
-    return GetProxy6._(_ProxyNotifier6(l1, l2, l3, l4, l5, l6, getValue));
+    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6) getValue, {
+    bool concurrent = false,
+  }) {
+    return GetProxy6._(_ProxyNotifier6(l1, l2, l3, l4, l5, l6, getValue, concurrent: concurrent));
   }
 
   /// Encapsulates a [ProxyNotifier7], using the provided callback to retrieve a value.
@@ -194,9 +203,12 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
     L5 l5,
     L6 l6,
     L7 l7,
-    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7) getValue,
-  ) {
-    return GetProxy7._(_ProxyNotifier7(l1, l2, l3, l4, l5, l6, l7, getValue));
+    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7) getValue, {
+    bool concurrent = false,
+  }) {
+    return GetProxy7._(
+      _ProxyNotifier7(l1, l2, l3, l4, l5, l6, l7, getValue, concurrent: concurrent),
+    );
   }
 
   /// Encapsulates a [ProxyNotifier8], using the provided callback to retrieve a value.
@@ -213,9 +225,12 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
     L6 l6,
     L7 l7,
     L8 l8,
-    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7, L8 l8) getValue,
-  ) {
-    return GetProxy8._(_ProxyNotifier8(l1, l2, l3, l4, l5, l6, l7, l8, getValue));
+    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7, L8 l8) getValue, {
+    bool concurrent = false,
+  }) {
+    return GetProxy8._(
+      _ProxyNotifier8(l1, l2, l3, l4, l5, l6, l7, l8, getValue, concurrent: concurrent),
+    );
   }
 
   /// Encapsulates a [ProxyNotifier9], using the provided callback to retrieve a value.
@@ -234,9 +249,12 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
     L7 l7,
     L8 l8,
     L9 l9,
-    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7, L8 l8, L9 l9) getValue,
-  ) {
-    return GetProxy9._(_ProxyNotifier9(l1, l2, l3, l4, l5, l6, l7, l8, l9, getValue));
+    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7, L8 l8, L9 l9) getValue, {
+    bool concurrent = false,
+  }) {
+    return GetProxy9._(
+      _ProxyNotifier9(l1, l2, l3, l4, l5, l6, l7, l8, l9, getValue, concurrent: concurrent),
+    );
   }
 }
 

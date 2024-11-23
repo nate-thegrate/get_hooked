@@ -107,9 +107,7 @@ const _use = use;
 
 /// Obtains the [BuildContext] of the building [HookWidget].
 BuildContext useContext() {
-  assert(
-    Hook._currentElement != null,
-    '`useContext` can only be called from the build method of HookWidget',
-  );
-  return Hook._currentElement!;
+  final BuildContext? result = Hooked.active ?? Hook._currentElement;
+  assert(result != null, '`useContext` can only be called from the build method of HookWidget');
+  return result!;
 }

@@ -16,6 +16,12 @@
 
 <br><br>
 
+# Summary
+
+No boilerplate. No `build_runner`. Raw performance.
+
+<br>
+
 Given a generic `Data` class, let's see how different state management options compare.
 
 ```dart
@@ -194,7 +200,7 @@ Many packages on [pub.dev](https://pub.dev/) have both a Flutter and a non-Flutt
 | [**flutter_bloc**](https://pub.dev/packages/flutter_bloc) | [**bloc**](https://pub.dev/packages/bloc) |
 | [**watch_it**](https://pub.dev/packages/watch_it) | [**get_it**](https://pub.dev/packages/get_it) |
 
-If you want a non-Flutter version of [**get_hooked**]((https://pub.dev/packages/get_hooked)), please [open an issue](https://github.com/nate-thegrate/get_hooked/issues)
+If you want a non-Flutter version of [**get_hooked**](https://pub.dev/packages/get_hooked), please [open an issue](https://github.com/nate-thegrate/get_hooked/issues)
 and describe your use case.
 
 <br>

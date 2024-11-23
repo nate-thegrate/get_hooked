@@ -9,7 +9,7 @@ part of '../hooks.dart';
 /// A subsequent [useMemoized] call with a different [key] will re-invoke the function
 /// to create a new instance.
 T useMemoized<T>(ValueGetter<T> valueGetter, {Object? key}) {
-  return use(_MemoizedHook<T>.new, data: valueGetter, key: key, debugLabel: 'useMemoized<$T>');
+  return use(_MemoizedHook<T>.new, key: key, data: valueGetter, debugLabel: 'useMemoized<$T>');
 }
 
 class _MemoizedHook<T> extends Hook<T, Function> {
