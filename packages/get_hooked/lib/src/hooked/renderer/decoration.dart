@@ -1,6 +1,9 @@
 part of '../renderer.dart';
 
-abstract class HookDecoration extends SingleChildRenderObjectWidget {
+/// A variation of [DecoratedBox] that allows specifying a [clipBehavior]
+/// and re-renders without any need to rebuild a widget subtree.
+abstract class HookDecoration extends RenderHookWidget {
+  /// Initializes fields for subclasses.
   const HookDecoration({
     super.key,
     this.position = DecorationPosition.background,
@@ -8,6 +11,12 @@ abstract class HookDecoration extends SingleChildRenderObjectWidget {
     super.child,
   });
 
+  /// Creates a [HookDecoration] using the specified [ValueGetter] callback.
+  ///
+  /// The [decorate] callback allows this widget to subscribe to updates—it
+  /// will repaint the widget while skipping the "build phase" entirely.
+  ///
+  /// {@macro get_hooked.RenderHookElement}
   const factory HookDecoration.compose({
     Key? key,
     required ValueGetter<Decoration> decorate,
@@ -16,16 +25,36 @@ abstract class HookDecoration extends SingleChildRenderObjectWidget {
     Widget? child,
   }) = _HookDecoration;
 
+  /// Whether to paint this decoration in front of or behind the [child].
   final DecorationPosition position;
+
+  /// Determines how the widget's [child] (and the child's descendants) are clipped.
+  ///
+  /// In order from cheapest to most expensive:
+  /// - [Clip.none]: don't perform any clipping.
+  /// - [Clip.hardEdge]: each pixel will either be fully visible or fully clipped.
+  /// - [Clip.antiAlias]: boundary pixels might be made partially transparent,
+  ///   in order to achieve a smoother appearance.
+  /// - [Clip.antiAliasWithSaveLayer]: all clipped content is placed in its own layer
+  ///   to prevent "bleeding-edge artifacts".
   final Clip clipBehavior;
 
+  /// Configures the [Decoration] for this UI element.
+  /// Unlike [DecoratedBox], this is a single
+  ///
+  /// Static [Ref] methods (e.g. [Ref.watch] and [Ref.read]) can be called from within
+  /// [decorate].
+  ///
+  /// The returned value must be either a [BoxDecoration] or a [ShapeDecoration].
   Decoration decorate();
 
   @override
-  HookDecorationElement createElement() => HookDecorationElement(this);
+  SingleChildRenderHookElement createElement() => _HookDecorationElement(this);
 
+  @internal
   @override
-  RenderObject createRenderObject(covariant HookDecorationElement context) {
+  // ignore: library_private_types_in_public_api, i don't care
+  RenderHookDecoration createRenderObject(_HookDecorationElement context) {
     return RenderHookDecoration(
       decorator: context.decorator,
       clipBehavior: clipBehavior,
@@ -57,16 +86,16 @@ class _HookDecoration extends HookDecoration {
   Decoration decorate() => _decorate();
 }
 
-class HookDecorationElement extends SingleChildRenderObjectElement with RenderHookElement {
-  HookDecorationElement(HookDecoration super.widget);
+final class _HookDecorationElement extends SingleChildRenderHookElement {
+  _HookDecorationElement(HookDecoration super.widget);
 
   @override
   void didResetListeners() {
     _handled = false;
+    renderObject.markNeedsPaint();
   }
 
   bool _handled = false;
-  late final markNeedsPaint = (renderObject as RenderHookDecoration).markNeedsPaint;
 
   Decoration decorator() {
     Hooked.renderer = this;
@@ -85,14 +114,14 @@ class HookDecorationElement extends SingleChildRenderObjectElement with RenderHo
       final T newValue = selector();
       if (newValue != value) {
         value = newValue;
-        markNeedsPaint();
+        renderObject.markNeedsPaint();
       }
     });
     return value;
   }
 }
 
-/// Paints a [Decoration] either before or after its child paints.
+/// Paints a [Decoration].
 class RenderHookDecoration extends RenderProxyBox {
   /// Creates a decorated box.
   RenderHookDecoration({
@@ -100,10 +129,12 @@ class RenderHookDecoration extends RenderProxyBox {
     DecorationPosition position = DecorationPosition.background,
     ImageConfiguration configuration = ImageConfiguration.empty,
     Clip clipBehavior = Clip.none,
-  }) : _position = position,
-       _clipBehavior = clipBehavior,
-       _configuration = configuration;
+  })  : _position = position,
+        _clipBehavior = clipBehavior,
+        _configuration = configuration;
 
+  /// This method is defined in the [RenderHookElement]
+  /// and references [HookDecoration.decorate].
   final ValueGetter<Decoration> decorator;
 
   late Decoration _decoration;
@@ -111,6 +142,7 @@ class RenderHookDecoration extends RenderProxyBox {
   Rect? _backgroundFillRect;
   (Color?, Gradient?, BlendMode?) _currentData = const (null, null, null);
 
+  /// Generates a [Paint] object to use in this render object's [paint] method.
   Paint backgroundFill(Rect rect) {
     final paint = Paint();
     final (Color? color, Gradient? gradient, BlendMode? blendMode) = _currentData;
@@ -126,7 +158,7 @@ class RenderHookDecoration extends RenderProxyBox {
     return paint;
   }
 
-  /// Whether to paint the box decoration behind or in front of the child.
+  /// Whether to paint the decoration behind or in front of the child.
   DecorationPosition get position => _position;
   DecorationPosition _position;
   set position(DecorationPosition value) {
@@ -225,6 +257,16 @@ class RenderHookDecoration extends RenderProxyBox {
       filledConfiguration.textDirection ?? TextDirection.ltr,
     );
 
+    void drawPaint([_, __]) {
+      if (position == DecorationPosition.background) {
+        context.canvas.drawPaint(paint);
+      }
+      super.paint(context, offset);
+      if (position == DecorationPosition.foreground) {
+        context.canvas.drawPaint(paint);
+      }
+    }
+
     switch (clipBehavior) {
       case Clip.antiAliasWithSaveLayer:
         layer = context.pushClipPath(
@@ -232,37 +274,25 @@ class RenderHookDecoration extends RenderProxyBox {
           offset,
           rect,
           clipPath,
-          (PaintingContext context, Offset offset) {
-            if (clipBehavior != Clip.antiAliasWithSaveLayer) return;
-
-            if (position == DecorationPosition.background) {
-              context.canvas.drawPaint(paint);
-            }
-            super.paint(context, offset);
-            if (position == DecorationPosition.foreground) {
-              context.canvas.drawPaint(paint);
-            }
-          },
+          drawPaint,
           oldLayer: layer as ClipPathLayer?,
           clipBehavior: clipBehavior,
         );
       case Clip.antiAlias:
-        context.canvas
-          ..save()
-          ..clipPath(clipPath)
-          ..drawPaint(paint);
-        super.paint(context, offset);
-        context.canvas.restore();
       case Clip.hardEdge:
         context.canvas
           ..save()
-          ..clipPath(clipPath, doAntiAlias: false)
-          ..drawPaint(paint);
-        super.paint(context, offset);
+          ..clipPath(clipPath, doAntiAlias: clipBehavior == Clip.antiAlias);
+        drawPaint();
         context.canvas.restore();
       case Clip.none:
-        context.canvas.drawPath(clipPath, paint);
+        if (position == DecorationPosition.background) {
+          context.canvas.drawPath(clipPath, paint);
+        }
         super.paint(context, offset);
+        if (position == DecorationPosition.foreground) {
+          context.canvas.drawPath(clipPath, paint);
+        }
     }
   }
 

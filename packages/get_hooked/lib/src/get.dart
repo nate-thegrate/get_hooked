@@ -19,9 +19,10 @@ import 'ref.dart';
 export 'package:flutter/foundation.dart' show ValueListenable;
 export 'hooked/builder/hooks.dart';
 
-part 'get/get.dart';
-part 'get/vsync.dart';
 part 'get/dispose_guard.dart';
+part 'get/get.dart';
+part 'get/scoped_get.dart';
+part 'get/vsync.dart';
 
 /// A `typedef` representing all objects that [Get] can represent.
 typedef ValueRef = ValueListenable<Object?>;

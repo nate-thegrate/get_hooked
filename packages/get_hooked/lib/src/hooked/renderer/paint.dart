@@ -1,8 +1,16 @@
 part of '../renderer.dart';
 
-abstract class HookPaint extends SingleChildRenderObjectWidget {
+/// A variation of [CustomPaint] that does not require any addditional class declarations.
+abstract class HookPaint extends RenderHookWidget {
+  /// Initializes fields for subclasses.
   const HookPaint({super.key, this.position = DecorationPosition.background, super.child});
 
+  /// Creates a [HookDecoration] using the specified [ValueGetter] callback.
+  ///
+  /// The [painter], [hitTest], and [semantics] callbacks allow this widget
+  /// to subscribe to updates.
+  ///
+  /// {@macro get_hooked.RenderHookElement}
   const factory HookPaint.compose({
     Key? key,
     required HookPainter painter,
@@ -12,8 +20,15 @@ abstract class HookPaint extends SingleChildRenderObjectWidget {
     Widget? child,
   }) = _HookPaint;
 
+  /// Whether the painting is done in front of or behind the [child].
   final DecorationPosition position;
 
+  /// Whether this widget should absorb hit tests.
+  ///
+  /// By default, it will not absorb any hit tests it receives if
+  /// the [position] is [DecorationPosition.foreground], and it will
+  /// absorb all hit tests (that do not hit descendant widgets) if it's
+  /// [DecorationPosition.background].
   bool hitTest(Offset location, Size size) => position == DecorationPosition.background;
 
   /// Called whenever the object needs to paint. The given [Canvas] has its
@@ -51,16 +66,24 @@ abstract class HookPaint extends SingleChildRenderObjectWidget {
   List<CustomPainterSemantics> buildSemantics(Size size) => const [];
 
   @override
-  HookPaintElement createElement() => HookPaintElement(this);
+  SingleChildRenderHookElement createElement() => _HookPaintElement(this);
 
+  @internal
   @override
-  RenderObject createRenderObject(covariant HookPaintElement element) {
-    return RenderHookPaint(this, element);
+  // ignore: library_private_types_in_public_api, I don't care
+  RenderBox createRenderObject(_HookPaintElement element) {
+    return _RenderHookPaint(this, element);
   }
 }
 
+/// Signature for the callback within a [HookPaint] widget that paints
+/// a UI element, using a [Canvas] retrieved via [HookPaintContext.stageCanvas].
 typedef HookPainter = void Function(HookPaintContext context, Size size);
-typedef HookPaintHitTest = bool Function(Offset location, Size size);
+
+/// Signature for a callback that determines whether a [HookPaint] widget
+/// will absorb a hit test. If the function or its output is `null`, the
+/// widget defers to the default behavior as defined in [HookPaint.hitTest].
+typedef HookPaintHitTest = bool? Function(Offset location, Size size);
 
 class _HookPaint extends HookPaint {
   const _HookPaint({
@@ -88,7 +111,14 @@ class _HookPaint extends HookPaint {
   void paint(HookPaintContext context, Size size) => painter(context, size);
 }
 
+/// The context in which a [HookPaint] widget paints.
+///
+/// The [Canvas] is accessed via [HookPaintContext.stageCanvas] in order to allow
+/// setting compositor hints.
 extension type HookPaintContext._(PaintingContext _context) {
+  /// Instead of using a [Canvas] directly, a [HookPaint] widget uses this method to
+  /// set compositor hints regarding whether the layer [isComplex] or is likely to
+  /// change.
   Canvas stageCanvas({bool isComplex = false, bool willChange = false}) {
     if (isComplex) _context.setIsComplexHint();
     if (willChange) _context.setWillChangeHint();
@@ -96,8 +126,8 @@ extension type HookPaintContext._(PaintingContext _context) {
   }
 }
 
-class HookPaintElement extends SingleChildRenderObjectElement with RenderHookElement {
-  HookPaintElement(HookPaint super.widget);
+final class _HookPaintElement extends SingleChildRenderHookElement {
+  _HookPaintElement(HookPaint super.widget);
 
   bool _handledPaint = false;
   bool _handledSemantics = false;
@@ -113,7 +143,7 @@ class HookPaintElement extends SingleChildRenderObjectElement with RenderHookEle
   @override
   T select<T>(Listenable listenable, ValueGetter<T> selector) {
     T currentValue = selector();
-    final renderer = renderObject as RenderHookPaint;
+    final renderer = renderObject as _RenderHookPaint;
     assert(
       renderer._method != null,
       '_method should be set immediately before calling any HookPainter method.',
@@ -122,16 +152,16 @@ class HookPaintElement extends SingleChildRenderObjectElement with RenderHookEle
 
     // dart format off
     final bool handled = switch (method) {
-      _PaintMethod.hitTest        => true,
-      _PaintMethod.paint          => _handledPaint,
+      _PaintMethod.hitTest => true,
+      _PaintMethod.paint => _handledPaint,
       _PaintMethod.buildSemantics => _handledSemantics,
     };
 
     if (handled) return currentValue;
 
     final VoidCallback mark = switch (method) {
-      _PaintMethod.hitTest        => throw Error(),
-      _PaintMethod.paint          => renderer.markNeedsPaint,
+      _PaintMethod.hitTest => throw Error(),
+      _PaintMethod.paint => renderer.markNeedsPaint,
       _PaintMethod.buildSemantics => renderer.markNeedsSemanticsUpdate,
     }; // dart format on
 
@@ -149,12 +179,12 @@ class HookPaintElement extends SingleChildRenderObjectElement with RenderHookEle
 
 enum _PaintMethod { hitTest, paint, buildSemantics }
 
-class RenderHookPaint extends RenderProxyBox {
-  RenderHookPaint(HookPaint hookPaint, this.hooked)
-    : _hookPaint = hookPaint,
-      foreground = hookPaint.position == DecorationPosition.foreground;
+class _RenderHookPaint extends RenderProxyBox {
+  _RenderHookPaint(HookPaint hookPaint, this.hooked)
+      : _hookPaint = hookPaint,
+        foreground = hookPaint.position == DecorationPosition.foreground;
 
-  final HookPaintElement hooked;
+  final _HookPaintElement hooked;
   T _invoke<T>(_PaintMethod method, ValueGetter<T> callback) {
     Hooked.renderer = hooked;
     _method = method;

@@ -1,3 +1,10 @@
+## 0.2.1
+- Lots of documentation added!
+- Introduced a `ScopedGet` API, for objects that should only be accessed via scoping.
+- Tweaked `RenderHookElement` to properly respond to Hot Reload.
+- Fixed a pinned dependency since pub.dev was mad :(
+
+
 ## 0.2.0
 - `RenderHookElement`
   - A new Hook class that allows re-rendering widgets while skipping the build phase entirely!

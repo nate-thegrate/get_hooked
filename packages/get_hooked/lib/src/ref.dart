@@ -1,3 +1,8 @@
+/// @docImport 'package:collection_notifiers/collection_notifiers.dart';
+///
+/// @docImport 'hooked.dart';
+library;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
@@ -19,16 +24,76 @@ extension<T> on T {
   }
 }
 
+/// A callback that returns a [Get] object that wraps the specified [ValueListenable].
 typedef GetFactory<V extends ValueRef> = ValueGetter<Get<Object?, V>>;
 
+/// A namespace for [Hook] functions that interact with [Get] objects.
+///
+/// Unlike most Hook functions, `Ref` methods (such as [Ref.watch]) can either
+/// be called inside [HookWidget.build] or in a [RenderHookWidget]'s method.
+/// The latter allows a [RenderHookElement] to subscribe to updates and re-paint
+/// a widget without ever rebuilding.
+///
+/// Additionally, if a [Substitution] is made in an ancestor [GetScope], these
+/// methods will reference that new value automatically.
+///
+/// The `Ref` methods include:
+///
+/// - [Ref.watch], for subscribing to updates from a [Get] object.
+/// - [Ref.read], to ensure that the scoped version of the [Get] object is being accessed,
+///   if applicable.
+/// - [Ref.vsync], to manage the ticker provider of a [GetVsync] object.
+/// - [Ref.select], to select a single value from a complex [Get] object.\
+///   Updates are only triggered when the selected value changes.
+///   - A single value can be selected from multiple [Get] objects via
+///     [Ref.select2], [Ref.select3], [Ref.select4], [Ref.select5],
+///     [Ref.select6], [Ref.select7], [Ref.select8], or [Ref.select9].
+///
+/// {@tool snippet}
+///
+/// The [Ref.new] constructor can wrap a [Get] object, creating a [Substitution]
+/// which can be passed into a [GetScope] (see also: [useSubstitute], to achieve
+/// the same effect via a [Hook] function).
+///
+/// ```dart
+/// GetScope(
+///   substitutes: {Ref(getValue).sub(getOtherValue)},
+///   child: widget.child,
+/// );
+/// ```
+/// {@end-tool}
 extension type Ref<V extends ValueRef>(Get<Object?, V> _get) implements Object {
-  Substitute<V> sub(Get<Object?, V> newGet) => subListenable(newGet.hooked);
+  /// Uses a different [Get] object to create a [Substitution]
+  /// which can be passed into a [GetScope].
+  Substitution<V> sub(Get<Object?, V> newGet, {bool autoDispose = true}) {
+    return subListenable(newGet.hooked, autoDispose: autoDispose);
+  }
 
-  Substitute<V> subListenable(V newListenable) => _SubEager(_get.hooked, newListenable);
+  /// Uses a [Listenable] (of the [Get] object's representation type)
+  /// to create a [Substitution] which can be passed into a [GetScope].
+  Substitution<V> subListenable(V newListenable, {bool autoDispose = true}) {
+    return _SubEager(_get.hooked, newListenable, autoDispose: autoDispose);
+  }
 
-  Substitute<V> subFactory(GetFactory<V> factory) => _SubGetFactory(_get.hooked, factory);
+  /// Uses a callback (typically a constructor) to create a [Substitution]
+  /// which can be passed into a [GetScope].
+  ///
+  /// This can be useful if, for example, a [StatelessWidget] builds a [GetScope]:
+  /// passing a constructor tear-off such as [Get.vsync] is preferred to `Get.vsync()`,
+  /// since the latter would create a new animation controller each time the widget is built.
+  Substitution<V> subFactory(GetFactory<V> factory, {bool autoDispose = true}) {
+    return _SubGetFactory(_get.hooked, factory, autoDispose: autoDispose);
+  }
 
-  Substitute<V> subListenableFactory(ValueGetter<V> factory) => _SubFactory(_get.hooked, factory);
+  /// Uses a callback (typically a constructor) to create a [Substitution]
+  /// which can be passed into a [GetScope].
+  ///
+  /// This can be useful if, for example, a [StatelessWidget] builds a [GetScope]:
+  /// passing a constructor tear-off like [ListNotifier.new] is preferred to `ListNotifier()`,
+  /// since the latter would create a new [Listenable] object each time the widget is built.
+  Substitution<V> subListenableFactory(ValueGetter<V> factory, {bool autoDispose = true}) {
+    return _SubFactory(_get.hooked, factory, autoDispose: autoDispose);
+  }
 
   /// This hook function returns a copy of the provided [Get] object,
   /// overriding it with any replacement in an ancestor [GetScope] if applicable.

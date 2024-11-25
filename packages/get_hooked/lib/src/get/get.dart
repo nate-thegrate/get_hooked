@@ -14,15 +14,15 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
 
   /// Encapsulates a [ListNotifier], and can be used as a [List] directly.
   @factory
-  static GetList<E> list<E>(Iterable<E> list) => GetList._(_ListNotifier(list));
+  static GetList<E> list<E>([Iterable<E> list = const []]) => GetList._(_ListNotifier(list));
 
   /// Encapsulates a [SetNotifier], and can be used as a [Set] directly.
   @factory
-  static GetSet<E> set<E>(Iterable<E> set) => GetSet._(_SetNotifier(set));
+  static GetSet<E> set<E>([Iterable<E> set = const {}]) => GetSet._(_SetNotifier(set));
 
   /// Encapsulates a [MapNotifier], and can be used as a [Map] directly.
   @factory
-  static GetMap<K, V> map<K, V>(Map<K, V> map) => GetMap._(_MapNotifier(map));
+  static GetMap<K, V> map<K, V>([Map<K, V> map = const {}]) => GetMap._(_MapNotifier(map));
 
   /// Encapsulates an [AnimationController].
   @factory

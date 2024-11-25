@@ -1,5 +1,13 @@
 part of '../ref.dart';
 
+/// Creates a [Substitution] and automatically applies it to the nearest
+/// ancestor [GetScope].
+///
+/// This can be called inside [HookWidget.build] to achieve the same result
+/// as [GetScope.add].
+///
+/// The substitution is automatically removed when the widget's [BuildContext]
+/// is unmounted.
 G useSubstitute<G extends GetAny>(G get, Object replacer, {Object? key}) {
   return use(_SubHook.new, data: (get, replacer), key: key, debugLabel: 'useSubstitute<$G>');
 }
@@ -29,13 +37,39 @@ class _SubHook<G extends GetAny> extends Hook<G, (G, Object?)> {
   G build() => newGet;
 }
 
-abstract final class Substitute<V extends ValueRef> with Diagnosticable {
-  Substitute(this.ref, {this.autoDispose = true});
+/// Causes the static [Ref] methods to reference a different [Get] object.
+///
+///
+/// {@tool snippet}
+///
+/// A substitution is made by wrapping a [Get] object in a [Ref] constructor
+/// and calling a `Ref` instance method, such as [Ref.sub].
+///
+/// ```dart
+/// GetScope(
+///   substitutes: {Ref(getValue).sub(getOtherValue)},
+///   child: widget.child,
+/// );
+/// ```
+/// {@end-tool}
+///
+/// See also: [useSubstitute], to create a substitution via a [Hook] function.
+abstract final class Substitution<V extends ValueRef> with Diagnosticable {
+  Substitution(this.ref, {this.autoDispose = true});
 
+  /// The original [ValueListenable] object (i.e. the listenable encapsulated in
+  /// a [Get] object).
   final V ref;
 
+  /// A [ValueListenable] of the same type as the [ref] which will be referenced
+  /// in its place by methods like [Ref.watch] called from descendant widgets.
   V get replacement;
 
+  /// Whether to automatically call [ChangeNotifier.dispose] when the substitution
+  /// is no longer part of an active [GetScope].
+  ///
+  /// Defaults to `true`, but this value is ignored if the notifier is identified
+  /// as a [DisposeGuard] instance.
   final bool autoDispose;
 
   @override
@@ -46,9 +80,10 @@ abstract final class Substitute<V extends ValueRef> with Diagnosticable {
   }
 }
 
-typedef SubAny = Substitute<ValueRef>;
+/// A generic type that encompasses all [Substitution] objects.
+typedef SubAny = Substitution<ValueRef>;
 
-final class _SubEager<V extends ValueRef> extends Substitute<V> {
+final class _SubEager<V extends ValueRef> extends Substitution<V> {
   _SubEager(super.ref, this.replacement, {super.autoDispose});
 
   @override
@@ -61,7 +96,7 @@ final class _SubEager<V extends ValueRef> extends Substitute<V> {
   }
 }
 
-final class _SubFactory<V extends ValueRef> extends Substitute<V> {
+final class _SubFactory<V extends ValueRef> extends Substitution<V> {
   _SubFactory(super.ref, this.factory, {super.autoDispose});
 
   final ValueGetter<V> factory;
@@ -76,7 +111,7 @@ final class _SubFactory<V extends ValueRef> extends Substitute<V> {
   }
 }
 
-final class _SubGetFactory<V extends ValueRef> extends Substitute<V> {
+final class _SubGetFactory<V extends ValueRef> extends Substitution<V> {
   _SubGetFactory(super.ref, this.factory, {super.autoDispose});
 
   final ValueGetter<Get<Object?, V>> factory;

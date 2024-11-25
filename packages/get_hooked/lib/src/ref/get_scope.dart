@@ -1,6 +1,25 @@
 part of '../ref.dart';
 
-/// A widget that allows setting [Override]s for [Get] objects.
+/// Allows accessing the relevant value from an ancestor [GetScope] in a reasonably
+/// concise manner.
+extension GetFromContext on BuildContext {
+  /// Allows accessing the relevant value from an ancestor [GetScope] in a reasonably
+  /// concise manner.
+  Get<T, V> get<T, V extends ValueListenable<T>>(
+    Get<T, V> get, {
+    bool createDependency = true,
+    bool throwIfMissing = false,
+  }) {
+    return GetScope.of(
+      this,
+      get,
+      createDependency: createDependency,
+      throwIfMissing: throwIfMissing,
+    );
+  }
+}
+
+/// A widget that allows setting [Substitution]s for [Get] objects.
 ///
 /// [Ref] static methods will point to the objects specified in the [substitutes]
 /// by default.
