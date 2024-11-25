@@ -141,6 +141,19 @@ final class _HookPaintElement extends SingleChildRenderHookElement {
   }
 
   @override
+  void watch(Listenable listenable) {
+    final renderer = renderObject as _RenderHookPaint;
+    switch (renderer._method!) {
+      case _PaintMethod.hitTest:
+        return;
+      case _PaintMethod.paint:
+        if (!_handledPaint) listen(listenable, renderer.markNeedsPaint);
+      case _PaintMethod.buildSemantics:
+        if (!_handledSemantics) listen(listenable, renderer.markNeedsSemanticsUpdate);
+    }
+  }
+
+  @override
   T select<T>(Listenable listenable, ValueGetter<T> selector) {
     T currentValue = selector();
     final renderer = renderObject as _RenderHookPaint;

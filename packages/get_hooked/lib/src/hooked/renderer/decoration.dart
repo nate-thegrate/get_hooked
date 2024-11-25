@@ -106,6 +106,11 @@ final class _HookDecorationElement extends SingleChildRenderHookElement {
   }
 
   @override
+  void watch(Listenable listenable) {
+    if (!_handled) listen(listenable, renderObject.markNeedsPaint);
+  }
+
+  @override
   T select<T>(Listenable listenable, ValueGetter<T> selector) {
     T value = selector();
     if (_handled) return value;

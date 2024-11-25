@@ -1,3 +1,9 @@
+## 0.2.2
+- Small optimization for `RenderHookElement`: no longer performs a redundant
+  equality check for `Ref.watch()` calls
+  - The `_ValueListenableHook` class has been factored out, for the same reason.
+
+
 ## 0.2.1
 - Lots of documentation added!
 - Introduced a `ScopedGet` API, for objects that should only be accessed via scoping.

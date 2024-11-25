@@ -148,7 +148,8 @@ extension type Ref<V extends ValueRef>(Get<Object?, V> _get) implements Object {
     const label = 'Ref.watch';
     if (useScope) get = GetScope.of(useContext(), get);
     if (Hooked.renderer case final hooked?) {
-      return hooked.select(get.hooked, () => _selectAll(get.value));
+      hooked.watch(get.hooked);
+      return get.value;
     }
 
     _useVsyncValidation(get, checkVsync, label);
@@ -567,6 +568,9 @@ extension type Ref<V extends ValueRef>(Get<Object?, V> _get) implements Object {
     final Controls scoped = GetScope.of(useContext(), get);
     if (Hooked.renderer case final hooked?) {
       hooked.vsync(scoped.vsync);
+      if (watch) {
+        hooked.watch(scoped.hooked);
+      }
       return scoped;
     }
     useListenable(watch ? scoped.hooked : null);

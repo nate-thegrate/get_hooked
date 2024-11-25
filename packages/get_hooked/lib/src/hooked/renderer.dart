@@ -33,6 +33,9 @@ base mixin RenderHookElement on RenderObjectElement {
   /// [RenderObject.markNeedsLayout], [RenderObject.markNeedsSemanticsUpdate], etc.
   T select<T>(Listenable listenable, ValueGetter<T> selector);
 
+  /// Called when [Listenable] notifications should trigger updates unconditionally.
+  void watch(Listenable listenable);
+
   /// Subtypes implement this method to clear out any flags relating to [Listenable]
   /// subscriptions, in order to re-subscribe.
   void didResetListeners();

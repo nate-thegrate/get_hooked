@@ -21,6 +21,9 @@ class _ListenableHook extends Hook<void, Listenable?> {
 
   @override
   void build() {}
+
+  @override
+  Listenable? get debugResult => data;
 }
 
 /// Subscribes to a [ValueListenable] and returns its value.
@@ -29,36 +32,15 @@ class _ListenableHook extends Hook<void, Listenable?> {
 ///   * [ValueListenable], the created object
 ///   * [useListenable]
 T useValueListenable<T>(ValueListenable<T> valueListenable, {bool watching = true}) {
-  return use(
-    _ValueListenableHook<T>.new,
-    data: valueListenable,
-    key: valueListenable,
+  final Listenable? key = watching ? valueListenable : null;
+  use(
+    _ListenableHook.new,
+    data: key,
+    key: key,
     debugLabel: 'useValueListenable<$T>',
   );
+  return valueListenable.value;
 }
 
 /// [Animation]s are just [ValueListenable]s with an [AnimationStatus]!
 const useAnimation = useValueListenable;
-
-class _ValueListenableHook<T> extends Hook<T, ValueListenable<T>> {
-  late T _value;
-
-  void listener() {
-    final T newValue = data.value;
-    if (newValue != _value) {
-      setState(() => _value = newValue);
-    }
-  }
-
-  @override
-  void initHook() {
-    _value = data.value;
-    data.addListener(listener);
-  }
-
-  @override
-  void dispose() => data.removeListener(listener);
-
-  @override
-  T build() => _value;
-}

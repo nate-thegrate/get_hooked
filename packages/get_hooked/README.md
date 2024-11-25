@@ -24,7 +24,7 @@ No boilerplate, no `build_runner`, huge performance.
 
 <br>
 
-# Comparison
+## Comparison
 
 | | [`InheritedWidget`](https://api.flutter.dev/flutter/widgets/InheritedWidget-class.html) | [provider](https://pub.dev/packages/provider) | [bloc](https://bloclibrary.dev) | [riverpod](https://riverpod.dev) | [get_it](https://pub.dev/packages/get_it) | [get_hooked](https://pub.dev/packages/get_hooked) |
 |---------------------------------------|:--:|:---:|:--:|:---:|:--:|:---:| 
@@ -32,7 +32,7 @@ No boilerplate, no `build_runner`, huge performance.
 | supports scoping                      | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | optimized for performance             | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | optimized for testability             | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| supports conditional subscriptions    | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| conditional subscriptions             | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
 | integrated with Hooks                 | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
 | avoids type overlap                   | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
 | no `context` needed                   | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
@@ -47,13 +47,13 @@ No boilerplate, no `build_runner`, huge performance.
 
 # Drawbacks
 
-### "Early Alpha" stage
+## "Early Alpha" stage
 
 Until version 1.0.0, you can expect breaking changes without prior warning.
 
 <br>
 
-### Flutter only
+## Flutter only
 
 Many packages on [pub.dev](https://pub.dev/) have both a Flutter and a non-Flutter variant.
 
@@ -69,7 +69,7 @@ This is not a planned feature for **get_hooked**.
 
 # Highlights
 
-### No boilerplate.
+## No boilerplate.
 
 Given a generic `Data` class, let's see how different state management options compare.
 
@@ -88,7 +88,7 @@ class Data {
 
 <br>
 
-#### Inherited Widget
+### Inherited Widget
 
 ```dart
 class _InheritedData extends InheritedWidget {
@@ -129,7 +129,7 @@ Then the data can be accessed with
 
 <br>
 
-#### provider
+### provider
 
 ```dart
 typedef MyData = ValueNotifier<Data>;
@@ -156,7 +156,7 @@ class MyWidget extends StatelessWidget {
 
 <br>
 
-#### riverpod
+### riverpod
 
 ```dart
 @riverpod
@@ -182,7 +182,7 @@ and accessed as follows:
 
 <br>
 
-#### get_it
+### get_it
 
 ```dart
 typedef MyData = ValueNotifier<Data>;
@@ -196,7 +196,7 @@ GetIt.I.registerSingleton(MyData(Data.initial));
 
 <br>
 
-#### get_hooked
+### get_hooked
 
 ```dart
 final getMyData = Get.it(Data.initial);
@@ -208,7 +208,7 @@ final getMyData = Get.it(Data.initial);
 
 <br>
 
-### Zero-cost interface
+## Zero-cost interface
 
 In April 2021, [flutter/flutter#71947](https://github.com/flutter/flutter/pull/71947#issuecomment-820568540)
 added a huge performance optimization to the [`ChangeNotifier`](https://github.com/flutter/flutter/blob/d6918a48d3bb8c247efabea04b3361e1c4a40e02/packages/flutter/lib/src/foundation/change_notifier.dart#L138)
@@ -236,38 +236,47 @@ extension type Get(Listenable _hooked) {
 }
 ```
 
-**get_hooked** adjusts the `Listenable` static interface,
-
-
 <br>
 
-### Animations
+## Animations
 
-This package makes it easier than ever before for a multitude of widgets to subscribe to a single
-[`Animation`](https://main-api.flutter.dev/flutter/animation/Animation-class.html).
+This package makes it easier than ever before for a multitude of widgets to
+subscribe to a single [`Animation`](https://main-api.flutter.dev/flutter/animation/Animation-class.html).
 
-A tailor-made `TickerProvider` allows animations to repeatedly attach & detach from `BuildContext`s
-based on how they're being used. A developer could prevent widget rebuilding entirely by
-hooking them straight up to `RenderObject`s.
+A tailor-made `Vsync` keeps the animation's ticker up-to-date, and
+`RenderHookWidget`s (such as `HookPaint`) can re-render animations
+without ever rebuilding the widget tree.
 
 ```dart
 final getAnimation = Get.vsync();
 
-class _RenderMyAnimation extends RenderSliverAnimatedOpacity {
-  _RenderMyAnimation() : super(opacity: getAnimation.hooked);
+class MyWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return HookPaint.compose(
+      painter: (context, size) {
+        // This widget will re-paint each time getAnimation sends an update.
+        Ref.vsync(getAnimation, watch: true);
+
+        // ...
+      },
+    );
+  }
 }
 ```
 
 <br>
 
-### Optional scoping
+## Optional scoping
 
-Here, "scoping" is defined as a form of dependency injection, where a subset of widgets
-(typically descendants of an `InheritedWidget`) receive data by different means.
+"Scoping" allows descendants of an `InheritedWidget` to receive data
+by different means.
+
+For example, **flutter_riverpod** includes a `ProviderScope` widget:
 
 ```dart
 ProviderScope(
-  overrides: [myDataProvider.overrideWith(OtherDataClass.new)],
+  overrides: [myDataProvider.overrideWith(OtherData.new)],
   child: Consumer(builder: (context, ref, child) {
     final data = ref.watch(myDataProvider);
     // ...
@@ -275,12 +284,12 @@ ProviderScope(
 ),
 ```
 
-`Ref.watch()` will watch a different Get object if an `Override` is found in
-an ancestor `GetScope` widget.
+Likewise, **get_hooked** enables `Ref.watch()` to subscribe to a different object
+if a substitution is found in an ancestor `GetScope`.
 
 ```dart
 GetScope(
-  overrides: [Override(getMyData, overrideWith: OtherDataClass.new)],
+  substitutes: [Ref(getMyData).subFactory(OtherData.new)],
   child: HookBuilder(builder: (context) {
     final data = Ref.watch(getMyData);
     // ...
@@ -299,8 +308,7 @@ class MyWidget extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final newData = useState(Data.initial);
-    Ref.override(getMyData, () => newData); // Adds newData to the scope.
+    final newData = useSubstitute(getMyData, OtherData.new);
 
     return Row(
       children: [Text('$newData'), child],
@@ -314,25 +322,29 @@ the `newData` by default.
 
 <br>
 
-### No magic curtain
+<!-- ## Dart 3 Hooks
+
+Introduced in the phenomenal [**flutter_hooks**](https://pub.dev/packages/flutter_hooks)
+package, the [**HookWidget**](https://pub.dev/documentation/flutter_hooks/latest/flutter_hooks/HookWidget-class.html)
+allows a widget to benefit from a [**StatefulWidget**](https://api.flutter.dev/flutter/widgets/StatefulWidget-class.html)'s
+functionality using a single class declaration.
+
+package as a foundation, **get_hooked** introduces a few tweaks to the API. -->
+
+<!-- ## No magic curtain
 
 Want to find out what's going on?\
 No breakpoints, no print statements. Just type the name.
 
 ![getFade](https://github.com/user-attachments/assets/9dbb65b3-c2c2-44eb-9870-28defeede0ad)
 
-<br>
+<br> -->
 
 # Overview
 
-"Get" encapsulates a listenable object with an interface for easy updates and automatic lifecycle management.
-
-<br>
-
-#### Example usage
-
 `Get` objects aren't necessary if the state isn't shared between widgets.\
 This example shows how to make a button with a number that increases each time it's tapped:
+
 ```dart
 class CounterButton extends HookWidget {
   const CounterButton({super.key});
@@ -352,6 +364,7 @@ class CounterButton extends HookWidget {
 ```
 
 But the following change would allow any widget to access this value:
+
 ```dart
 final getCount = Get.it(0);
 
@@ -380,6 +393,7 @@ creating huge potential for rebuild-optimization.
 
 The following example supports the same functionality as before, but the `Text` widget updates based on
 `getCount` without the outer button widget ever being rebuilt:
+
 ```dart
 final getCount = Get.it(0);
 
@@ -388,7 +402,7 @@ class CounterButton extends FilledButton {
     : super(onPressed: _increment, child: const HookBuilder(builder: _build));
 
   static void _increment() {
-    getCount.modify((int value) => value + 1);
+    getCount.value += 1;
   }
 
   static Widget _build(BuildContext context) {
@@ -401,28 +415,19 @@ class CounterButton extends FilledButton {
 
 ## Detailed Overview
 
-Here's a rundown of the Get API:
-
 ```dart
+/// Wraps a [Listenable] with a new interface.
 extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) {
   @factory
-  static GetValue<T> it<T>(T initial) => GetValue<T>._(initial);
+  static GetValue<T> it<T>(T initial) => GetValue<T>._(ValueNotifier(initial));
 
   T get value => hooked.value
 }
 
-extension type GetValue<T>._(ValueNotifier<T> _hooked) implements Get<T, ValueNotifier<T>> {
-  void emit(T newValue) => hooked.value = newValue;
+/// A subtype of [Get] that encapsulates a [ValueNotifier].
+extension type GetValue<T>._(ValueNotifier<T> _hooked) implements Get<T, ValueNotifier<T>> {}
 
-  void modify(T Function(T value) modifier) => emit(modifier(hooked.value));
-}
-
-extension type Ref(Get _get) {
-  static T watch(Get<T, ValueListenable<T>> getObject) {
-    return use(_RefHook(getObject));
-  }
-}
-
+/// Gives direct access to the underlying [Listenable].
 extension GetHooked<V> on Get<Object?, V> {
   V get hooked => _hooked;
 }
@@ -434,7 +439,7 @@ extension GetHooked<V> on Get<Object?, V> {
 > not to mention the problems that calling `dispose()` would create for other widgets
 > that are still using the object.
 >
-> Consider hiding the getter as follows:
+> Consider hiding this getter as follows:
 >
 > ```dart
 > import 'package:get_hooked/get_hooked.dart' hide GetHooked;
@@ -448,9 +453,30 @@ extension GetHooked<V> on Get<Object?, V> {
 
 <br>
 
+```dart
+extension type Ref<T, V>(Get _get) {
+  static T watch(Get<T, V> getObject) {
+    return use(_RefWatchHook(getObject));
+  }
+
+  Substitution sub(Get other) {
+    return _SubEager(_get.hooked, other.hooked);
+  }
+}
+```
+
+`Ref.watch()` and other static methods link Get objects with `HookWidget`s
+and `RenderHookWidget`s.
+
+The `Ref()` constructor is used in a `GetScope` to make substitutions.\
+Descendant widgets that use `Ref.watch()` will reference the new object
+in its place.
+
+<br>
+
 # Tips for success
 
-### Follow the rules of Hooks
+## Follow the rules of Hooks
 
 `Ref` functions, along with any function name starting with `use`,
 should only be called inside a `HookWidget`'s build method.
@@ -499,7 +525,7 @@ HookPaint.compose(painter: (context, size) {
 
 <br>
 
-### Only scope when necessary
+## Only scope when necessary
 
 One of the best things about **get_hooked** is the ability to interact
 with providers directly.
@@ -582,7 +608,7 @@ final getString = ScopedGet.it<String>();
 
 <br>
 
-### Avoid accessing `hooked` directly
+## Avoid accessing `hooked` directly
 
 Unlike a typical `State` member variable, Get objects persist throughout
 changes to the app's state, so a couple of missing `removeListener()` calls
