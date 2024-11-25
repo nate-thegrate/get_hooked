@@ -261,7 +261,7 @@ class _SelectHook<Result> extends Hook<Result, _DataSelect<Result>> {
   Result build() => previous = data.result;
 }
 
-class _VsyncHook<Controls extends GetVsyncAny> extends Hook<void, Controls> {
+class _VsyncHook extends Hook<void, GetVsyncAny> {
   late GetVsyncAny get = data;
   late Vsync vsync = get.vsync;
 
@@ -271,7 +271,7 @@ class _VsyncHook<Controls extends GetVsyncAny> extends Hook<void, Controls> {
   }
 
   @override
-  void didUpdate(Controls oldData) {
+  void didUpdate(GetVsyncAny oldData) {
     final GetVsyncAny newGet = data;
 
     if (newGet != get) {

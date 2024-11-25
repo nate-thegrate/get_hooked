@@ -1,6 +1,7 @@
 /// Get hooked!
 ///
 /// @docImport 'dart:ui';
+/// @docImport 'hooked.dart';
 /// @docImport 'ref.dart';
 library;
 
@@ -12,15 +13,15 @@ import 'package:flutter/scheduler.dart';
 import 'package:meta/meta.dart';
 
 import '../utils/_all_utils.dart';
-import 'hooks.dart';
+import 'hooked/builder/hooks.dart';
 import 'ref.dart';
 
 export 'package:flutter/foundation.dart' show ValueListenable;
-export 'hooks.dart';
+export 'hooked/builder/hooks.dart';
 
 part 'get/get.dart';
 part 'get/vsync.dart';
-part 'get/auto_dispose.dart';
+part 'get/dispose_guard.dart';
 
 /// A `typedef` representing all objects that [Get] can represent.
 typedef ValueRef = ValueListenable<Object?>;

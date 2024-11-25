@@ -1,6 +1,6 @@
 name: get_hooked
 description: "Shared state with flutter_hooks! Inspired by riverpod and get_it."
-version: 0.1.0
+version: 0.2.0
 homepage: https://no-tolls.dev/
 issue_tracker: https://github.com/nate-thegrate/get_hooked/issues
 repository: https://github.com/nate-thegrate/get_hooked/tree/main/packages/get_hooked
@@ -10,7 +10,7 @@ topics:
   - state-management
 
 environment:
-  sdk: '>=3.7.0-157.0.dev <4.0.0'
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   flutter:

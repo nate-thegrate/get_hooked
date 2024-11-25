@@ -32,7 +32,7 @@ class Vsync implements TickerProvider {
   Vsync([BuildContext? context]) : _context = context;
 
   /// A placeholder value, signifying that a [VsyncTicker]
-  /// is being managed by the [Ref.vsync] hook.
+  /// is being managed by [Ref.vsync].
   static const BuildContext auto = _AutoManaged();
 
   /// Optionally allows an object to keep track of its [Vsync].

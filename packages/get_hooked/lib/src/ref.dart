@@ -1,15 +1,14 @@
-import 'dart:collection';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../utils/proxy_notifier.dart';
 import '../utils/value_animation.dart';
 import 'get.dart';
-import 'hooked.dart';
+import 'hooked/_hooked.dart';
 
 part 'ref/get_scope.dart';
 part 'ref/ref_hooks.dart';
+part 'ref/substitute.dart';
 
 extension<T> on T {
   T of(BuildContext context) {
@@ -20,19 +19,16 @@ extension<T> on T {
   }
 }
 
-/// An [InheritedModel] used by [Ref] to store its [Override]s
-/// and notify dependent widgets.
-final class Ref extends InheritedModel<ValueRef> {
-  /// Creates an [InheritedModel] that stores [Override]s
-  // ignore: avoid_field_initializers_in_const_classes
-  const Ref({super.key, required this.map, required super.child});
+typedef GetFactory<V extends ValueRef> = ValueGetter<Get<Object?, V>>;
 
-  const Ref._(this.map, {required super.child});
+extension type Ref<V extends ValueRef>(Get<Object?, V> _get) implements Object {
+  Substitute<V> sub(Get<Object?, V> newGet) => subListenable(newGet.hooked);
 
-  /// The override map.
-  ///
-  /// The key is the original object; the value is the new object.
-  final Map<ValueRef, ValueRef> map;
+  Substitute<V> subListenable(V newListenable) => _SubEager(_get.hooked, newListenable);
+
+  Substitute<V> subFactory(GetFactory<V> factory) => _SubGetFactory(_get.hooked, factory);
+
+  Substitute<V> subListenableFactory(ValueGetter<V> factory) => _SubFactory(_get.hooked, factory);
 
   /// This hook function returns a copy of the provided [Get] object,
   /// overriding it with any replacement in an ancestor [GetScope] if applicable.
@@ -84,12 +80,17 @@ final class Ref extends InheritedModel<ValueRef> {
     bool checkVsync = true,
     bool useScope = true,
   }) {
-    return Ref.select(
-      get,
-      _selectAll<T>,
-      watching: watching,
-      checkVsync: checkVsync,
-      useScope: useScope,
+    const label = 'Ref.watch';
+    if (useScope) get = GetScope.of(useContext(), get);
+    if (Hooked.renderer case final hooked?) {
+      return hooked.select(get.hooked, () => _selectAll(get.value));
+    }
+
+    _useVsyncValidation(get, checkVsync, label);
+
+    return HookData.use(
+      _Select1<T, T>(get.hooked, _selectAll<T>, watching: watching),
+      debugLabel: label,
     );
   }
 
@@ -109,7 +110,7 @@ final class Ref extends InheritedModel<ValueRef> {
     const label = 'Ref.select';
     final BuildContext context = useContext();
     if (useScope) get = GetScope.of(context, get);
-    if (Hooked.active case final hooked?) {
+    if (Hooked.renderer case final hooked?) {
       return hooked.select(get.hooked, () => selector(get.value));
     }
 
@@ -142,7 +143,7 @@ final class Ref extends InheritedModel<ValueRef> {
       l1 = l1.of(context);
       l2 = l2.of(context);
     }
-    if (Hooked.active case final hooked?) {
+    if (Hooked.renderer case final hooked?) {
       return hooked.select(ProxyListenable(l1, l2), () => selector(l1, l2));
     }
 
@@ -178,7 +179,7 @@ final class Ref extends InheritedModel<ValueRef> {
       l2 = l2.of(context);
       l3 = l3.of(context);
     }
-    if (Hooked.active case final hooked?) {
+    if (Hooked.renderer case final hooked?) {
       return hooked.select(ProxyListenable(l1, l2, l3), () => selector(l1, l2, l3));
     }
 
@@ -217,7 +218,7 @@ final class Ref extends InheritedModel<ValueRef> {
       l3 = l3.of(context);
       l4 = l4.of(context);
     }
-    if (Hooked.active case final hooked?) {
+    if (Hooked.renderer case final hooked?) {
       return hooked.select(ProxyListenable(l1, l2, l3, l4), () => selector(l1, l2, l3, l4));
     }
 
@@ -259,7 +260,7 @@ final class Ref extends InheritedModel<ValueRef> {
       l4 = l4.of(context);
       l5 = l5.of(context);
     }
-    if (Hooked.active case final hooked?) {
+    if (Hooked.renderer case final hooked?) {
       return hooked.select(
         ProxyListenable(l1, l2, l3, l4, l5),
         () => selector(l1, l2, l3, l4, l5),
@@ -307,7 +308,7 @@ final class Ref extends InheritedModel<ValueRef> {
       l5 = l5.of(context);
       l6 = l6.of(context);
     }
-    if (Hooked.active case final hooked?) {
+    if (Hooked.renderer case final hooked?) {
       return hooked.select(
         ProxyListenable(l1, l2, l3, l4, l5, l6),
         () => selector(l1, l2, l3, l4, l5, l6),
@@ -358,7 +359,7 @@ final class Ref extends InheritedModel<ValueRef> {
       l6 = l6.of(context);
       l7 = l7.of(context);
     }
-    if (Hooked.active case final hooked?) {
+    if (Hooked.renderer case final hooked?) {
       return hooked.select(
         ProxyListenable(l1, l2, l3, l4, l5, l6, l7),
         () => selector(l1, l2, l3, l4, l5, l6, l7),
@@ -412,7 +413,7 @@ final class Ref extends InheritedModel<ValueRef> {
       l7 = l7.of(context);
       l8 = l8.of(context);
     }
-    if (Hooked.active case final hooked?) {
+    if (Hooked.renderer case final hooked?) {
       return hooked.select(
         ProxyListenable(l1, l2, l3, l4, l5, l6, l7, l8),
         () => selector(l1, l2, l3, l4, l5, l6, l7, l8),
@@ -469,7 +470,7 @@ final class Ref extends InheritedModel<ValueRef> {
       l8 = l8.of(context);
       l9 = l9.of(context);
     }
-    if (Hooked.active case final hooked?) {
+    if (Hooked.renderer case final hooked?) {
       return hooked.select(
         ProxyListenable(l1, l2, l3, l4, l5, l6, l7, l8, l9),
         () => selector(l1, l2, l3, l4, l5, l6, l7, l8, l9),
@@ -492,46 +493,6 @@ final class Ref extends InheritedModel<ValueRef> {
     );
   }
 
-  /// Overrides the [Get] object accessed by [Ref.watch] with a new value
-  /// using the object returned by calling the [factory].
-  static G override<G extends GetAny>(
-    G get,
-    ValueGetter<Object> factory, {
-    bool watching = false,
-  }) {
-    final BuildContext context = useContext();
-    final G result = useMemoized(() {
-      switch (factory()) {
-        case final G g:
-          assert(() {
-            if (GetScope.maybeOf(context, get) != null) {
-              return true;
-            }
-            throw FlutterError.fromParts([
-              ErrorSummary(
-                'Ref.override() called inside a BuildContext without an ancestor GetScope.',
-              ),
-              ErrorDescription(
-                'Without a GetScope higher up in the widget tree, '
-                'there is no place to store the override.',
-              ),
-              ErrorHint('Consider adding a GetScope widget, or removing this override.'),
-            ]);
-          }());
-          GetScope.add(context, getObjects: {get: g});
-          return g;
-
-        case final Object invalid:
-          throw ArgumentError(
-            'Invalid factory passed to Ref.override() – '
-            'expected $G, got ${invalid.runtimeType}',
-          );
-      }
-    });
-    useListenable(watching ? result.hooked : null);
-    return result;
-  }
-
   /// Provides an interface for controlling a [GetVsync] animation,
   /// and optionally rebuilds when the animation sends a notification.
   ///
@@ -539,55 +500,13 @@ final class Ref extends InheritedModel<ValueRef> {
   /// triggers a rebuild.
   static Controls vsync<Controls extends GetVsyncAny>(Controls get, {bool watch = false}) {
     final Controls scoped = GetScope.of(useContext(), get);
-    if (Hooked.active case final hooked?) {
+    if (Hooked.renderer case final hooked?) {
       hooked.vsync(scoped.vsync);
       return scoped;
     }
     useListenable(watch ? scoped.hooked : null);
 
-    use(_VsyncHook<Controls>.new, data: scoped, key: scoped, debugLabel: 'Ref.vsync');
+    use(_VsyncHook.new, key: scoped, data: scoped, debugLabel: 'Ref.vsync');
     return scoped;
   }
-
-  G? _select<G extends GetAny>(G get) => switch (map[get.hooked]) {
-    final G gotIt => gotIt,
-    _ => null,
-  };
-
-  // ignore: annotate_overrides, name overlap
-  bool updateShouldNotify(Ref oldWidget) {
-    return !mapEquals(map, oldWidget.map);
-  }
-
-  // ignore: annotate_overrides, name overlap
-  bool updateShouldNotifyDependent(Ref oldWidget, Set<ValueRef> dependencies) {
-    for (final ValueRef dependency in dependencies) {
-      final Get<Object?, ValueRef> get = Get.custom(dependency);
-      if (_select(get) != oldWidget._select(get)) return true;
-    }
-    return false;
-  }
-}
-
-void _useVsyncValidation(Object? get, bool checkVsync, String debugLabel) {
-  assert(
-    useMemoized(() {
-      if (!checkVsync) return true;
-      if (get case final GetVsyncAny getVsync when getVsync.vsync.context == null) {
-        throw FlutterError.fromParts([
-          ErrorSummary('$debugLabel() called with a non-attached Vsync.'),
-          ErrorDescription(
-            '$debugLabel() is intended to listen to an existing value, '
-            'but the $getVsync has not been set up.',
-          ),
-          ErrorHint(
-            'Consider setting up an ancestor widget with Ref.vsync(), '
-            'or calling Ref.vsync() here instead of $debugLabel().',
-          ),
-          ErrorHint('Alternatively, call $debugLabel(checkVsync: false) to ignore this warning.'),
-        ]);
-      }
-      return true;
-    }, key: checkVsync ? get : null),
-  );
 }

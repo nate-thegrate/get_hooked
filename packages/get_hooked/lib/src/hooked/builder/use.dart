@@ -1,4 +1,4 @@
-part of '_hook.dart';
+part of '../builder.dart';
 
 /// Signature for a callback that returns a [Hook].
 typedef GetHook<Result, Data> = ValueGetter<Hook<Result, Data>>;
@@ -9,23 +9,23 @@ typedef GetHook<Result, Data> = ValueGetter<Hook<Result, Data>>;
 /// See [Hook] for more explanation.
 Result use<Result, Data>(
   GetHook<Result, Data> getHook, {
-  required Data data,
   required Object? key,
-  required String? debugLabel,
+  required Data data,
+  required String debugLabel,
 }) {
-  final HookElement? hookElement = Hook._currentElement;
-  if (hookElement == null) {
+  final HookElement? currentElement = Hooked.builder;
+  if (currentElement == null) {
     assert(
       throw FlutterError.fromParts([
         ErrorSummary(
-          'Attempted to access ${debugLabel ?? 'a Hook'} '
+          'Attempted to access $debugLabel '
           "outside of a hook widget's build method.",
         ),
       ]),
     );
     return getHook().build();
   }
-  final _HookEntry? currentEntry = hookElement._currentEntry;
+  final _HookEntry? currentEntry = currentElement._currentEntry;
 
   Hook<Result, Data> init() {
     assert(Hook._debugInitializing = true);
@@ -33,7 +33,7 @@ Result use<Result, Data>(
         getHook()
           .._key = key
           .._data = data
-          .._element = hookElement
+          .._element = currentElement
           .._debugLabel = debugLabel
           ..initHook();
     assert(!(Hook._debugInitializing = false));
@@ -47,7 +47,7 @@ Result use<Result, Data>(
   if (currentEntry case _HookEntry(value: final hook) when oldData is Data) {
     entry = currentEntry;
     if (key != hook._key) {
-      (hookElement._needDispose ??= LinkedList()).add(_HookEntry(hook));
+      (currentElement._needDispose ??= LinkedList()).add(_HookEntry(hook));
       entry.value = init();
     } else if (data != oldData) {
       entry.value
@@ -56,17 +56,17 @@ Result use<Result, Data>(
     }
   } else {
     if (currentEntry != null) {
-      hookElement._unmountAllRemainingHooks();
-      if (!hookElement._debugDidReassemble) {
+      currentElement._unmountAllRemainingHooks();
+      if (!currentElement._debugDidReassemble) {
         throw StateError(
           'Type mismatch between hooks:\n'
           '  - old hook: ${currentEntry.value.runtimeType}\n'
-          '  - current hook: ${debugLabel ?? getHook().runtimeType.toString()}',
+          '  - current hook: $debugLabel',
         );
       }
     }
     entry = _HookEntry(init());
-    hookElement
+    currentElement
       .._currentEntry = entry
       .._hooks.add(entry);
   }
@@ -76,12 +76,11 @@ Result use<Result, Data>(
     entry.value._debugPreviousResult = result;
     return true;
   }());
-  hookElement._currentEntry = entry.next;
+  currentElement._currentEntry = entry.next;
   return result;
 }
 
-/// If a class is being declared just to store data for a [Hook],
-/// it might as well extend [HookData].
+/// This class makes it easier for a [Hook] to work with a complex data model.
 @immutable
 abstract class HookData<Result> {
   /// Creates a data object to be passed into a [Hook].
@@ -90,10 +89,15 @@ abstract class HookData<Result> {
   /// Changing this key's value will cause the [Hook] to reset.
   final Object? key;
 
-  /// Uses an [HookData] instance to create a [Hook]
+  /// Uses a [HookData] instance to create a [Hook]
   /// and return its result.
   static Result use<Result>(HookData<Result> hookData, {String? debugLabel}) {
-    return _use(hookData.createHook, data: hookData, key: hookData.key, debugLabel: debugLabel);
+    return _use(
+      hookData.createHook,
+      data: hookData,
+      key: hookData.key,
+      debugLabel: debugLabel ?? describeIdentity(hookData),
+    );
   }
 
   /// Generally returns an empty constructor for a [Hook] subclass.
@@ -107,7 +111,7 @@ const _use = use;
 
 /// Obtains the [BuildContext] of the building [HookWidget].
 BuildContext useContext() {
-  final BuildContext? result = Hooked.active ?? Hook._currentElement;
+  final BuildContext? result = Hooked.renderer ?? Hooked.builder;
   assert(result != null, '`useContext` can only be called from the build method of HookWidget');
   return result!;
 }

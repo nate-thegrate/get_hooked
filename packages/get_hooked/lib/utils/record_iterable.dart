@@ -1,3 +1,7 @@
+/// ## Disclaimer
+/// Not currently used at all; prone to removal/relocation.
+library;
+
 // ignore_for_file: public_member_api_docs, not gonna do that, sorry :(
 
 extension RecordIterable2<T> on (T, T) {

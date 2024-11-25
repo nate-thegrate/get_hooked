@@ -1,3 +1,13 @@
+## 0.2.0
+- `RenderHookElement`
+  - A new Hook class that allows re-rendering widgets while skipping the build phase entirely!
+  - 2 widgets implemented so far:
+    - `HookDecoration`, similar to DecoratedBox but can render with a `Clip` behavior
+    - `HookPaint`, a variation of CustomPaint that doesn't require an additional class declaration
+- Fixed various bugs I'd previously introduced…\
+  now I just need to add a bunch of missing documentation :)
+
+
 ## 0.1.0
 - Scoping!
   - It bothered me to just not have this feature :)

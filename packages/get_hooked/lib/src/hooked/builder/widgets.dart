@@ -1,6 +1,6 @@
 // ignore_for_file: use_to_and_as_if_applicable, smh my head
 
-part of '_hook.dart';
+part of '../builder.dart';
 
 final class _StatelessHookElement = StatelessElement with HookElement;
 final class _StatefulHookElement = StatefulElement with HookElement;

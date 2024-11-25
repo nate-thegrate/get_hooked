@@ -1,9 +1,16 @@
-// ignore_for_file: public_member_api_docs, pro crastinate
+part of '../renderer.dart';
 
-part of '../hooked.dart';
+abstract class HookPaint extends SingleChildRenderObjectWidget {
+  const HookPaint({super.key, this.position = DecorationPosition.background, super.child});
 
-abstract class HookPainter extends SingleChildRenderObjectWidget {
-  const HookPainter({super.key, this.position = DecorationPosition.background, super.child});
+  const factory HookPaint.compose({
+    Key? key,
+    required HookPainter painter,
+    HookPaintHitTest? hitTest,
+    SemanticsBuilderCallback semantics,
+    DecorationPosition position,
+    Widget? child,
+  }) = _HookPaint;
 
   final DecorationPosition position;
 
@@ -29,7 +36,7 @@ abstract class HookPainter extends SingleChildRenderObjectWidget {
   /// To paint text on a [Canvas], use a [TextPainter].
   ///
   /// To paint an image on a [Canvas]…
-  /// I'll probably need to add a [Get] API for [ImageStream]s.
+  /// ([Get] API for [ImageStream]s—coming soon!)
   void paint(HookPaintContext context, Size size);
 
   /// Signature of the function returned by [CustomPainter.semanticsBuilder].
@@ -44,12 +51,41 @@ abstract class HookPainter extends SingleChildRenderObjectWidget {
   List<CustomPainterSemantics> buildSemantics(Size size) => const [];
 
   @override
-  HookedElement createElement() => HookedElement(this);
+  HookPaintElement createElement() => HookPaintElement(this);
 
   @override
-  RenderObject createRenderObject(covariant HookedElement element) {
-    return RenderHookPainter(this, element);
+  RenderObject createRenderObject(covariant HookPaintElement element) {
+    return RenderHookPaint(this, element);
   }
+}
+
+typedef HookPainter = void Function(HookPaintContext context, Size size);
+typedef HookPaintHitTest = bool Function(Offset location, Size size);
+
+class _HookPaint extends HookPaint {
+  const _HookPaint({
+    super.key,
+    required this.painter,
+    HookPaintHitTest? hitTest,
+    this.semantics = _defaultSemantics,
+    super.position,
+    super.child,
+  }) : _hitTest = hitTest;
+
+  final HookPainter painter;
+
+  final HookPaintHitTest? _hitTest;
+
+  final SemanticsBuilderCallback semantics;
+  static List<CustomPainterSemantics> _defaultSemantics(Size size) => const [];
+
+  @override
+  bool hitTest(Offset location, Size size) {
+    return _hitTest?.call(location, size) ?? super.hitTest(location, size);
+  }
+
+  @override
+  void paint(HookPaintContext context, Size size) => painter(context, size);
 }
 
 extension type HookPaintContext._(PaintingContext _context) {
@@ -60,114 +96,90 @@ extension type HookPaintContext._(PaintingContext _context) {
   }
 }
 
-class HookedElement extends SingleChildRenderObjectElement implements Hooked {
-  HookedElement(HookPainter super.widget);
+class HookPaintElement extends SingleChildRenderObjectElement with RenderHookElement {
+  HookPaintElement(HookPaint super.widget);
 
-  final disposers = <VoidCallback>{};
-  final vsyncs = <Vsync>{};
-  final handledMethods = <Object>{};
-
-  @override
-  void vsync(Vsync vsync) {
-    vsyncs.add(vsync..context = Vsync.auto);
-  }
+  bool _handledPaint = false;
+  bool _handledSemantics = false;
 
   @override
-  void activate() {
-    super.activate();
-    for (final Vsync(:context, :ticker) in vsyncs) {
-      if (context == Vsync.auto) {
-        ticker?.updateNotifier(this);
-      }
-    }
-  }
-
-  @override
-  void unmount() {
-    for (final VoidCallback dispose in disposers) {
-      dispose();
-    }
-    for (final Vsync vsync in vsyncs) {
-      if (vsync.context == Vsync.auto) {
-        vsync.context = null;
-      }
-    }
-    super.unmount();
+  void didResetListeners() {
+    _handledPaint = _handledSemantics = false;
+    renderObject
+      ..markNeedsPaint()
+      ..markNeedsSemanticsUpdate();
   }
 
   @override
   T select<T>(Listenable listenable, ValueGetter<T> selector) {
     T currentValue = selector();
-    final renderer = renderObject as RenderHookPainter;
-    final _PainterMethod method = renderer._method!;
-    if (handledMethods.contains(method)) return currentValue;
+    final renderer = renderObject as RenderHookPaint;
+    assert(
+      renderer._method != null,
+      '_method should be set immediately before calling any HookPainter method.',
+    );
+    final _PaintMethod method = renderer._method!;
+
     // dart format off
-    final VoidCallback? markNeedsUpdate = switch (method) {
-      _PainterMethod.hitTest        => null,
-      _PainterMethod.paint          => renderer.markNeedsPaint,
-      _PainterMethod.buildSemantics => renderer.markNeedsSemanticsUpdate,
+    final bool handled = switch (method) {
+      _PaintMethod.hitTest        => true,
+      _PaintMethod.paint          => _handledPaint,
+      _PaintMethod.buildSemantics => _handledSemantics,
+    };
+
+    if (handled) return currentValue;
+
+    final VoidCallback mark = switch (method) {
+      _PaintMethod.hitTest        => throw Error(),
+      _PaintMethod.paint          => renderer.markNeedsPaint,
+      _PaintMethod.buildSemantics => renderer.markNeedsSemanticsUpdate,
     }; // dart format on
 
-    if (markNeedsUpdate != null) {
-      void listener() {
-        final T newValue = selector();
-        if (newValue != currentValue) {
-          currentValue = newValue;
-          markNeedsUpdate();
-        }
+    listen(listenable, () {
+      final T newValue = selector();
+      if (newValue != currentValue) {
+        currentValue = newValue;
+        mark();
       }
+    });
 
-      listenable.addListener(listener);
-      disposers.add(() => listenable.removeListener(listener));
-    }
-    handledMethods.add(method);
     return currentValue;
   }
 }
 
-enum _PainterMethod { hitTest, paint, buildSemantics }
+enum _PaintMethod { hitTest, paint, buildSemantics }
 
-class RenderHookPainter extends RenderProxyBox {
-  RenderHookPainter(HookPainter hookPainter, this.hooked)
-    : _hookPainter = hookPainter,
-      foreground = hookPainter.position == DecorationPosition.foreground;
+class RenderHookPaint extends RenderProxyBox {
+  RenderHookPaint(HookPaint hookPaint, this.hooked)
+    : _hookPaint = hookPaint,
+      foreground = hookPaint.position == DecorationPosition.foreground;
 
-  final HookedElement hooked;
-  T _invoke<T>(_PainterMethod method, ValueGetter<T> callback) {
-    Hooked.active = hooked;
+  final HookPaintElement hooked;
+  T _invoke<T>(_PaintMethod method, ValueGetter<T> callback) {
+    Hooked.renderer = hooked;
     _method = method;
     final T result = callback();
-    Hooked.active = _method = null;
+    Hooked.renderer = _method = null;
     return result;
   }
 
-  HookPainter get hookPainter => _hookPainter;
-  HookPainter _hookPainter;
-  set hookPainter(HookPainter newValue) {
-    if (newValue == _hookPainter) return;
-    _hookPainter = newValue;
+  HookPaint get hookPaint => _hookPaint;
+  HookPaint _hookPaint;
+  set hookPaint(HookPaint newValue) {
+    if (newValue == _hookPaint) return;
+    _hookPaint = newValue;
     foreground = newValue.position == DecorationPosition.foreground;
   }
 
-  _PainterMethod? _method;
+  _PaintMethod? _method;
 
   bool foreground;
 
-  void markNeedsScope() {
-    // at some point I'll double-check that scoping works!
-  }
-
-  @override
-  void attach(PipelineOwner owner) {
-    super.attach(owner);
-    markNeedsScope();
-  }
-
   @override
   bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
-    final bool wasHit = _invoke(_PainterMethod.hitTest, () {
-      return hookPainter.position == DecorationPosition.foreground &&
-          hookPainter.hitTest(position, size);
+    final bool wasHit = _invoke(_PaintMethod.hitTest, () {
+      return hookPaint.position == DecorationPosition.foreground &&
+          hookPaint.hitTest(position, size);
     });
 
     return wasHit || super.hitTestChildren(result, position: position);
@@ -175,7 +187,7 @@ class RenderHookPainter extends RenderProxyBox {
 
   @override
   bool hitTestSelf(Offset position) {
-    return _invoke(_PainterMethod.hitTest, () => hookPainter.hitTest(position, size));
+    return _invoke(_PaintMethod.hitTest, () => hookPaint.hitTest(position, size));
   }
 
   @override
@@ -197,6 +209,7 @@ class RenderHookPainter extends RenderProxyBox {
   void paint(PaintingContext context, Offset offset) {
     late int debugPreviousCanvasSaveCount;
     final Canvas canvas = context.canvas;
+    if (foreground) super.paint(context, offset);
     canvas.save();
     assert(() {
       debugPreviousCanvasSaveCount = canvas.getSaveCount();
@@ -205,13 +218,13 @@ class RenderHookPainter extends RenderProxyBox {
     if (offset != Offset.zero) {
       canvas.translate(offset.dx, offset.dy);
     }
-    _invoke(_PainterMethod.paint, () => hookPainter.paint(HookPaintContext._(context), size));
+    _invoke(_PaintMethod.paint, () => hookPaint.paint(HookPaintContext._(context), size));
     assert(() {
       final int debugNewCanvasSaveCount = canvas.getSaveCount();
       if (debugNewCanvasSaveCount > debugPreviousCanvasSaveCount) {
         throw FlutterError.fromParts(<DiagnosticsNode>[
           ErrorSummary(
-            'The $hookPainter hook painter called canvas.save() or canvas.saveLayer() at least '
+            'The $hookPaint hook painter called canvas.save() or canvas.saveLayer() at least '
             '${debugNewCanvasSaveCount - debugPreviousCanvasSaveCount} more '
             'time${debugNewCanvasSaveCount - debugPreviousCanvasSaveCount == 1 ? '' : 's'} '
             'than it called canvas.restore().',
@@ -227,7 +240,7 @@ class RenderHookPainter extends RenderProxyBox {
       if (debugNewCanvasSaveCount < debugPreviousCanvasSaveCount) {
         throw FlutterError.fromParts(<DiagnosticsNode>[
           ErrorSummary(
-            'The $hookPainter hook painter called canvas.restore() '
+            'The $hookPaint hook painter called canvas.restore() '
             '${debugPreviousCanvasSaveCount - debugNewCanvasSaveCount} more '
             'time${debugPreviousCanvasSaveCount - debugNewCanvasSaveCount == 1 ? '' : 's'} '
             'than it called canvas.save() or canvas.saveLayer().',
@@ -241,6 +254,8 @@ class RenderHookPainter extends RenderProxyBox {
       return debugNewCanvasSaveCount == debugPreviousCanvasSaveCount;
     }());
     canvas.restore();
+    if (!foreground) super.paint(context, offset);
+    hooked._handledPaint = true;
   }
 
   List<CustomPainterSemantics> painterSemantics = const [];
@@ -254,6 +269,7 @@ class RenderHookPainter extends RenderProxyBox {
     //   () => hookPainter.buildSemantics(size),
     // );
     // config.isSemanticBoundary = semantics.isNotEmpty;
+    hooked._handledSemantics = true;
   }
 
   @override
@@ -658,6 +674,6 @@ class RenderHookPainter extends RenderProxyBox {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(MessageProperty('painter', '$hookPainter'));
+    properties.add(MessageProperty('painter', '$hookPaint'));
   }
 }

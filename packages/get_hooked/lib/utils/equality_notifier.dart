@@ -1,5 +1,3 @@
-// ignore_for_file: public_member_api_docs, pro crastinate
-
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 
@@ -46,8 +44,8 @@ class _EqualityNotifier<T> extends EqualityNotifier<T> {
         List() => const ListEquality<Object?>(),
         Map() => const MapEquality<Object?, Object?>(),
         Iterable() => const IterableEquality<Object?>(),
-        _ => const DefaultEquality(),
-      },
+        _ => const DefaultEquality<Object?>(),
+      } as Equality<Object?>,
     };
   }
   @override

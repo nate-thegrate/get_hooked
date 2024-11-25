@@ -2,9 +2,9 @@ part of '../get.dart';
 
 /// Mixin for [Get] objects with a [dispose] method.
 ///
-/// {@macro get_hooked.AutoDispose}
+/// {@macro get_hooked.DisposeGuard}
 mixin DisposeGuard {
-  /// {@template get_hooked.AutoDispose}
+  /// {@template get_hooked.DisposeGuard}
   /// [Ref] will automatically free associated resources when its associated
   /// [HookWidget] is no longer in use, so the `dispose()` method of a
   /// [ValueNotifier] or [AnimationController] is unnecessary.

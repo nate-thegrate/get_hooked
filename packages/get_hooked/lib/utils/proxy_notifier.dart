@@ -2,6 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:get_hooked/utils/_all_utils.dart';
 
 extension type ProxyListenable._(Listenable listenable) implements Listenable {
   // ignore: inference_failure_on_untyped_parameter, they're dynamic
@@ -17,16 +18,6 @@ extension type ProxyListenable._(Listenable listenable) implements Listenable {
         if (l8 is Listenable) yield l8;
         if (l9 is Listenable) yield l9;
       }());
-}
-
-extension on SchedulerBinding {
-  bool get building => switch (schedulerPhase) {
-    SchedulerPhase.midFrameMicrotasks || SchedulerPhase.persistentCallbacks => true,
-    SchedulerPhase.postFrameCallbacks ||
-    SchedulerPhase.transientCallbacks ||
-    SchedulerPhase.idle =>
-      false,
-  };
 }
 
 abstract class ProxyNotifierBase<T> with ChangeNotifier implements ValueListenable<T> {

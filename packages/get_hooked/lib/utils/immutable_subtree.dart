@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
-/// Builds a [Widget], given the [Key] from the [ImmutableSubtree.placeholder].
-typedef SubtreeBuilder = Widget Function(BuildContext context, Key? key);
+/// Builds a [Widget], given the [key] from the [ImmutableSubtree.placeholder].
+typedef SubtreeBuilder = Widget Function(BuildContext context, Object? key);
 
 /// Those darn times when 1 widget makes it so the entire thing can't be `const`.
 ///

@@ -1,11 +1,10 @@
 import 'package:example/counter/counter.dart';
-import 'package:example/faceoff/faceoff.dart';
 import 'package:flutter/material.dart';
 import 'package:get_hooked/get_hooked.dart';
 
 void main() => runApp(const App());
 
-enum Screen { counter, faceoff }
+enum Screen { counter }
 
 final getScreen = Get.it(Screen.counter);
 
@@ -16,7 +15,6 @@ class App extends HookWidget {
   Widget build(BuildContext context) {
     return switch (Ref.watch(getScreen)) {
       Screen.counter => const Counter(),
-      Screen.faceoff => const Faceoff(),
     };
   }
 }
@@ -32,7 +30,10 @@ class ScreenSelect extends StatelessWidget {
           for (final screen in Screen.values)
             ListTile(
               title: Text(screen.name),
-              onTap: () => getScreen.value = screen,
+              onTap: () {
+                getScreen.value = screen;
+                Scaffold.maybeOf(context)?.closeDrawer();
+              },
             ),
         ],
       ),

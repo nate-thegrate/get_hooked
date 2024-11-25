@@ -259,7 +259,7 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
 }
 
 /// A generic type implemented by all [Get] objects.
-typedef GetAny = Get<Object?, ValueListenable<Object?>>;
+typedef GetAny = Get<Object?, ValueRef>;
 
 /// A generic type implemented by all [GetVsync] objects.
 typedef GetVsyncAny = GetVsync<Object?, Animation<Object?>>;
