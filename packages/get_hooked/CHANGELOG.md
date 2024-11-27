@@ -1,3 +1,8 @@
+## 0.3.0
+- Decided that `RenderHookElement` is too convoluted!
+  - API has been reworked into `RefPaint`
+
+
 ## 0.2.2
 - Small optimization for `RenderHookElement`: no longer performs a redundant
   equality check for `Ref.watch()` calls

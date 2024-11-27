@@ -58,7 +58,7 @@ Until version 1.0.0, you can expect breaking changes without prior warning.
 Many packages on [pub.dev](https://pub.dev/) have both a Flutter and a non-Flutter variant.
 
 | Flutter | generic |
-|:-:|:-:|
+|:-------:|:-------:|
 | [**flutter_riverpod**](https://pub.dev/packages/flutter_riverpod) | [**riverpod**](https://pub.dev/packages/riverpod) |
 | [**flutter_bloc**](https://pub.dev/packages/flutter_bloc) | [**bloc**](https://pub.dev/packages/bloc) |
 | [**watch_it**](https://pub.dev/packages/watch_it) | [**get_it**](https://pub.dev/packages/get_it) |
@@ -215,10 +215,13 @@ added a huge performance optimization to the [`ChangeNotifier`](https://github.c
 API.
 
 This boosted `Listenable` objects throughout the Flutter framework,
-and the effects have stretched into other packages:
+and in other packages:
 
 - **flutter_hooks** includes built-in support for Flutter's `Listenable` objects.
-- **riverpod** has adopted [the same strategy as ChangeNotifier](https://github.com/rrousselGit/riverpod/blob/9e62837a9fb6741dc40728c6e28d0fd9d62452e3/packages/riverpod/lib/src/listenable.dart#L53) in its internal logic.
+- **riverpod** has adopted [the same strategy as ChangeNotifier](https://github.com/rrousselGit/riverpod/blob/9e62837a9fb6741dc40728c6e28d0fd9d62452e3/packages/riverpod/lib/src/listenable.dart#L53)
+  in its internal logic.
+- **get_it** [recommends using ChangeNotifier](https://github.com/fluttercommunity/get_it/blob/589f27a775da471747f2cc47412e596491450264/example/lib/app_model.dart#L5-L9)
+  to interact with its service locator API.
 
 <br>
 
@@ -388,11 +391,12 @@ class CounterButton extends HookWidget {
 <br>
 
 An object like `getCount` can't be passed into a `const` constructor.\
-However: since access isn't limited in scope, it can be referenced by functions and static methods,
-creating huge potential for rebuild-optimization.
+However: since access isn't limited in scope, it can be referenced by functions
+and static methods, creating huge potential for rebuild-optimization.
 
-The following example supports the same functionality as before, but the `Text` widget updates based on
-`getCount` without the outer button widget ever being rebuilt:
+The following example supports the same functionality as before, but
+the `Text` widget updates based on `getCount` without the outer button widget
+ever being rebuilt:
 
 ```dart
 final getCount = Get.it(0);
@@ -434,6 +438,7 @@ extension GetHooked<V> on Get<Object?, V> {
 ```
 
 > [!CAUTION]
+>
 > **Do not get** `hooked` **directly:** use `Ref.watch()` instead.\
 > If a listener is added without automatically being removed, it can result in memory leaks,
 > not to mention the problems that calling `dispose()` would create for other widgets
@@ -598,6 +603,8 @@ testWidgets('my test', (tester) async {
   (This code snippet was written for the purpose of instruction;
   please disregard the glaring lack of a <a href="https://dart.dev/lints/unnecessary_lambdas"><b>tear-off</b></a>.)
 </sup>
+
+<br>
 
 If scoping is always the desired behavior for a certain Get object,
 prefer instantiating via a `ScopedGet` constructor.
