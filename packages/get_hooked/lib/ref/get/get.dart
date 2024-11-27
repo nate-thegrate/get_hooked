@@ -284,11 +284,13 @@ typedef GetVsyncAny = GetVsync<Object?, Animation<Object?>>;
 /// Encapsulates a [ValueNotifier].
 extension type GetValue<T>._(ValueNotifier<T> _hooked) implements Get<T, ValueNotifier<T>> {
   // ignore: annotate_redeclares, false positive
-  set value(T newValue) => emit(newValue);
+  set value(T newValue) {
+    _hooked.value = newValue;
+  }
 
   /// Sets a new value and emits a notification.
-  void emit(T newValue) {
-    _hooked.value = newValue;
+  void emit(T? newValue) {
+    if (newValue is T) _hooked.value = newValue;
   }
 }
 

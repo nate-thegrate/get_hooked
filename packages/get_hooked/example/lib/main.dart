@@ -1,3 +1,4 @@
+import 'package:example/benchmark/benchmark.dart';
 import 'package:example/counter/counter.dart';
 import 'package:example/form/form.dart';
 import 'package:flutter/material.dart';
@@ -5,7 +6,7 @@ import 'package:get_hooked/get_hooked.dart';
 
 void main() => runApp(const App());
 
-enum Screen { counter, form }
+enum Screen { counter, form, benchmark }
 
 final getScreen = Get.it(Screen.counter);
 
@@ -17,6 +18,7 @@ class App extends HookWidget {
     return switch (Ref.watch(getScreen)) {
       Screen.counter => const Counter(),
       Screen.form => const FormExampleApp(),
+      Screen.benchmark => const BenchmarkApp(),
     };
   }
 }
