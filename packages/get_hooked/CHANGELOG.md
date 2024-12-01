@@ -1,8 +1,9 @@
 ## 0.3.0
-- Decided that `RenderHookElement` is too convoluted!
+- Decided that `RenderHookElement` is too convoluted :)
   - API has been reworked into `RefPaint`
 - A bunch of benchmarking!
 - `RenderGet`, a super-performant render object widget
+- Remove "arbitrary `context`" vsync mode
 
 
 ## 0.2.2

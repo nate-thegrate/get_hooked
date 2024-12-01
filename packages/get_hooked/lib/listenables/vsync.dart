@@ -3,38 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 /// Creates an [Animation] using a [TickerProvider].
-typedef VsyncBuilder<A extends Animation<Object?>> = A Function(TickerProvider vsync);
+typedef VsyncBuilder<A extends Animation<Object?>> = A Function(Vsync vsync);
 
 /// A [TickerProvider] implementation that can arbitrarily
 /// reconfigure its attached [BuildContext].
 ///
-/// `Vsync` has 3 modes:
-///
-/// 1. No context: its [ticker] will always be unmuted.
-/// 2. Any context: attaching to an arbitrary [BuildContext] will
-///    subscribe this Vsync to its ancestor [TickerMode] notifier,
-///    and verify that it has the correct notifier each animation frame.
-/// 3. [Vsync.auto]: The ticker is automatically managed by [Ref.vsync].
-///
-/// ### Reliability Consideration
-///
-/// The "any context" mode is nearly always guaranteed to accurately manage
-/// the ticker's muted status, except in rare cases where the ticker is muted
-/// and then a change to the widget tree (e.g. a [GlobalKey] causing the
-/// [BuildContext] to be transported to another location) results in the [context]
-/// inheriting from a different [TickerMode].
-///
-/// Should this edge case arise, the ticker could be updated by calling
-/// [VsyncTicker.updateNotifier] inside [State.activate] or [StatelessWidget.build],
-/// or by using [Ref.vsync] instead.
+/// Setting a [context] allows the ticker to inherit from the ambient
+/// [TickerMode]; if the context is null, the ticker will always be active.
 class Vsync implements TickerProvider {
   /// Creates a [TickerProvider] that can arbitrarily
   /// reconfigure its attached [BuildContext].
   Vsync([BuildContext? context]) : _context = context;
-
-  /// A placeholder value, signifying that a [VsyncTicker]
-  /// is being managed by [Ref.vsync].
-  static const BuildContext auto = _AutoManaged();
 
   /// Optionally allows an object to keep track of its [Vsync].
   ///
@@ -50,9 +29,6 @@ class Vsync implements TickerProvider {
     Vsync.cache[animation] = vsync;
     return animation;
   }
-
-  /// Whether a [VsyncTicker] is currently assigned.
-  bool get hasTicker => _ticker != null;
 
   /// The [VsyncTicker] being managed by this ticker provider.
   VsyncTicker? get ticker => _ticker;
@@ -70,13 +46,12 @@ class Vsync implements TickerProvider {
   BuildContext? get context => _context;
   BuildContext? _context;
   set context(BuildContext? newContext) {
-    switch (newContext) {
-      case Vsync.auto:
-        break;
-      case null:
-        _ticker?.detach();
-      default:
-        _ticker?.updateNotifier(newContext);
+    if (newContext == _context) return;
+
+    if (newContext != null) {
+      _ticker?.updateNotifier(newContext);
+    } else {
+      _ticker?.detach();
     }
 
     _context = newContext;
@@ -102,25 +77,7 @@ class Vsync implements TickerProvider {
       return true;
     }());
 
-    late final VsyncTicker ticker;
-
-    void tickerCallback(Duration elapsed) {
-      switch (ticker.vsync.context) {
-        case auto || null:
-          break;
-
-        case BuildContext(mounted: false):
-          return ticker.stop(canceled: true);
-
-        case final BuildContext context:
-          ticker.updateNotifier(context);
-          if (ticker.muted) return;
-      }
-
-      onTick(elapsed);
-    }
-
-    return ticker = VsyncTicker(tickerCallback, this);
+    return VsyncTicker(onTick, this);
   }
 }
 
@@ -166,15 +123,17 @@ class VsyncTicker extends Ticker {
   @override
   TickerFuture start() {
     assert(() {
-      if (vsync.context case null || Vsync.auto || BuildContext(mounted: true)) {
-        return true;
+      if (vsync.context case BuildContext(mounted: false)) {
+        throw FlutterError.fromParts([
+          ErrorSummary('Ticker.start() called after dispose().'),
+          ErrorHint(
+            'Consider setting an active context for its vsync before starting the ticker.',
+          ),
+        ]);
       }
-
-      throw FlutterError.fromParts([
-        ErrorSummary('Ticker.start() called after dispose().'),
-        ErrorHint('Consider setting an active context for its vsync before starting the ticker.'),
-      ]);
+      return true;
     }());
+
     return super.start();
   }
 
@@ -198,13 +157,4 @@ class _UnsetNotifier implements ValueListenable<bool> {
 
   @override
   void removeListener(VoidCallback listener) {}
-}
-
-class _AutoManaged implements BuildContext {
-  const _AutoManaged();
-
-  @override
-  Never noSuchMethod(Invocation invocation) {
-    throw UnsupportedError('"Hooked" acts as a placeholder value for a Vsync BuildContext.');
-  }
 }

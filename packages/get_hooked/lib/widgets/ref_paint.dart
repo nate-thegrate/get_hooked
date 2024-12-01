@@ -187,7 +187,7 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
   }
 
   /// Returns the [Get] object's value, and triggers a re-render when it changes.
-  T watch<T>(Get<T, ValueListenable<T>> get) {
+  T watch<T>(GetT<T> get) {
     final renderer = _element.renderObject as _RenderRefPaint;
     switch (renderer._method!) {
       case _PaintMethod.hitTest:
@@ -197,8 +197,8 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
             ErrorHint('Consider using ref.read() instead.'),
           ]),
         );
-      case _PaintMethod.paint when _element._handledPaint:
-      case _PaintMethod.buildSemantics when _element._handledSemantics:
+      case _PaintMethod.paint when _element.handledPaint:
+      case _PaintMethod.buildSemantics when _element.handledSemantics:
         break;
       case _PaintMethod.paint:
         _listen(get.hooked, renderer.markNeedsPaint);
@@ -210,7 +210,7 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
 
   /// Returns the [selector]'s output, and triggers a re-render when it changes.
   Result select<Result, T>(
-    Get<T, ValueListenable<T>> get,
+    GetT<T> get,
     Result Function(T value) selector, {
     bool useScope = true,
   }) {
@@ -430,8 +430,8 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
     // dart format off
     final bool handled = switch (method) {
       _PaintMethod.hitTest        => throw StateError('hit-testing'),
-      _PaintMethod.paint          => _element._handledPaint,
-      _PaintMethod.buildSemantics => _element._handledSemantics,
+      _PaintMethod.paint          => _element.handledPaint,
+      _PaintMethod.buildSemantics => _element.handledSemantics,
     };
 
     if (handled) return currentValue;
@@ -455,7 +455,7 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
 
   void _listen(Listenable listenable, VoidCallback listener) {
     listenable.addListener(listener);
-    _element._disposers.add(() => listenable.removeListener(listener));
+    _element.disposers.add(() => listenable.removeListener(listener));
   }
 
   /// Registers a [GetVsync] object with this [RefPaint]'s context,
@@ -464,7 +464,7 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
     if (useScope) {
       getVsync = GetScope.of(context, getVsync);
     }
-    _element._vsyncs.add(getVsync.vsync..context = Vsync.auto);
+    _element.vsyncs.add(getVsync.vsync..context = _element);
     if (watch) {
       this.watch(getVsync);
     }
@@ -477,38 +477,38 @@ class _RefPainterElement extends SingleChildRenderObjectElement {
 
   Size? _size;
 
-  bool _handledPaint = false;
-  bool _handledSemantics = false;
+  bool handledPaint = false;
+  bool handledSemantics = false;
 
   void resetListeners() {
-    for (final VoidCallback dispose in _disposers) {
+    for (final VoidCallback dispose in disposers) {
       dispose();
     }
-    _handledPaint = _handledSemantics = false;
+    handledPaint = handledSemantics = false;
     renderObject
       ..markNeedsPaint()
       ..markNeedsSemanticsUpdate();
   }
 
-  final _disposers = <VoidCallback>{};
-  final _vsyncs = <Vsync>{};
+  final disposers = <VoidCallback>{};
+  final vsyncs = <Vsync>{};
 
   PaintingContext? paintingContext;
 
+  bool get hasScope => getInheritedWidgetOfExactType<ScopeModel>() != null;
   late bool _hasScope;
-  bool get _hasScopeNow => getInheritedWidgetOfExactType<ScopeModel>() != null;
   @override
   void mount(Element? parent, Object? newSlot) {
     super.mount(parent, newSlot);
-    _hasScope = _hasScopeNow;
+    _hasScope = hasScope;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final bool hasScope = _hasScopeNow;
-    if (_hasScope || hasScope) resetListeners();
-    _hasScope = hasScope;
+    final bool hasScopeNow = hasScope;
+    if (_hasScope || hasScopeNow) resetListeners();
+    _hasScope = hasScopeNow;
     renderObject
       ..markNeedsPaint()
       ..markNeedsSemanticsUpdate();
@@ -517,10 +517,8 @@ class _RefPainterElement extends SingleChildRenderObjectElement {
   @override
   void activate() {
     super.activate();
-    for (final Vsync(:context, :ticker) in _vsyncs) {
-      if (context == Vsync.auto) {
-        ticker?.updateNotifier(this);
-      }
+    for (final Vsync vsync in vsyncs) {
+      vsync.ticker?.updateNotifier(this);
     }
   }
 
@@ -533,11 +531,11 @@ class _RefPainterElement extends SingleChildRenderObjectElement {
 
   @override
   void unmount() {
-    for (final VoidCallback dispose in _disposers) {
+    for (final VoidCallback dispose in disposers) {
       dispose();
     }
-    for (final Vsync vsync in _vsyncs) {
-      if (vsync.context == Vsync.auto) {
+    for (final Vsync vsync in vsyncs) {
+      if (vsync.context == this) {
         vsync.context = null;
       }
     }
@@ -581,9 +579,7 @@ class _RenderRefPaint extends RenderProxyBox {
   @override
   bool hitTestSelf(Offset position) {
     _method = _PaintMethod.hitTest;
-    final bool wasHit =
-        painter.position == DecorationPosition.foreground &&
-        painter.hitTest(PainterRef._(_element.._size = size), position);
+    final bool wasHit = painter.hitTest(PainterRef._(_element.._size = size), position);
     _method = null;
     return wasHit;
   }
@@ -661,7 +657,7 @@ class _RenderRefPaint extends RenderProxyBox {
     }());
     canvas.restore();
     if (!foreground) super.paint(context, offset);
-    _element._handledPaint = true;
+    _element.handledPaint = true;
   }
 
   List<CustomPainterSemantics> painterSemantics = const [];
@@ -675,7 +671,7 @@ class _RenderRefPaint extends RenderProxyBox {
     //   () => hookPainter.buildSemantics(size),
     // );
     // config.isSemanticBoundary = semantics.isNotEmpty;
-    _element._handledSemantics = true;
+    _element.handledSemantics = true;
   }
 
   @override

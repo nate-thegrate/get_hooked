@@ -266,9 +266,7 @@ class _VsyncHook extends Hook<void, GetVsyncAny> {
   late Vsync vsync = get.vsync;
 
   @override
-  void initHook() {
-    vsync.context = Vsync.auto;
-  }
+  void initHook() => vsync.context = context;
 
   @override
   void didUpdate(GetVsyncAny oldData) {
@@ -283,14 +281,15 @@ class _VsyncHook extends Hook<void, GetVsyncAny> {
   }
 
   @override
+  void activate() => vsync.ticker?.updateNotifier(context);
+
+  @override
   void dispose() {
-    if (vsync.context == Vsync.auto) vsync.context = null;
+    if (vsync.context == context) vsync.context = null;
   }
 
   @override
-  void build() {
-    vsync.ticker?.updateNotifier(context);
-  }
+  void build() {}
 }
 
 /// Calls the [statusListener] whenever the [Animation.status] changes.

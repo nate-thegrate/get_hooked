@@ -13,7 +13,7 @@ part 'src/ref_hooks.dart';
 part 'src/substitute.dart';
 
 /// A callback that returns a [Get] object that wraps the specified [ValueListenable].
-typedef GetGetter<V extends ValueRef> = ValueGetter<Get<Object?, V>>;
+typedef GetGetter<V extends ValueRef> = ValueGetter<GetV<V>>;
 
 /// A namespace for [Hook] functions that interact with [Get] objects.
 ///
@@ -50,10 +50,10 @@ typedef GetGetter<V extends ValueRef> = ValueGetter<Get<Object?, V>>;
 /// );
 /// ```
 /// {@end-tool}
-extension type Ref<V extends ValueRef>(Get<Object?, V> _get) implements Object {
+extension type Ref<V extends ValueRef>(GetV<V> _get) implements Object {
   /// Uses a different [Get] object to create a [Substitution]
   /// which can be passed into a [GetScope].
-  Substitution<V> sub(Get<Object?, V> newGet, {bool autoDispose = true}) {
+  Substitution<V> sub(GetV<V> newGet, {bool autoDispose = true}) {
     return subListenable(newGet.hooked, autoDispose: autoDispose);
   }
 
@@ -128,7 +128,7 @@ extension type Ref<V extends ValueRef>(Get<Object?, V> _get) implements Object {
   /// * [GetScope.of], for retrieving an [Override]'s new value outside of
   ///   a [HookWidget.build] method.
   static T watch<T>(
-    Get<T, ValueListenable<T>> get, {
+    GetT<T> get, {
     bool watching = true,
     bool checkVsync = true,
     bool useScope = true,
@@ -151,7 +151,7 @@ extension type Ref<V extends ValueRef>(Get<Object?, V> _get) implements Object {
   ///
   /// {@macro get_hooked.Ref.watch}
   static Result select<Result, T>(
-    Get<T, ValueListenable<T>> get,
+    GetT<T> get,
     Result Function(T value) selector, {
     bool watching = true,
     bool checkVsync = true,

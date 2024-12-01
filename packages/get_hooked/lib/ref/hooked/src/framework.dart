@@ -153,6 +153,9 @@ abstract class Hook<Result, Data> with Diagnosticable {
   /// Equivalent of [State.deactivate] for [Hook].
   void deactivate() {}
 
+  /// Equivalent of [State.deactivate] for [Hook].
+  void activate() {}
+
   /// {@macro flutter.widgets.reassemble}
   ///
   /// In addition to this method being invoked, it is guaranteed that the
@@ -184,13 +187,12 @@ abstract class Hook<Result, Data> with Diagnosticable {
   /// As opposed to [setState], the rebuild is optional and can be cancelled right
   /// before `build` is called, by having [shouldRebuild] return false.
   void markMayNeedRebuild() {
-    if (_element._isOptionalRebuild ?? true) {
-      _element
-        .._isOptionalRebuild = true
-        .._shouldRebuildQueue.add(_Entry(shouldRebuild))
-        ..markNeedsBuild();
-    }
-    assert(_element.dirty, 'Bad state');
+    if (_element._rebuildRequired ?? false) return;
+    _element
+      .._rebuildRequired = false
+      .._shouldRebuildQueue.add(_Entry(shouldRebuild))
+      ..markNeedsBuild();
+    assert(_element.dirty);
   }
 
   /// Equivalent of [State.setState] for [Hook].
@@ -198,7 +200,7 @@ abstract class Hook<Result, Data> with Diagnosticable {
   void setState([VoidCallback? fn]) {
     fn?.call();
     _element
-      .._isOptionalRebuild = false
+      .._rebuildRequired = true
       ..markNeedsBuild();
   }
 

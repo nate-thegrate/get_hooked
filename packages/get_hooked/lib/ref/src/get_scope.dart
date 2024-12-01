@@ -336,7 +336,7 @@ final class ScopeModel extends InheritedModel<ValueRef> {
   /// The key is the original object; the value is the new object.
   final Map<ValueRef, ValueRef> map;
 
-  G? _select<G extends GetAny>(G get) => switch (map[get.hooked]) {
+  G? _select<G extends GetAny>(G get) => switch (map[get]) {
     final G gotIt => gotIt,
     _ => null,
   };
@@ -349,7 +349,7 @@ final class ScopeModel extends InheritedModel<ValueRef> {
   // ignore: annotate_overrides, name overlap
   bool updateShouldNotifyDependent(ScopeModel oldWidget, Set<ValueRef> dependencies) {
     for (final ValueRef dependency in dependencies) {
-      final Get<Object?, ValueRef> get = Get.custom(dependency);
+      final GetAny get = Get.custom(dependency);
       if (_select(get) != oldWidget._select(get)) return true;
     }
     return false;

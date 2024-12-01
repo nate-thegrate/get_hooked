@@ -7,7 +7,7 @@ base mixin HookElement on ComponentElement {
   final _hooks = LinkedList<_HookEntry>();
   final _shouldRebuildQueue = LinkedList<_Entry<bool Function()>>();
   LinkedList<_HookEntry>? _needDispose;
-  bool? _isOptionalRebuild = false;
+  bool? _rebuildRequired = true;
   Widget? _buildCache;
 
   bool _debugDidReassemble = false;
@@ -24,20 +24,20 @@ base mixin HookElement on ComponentElement {
 
   @override
   void update(Widget newWidget) {
-    _isOptionalRebuild = false;
+    _rebuildRequired = true;
     super.update(newWidget);
   }
 
   @override
   void didChangeDependencies() {
-    _isOptionalRebuild = false;
+    _rebuildRequired = true;
     super.didChangeDependencies();
   }
 
   @override
   void reassemble() {
     super.reassemble();
-    _isOptionalRebuild = false;
+    _rebuildRequired = true;
     assert(_debugDidReassemble = true);
     for (final _HookEntry hook in _hooks) {
       hook.value.reassemble();
@@ -47,12 +47,10 @@ base mixin HookElement on ComponentElement {
   @override
   Widget build() {
     // Check whether we can cancel the rebuild (caused by HookState.mayNeedRebuild).
-    final bool mustRebuild = switch (_isOptionalRebuild) {
-      false || null => true,
-      true => _shouldRebuildQueue.any((cb) => cb.value()),
-    };
+    final bool mustRebuild =
+        (_rebuildRequired ?? true) || _shouldRebuildQueue.any((cb) => cb.value());
 
-    _isOptionalRebuild = null;
+    _rebuildRequired = null;
     _shouldRebuildQueue.clear();
 
     if (!mustRebuild && _buildCache != null) {
@@ -66,7 +64,7 @@ base mixin HookElement on ComponentElement {
     try {
       _buildCache = super.build();
     } finally {
-      _isOptionalRebuild = null;
+      _rebuildRequired = null;
       _debugDidReassemble = false;
       _unmountAllRemainingHooks();
       _current = null;
@@ -147,6 +145,25 @@ base mixin HookElement on ComponentElement {
       }
     }
     super.deactivate();
+  }
+
+  @override
+  void activate() {
+    super.activate();
+    for (final _HookEntry hook in _hooks) {
+      try {
+        hook.value.activate();
+      } catch (exception, stack) {
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: exception,
+            stack: stack,
+            library: 'hooks library',
+            context: DiagnosticsNode.message('while activating ${hook.runtimeType}'),
+          ),
+        );
+      }
+    }
   }
 
   @override

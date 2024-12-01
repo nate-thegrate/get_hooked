@@ -114,7 +114,7 @@ final class _SubFactory<V extends ValueRef> extends Substitution<V> {
 final class _SubGetFactory<V extends ValueRef> extends Substitution<V> {
   _SubGetFactory(super.ref, this.factory, {super.autoDispose});
 
-  final ValueGetter<Get<Object?, V>> factory;
+  final GetGetter<V> factory;
 
   @override
   late final V replacement = factory().hooked;

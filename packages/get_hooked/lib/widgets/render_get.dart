@@ -42,7 +42,7 @@ abstract class RenderScopedGetBase<T> extends SingleChildRenderObjectWidget {
   /// The [Get] object attached to this widget.
   ///
   /// This getter should always return the same object.
-  Get<T, ValueListenable<T>> get get;
+  GetT<T> get get;
 
   /// Creates a [RenderObject] (which is then passed to [createRenderObject]).
   RenderObject render(BuildContext context, T value);
@@ -82,7 +82,7 @@ abstract final class RenderGet<Render extends RenderObject> implements SingleChi
   @factory
   static RenderGet<Render> scoped<Render extends RenderObject, T>({
     Key? key,
-    required Get<T, ValueListenable<T>> get,
+    required GetT<T> get,
     required Render Function(BuildContext context, T value) render,
     required void Function(Render render, T value) listen,
     Widget? child,
@@ -127,7 +127,7 @@ final class _RenderScopedGet<T, Render extends RenderObject> extends RenderScope
        _render = render;
 
   @override
-  final Get<T, ValueListenable<T>> get;
+  final GetT<T> get;
 
   final void Function(Render render, T value) _listen;
 
@@ -172,8 +172,8 @@ class _RenderGetElement extends SingleChildRenderObjectElement {
 class _RenderScopedGetElement<T> extends SingleChildRenderObjectElement {
   _RenderScopedGetElement(super.widget, this.get);
 
-  final Get<T, ValueListenable<T>> get;
-  late Get<T, ValueListenable<T>> scopedGet;
+  final GetT<T> get;
+  late GetT<T> scopedGet;
 
   Vsync? vsync;
 
@@ -191,7 +191,7 @@ class _RenderScopedGetElement<T> extends SingleChildRenderObjectElement {
     if (scopedGet case GetVsyncAny(:final Vsync vsync)) {
       this.vsync =
           vsync
-            ..context = Vsync.auto
+            ..context ??= this
             ..ticker?.updateNotifier(this);
     }
   }
@@ -205,7 +205,7 @@ class _RenderScopedGetElement<T> extends SingleChildRenderObjectElement {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final Get<T, ValueListenable<T>> newGet = GetScope.of(this, get);
+    final GetT<T> newGet = GetScope.of(this, get);
     if (newGet == scopedGet) return;
 
     scopedGet.hooked.removeListener(listener);
