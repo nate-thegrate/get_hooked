@@ -97,13 +97,13 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
     return GetVsync._(Vsync.build(builder));
   }
 
-  /// Encapsulates an [AsyncController] with a preconfigured [futureCallback].
+  /// Encapsulates an [AsyncNotifier] with a preconfigured [futureCallback].
   @factory
   static GetAsync<T> async<T>(AsyncValueGetter<T> futureCallback, {T? initialData}) {
     return GetAsync._(_AsyncController(futureCallback: futureCallback, initialData: initialData));
   }
 
-  /// Encapsulates an [AsyncController] with a preconfigured [streamCallback].
+  /// Encapsulates an [AsyncNotifier] with a preconfigured [streamCallback].
   @factory
   static GetAsync<T> stream<T>(
     StreamCallback<T> streamCallback, {
@@ -649,8 +649,7 @@ extension type GetVsyncValue<T>._(ValueAnimation<T> _hooked)
 }
 
 /// Encapsulates an [AsyncNotifier].
-extension type GetAsync<T>._(AsyncController<T> _hooked)
-    implements Get<AsyncSnapshot<T>, AsyncController<T>> {}
+extension type GetAsync<T>._(AsyncNotifier<T> _hooked) implements Get<T?, AsyncNotifier<T>> {}
 
 // dart format off
 /// Encapsulates any [Listenable], using the provided callback to retrieve a value.

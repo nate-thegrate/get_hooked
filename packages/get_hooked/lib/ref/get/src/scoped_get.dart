@@ -45,11 +45,11 @@ class ScopedGet<T> implements ValueListenable<T> {
   @factory
   static GetVsyncValue<T> vsyncValue<T>() => GetVsyncValue._(_ScopeValue());
 
-  /// Placeholder for an [AsyncController].
+  /// Placeholder for an [AsyncNotifier].
   @factory
   static GetAsync<T> async<T>() => GetAsync._(_ScopeAsync());
 
-  /// Placeholder for an [AsyncController].
+  /// Placeholder for an [AsyncNotifier].
   @factory
   static GetAsync<T> stream<T>() => GetAsync._(_ScopeAsync());
 
@@ -95,7 +95,7 @@ class _ScopeMap<K, V> extends ScopedGet<Map<K, V>> implements MapNotifier<K, V> 
 
 class _ScopeVsync extends ScopedGet<double> implements AnimationController {}
 
-class _ScopeAsync<T> extends ScopedGet<AsyncSnapshot<T>> implements AsyncController<T> {}
+class _ScopeAsync<T> extends ScopedGet<T?> implements AsyncNotifier<T> {}
 
 class _ScopeProxy<T, L extends Listenable> extends ScopedGet<T> implements ProxyNotifier<T, L> {}
 
