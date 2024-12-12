@@ -8,7 +8,10 @@ mixin DisposeGuard {
   /// [Ref] will automatically free associated resources when its associated
   /// [HookWidget] is no longer in use, so the `dispose()` method of a
   /// [ValueNotifier] or [AnimationController] is unnecessary.
+  /// 
+  /// The [DisposeGuard.dispose] method throws an error.
   /// {@endtemplate}
+  @protected
   @visibleForOverriding
   void dispose() {
     assert(

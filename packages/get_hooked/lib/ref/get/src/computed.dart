@@ -79,9 +79,6 @@ abstract class _ComputeBase<Result> with ChangeNotifier implements ValueListenab
 
 abstract class ComputedNotifier<Result> implements ComputeRef, ValueListenable<Result> {
   factory ComputedNotifier(RefComputer<Result> compute, {bool? concurrent}) =
-      ComputedScoped<Result>;
-
-  factory ComputedNotifier.noScope(RefComputer<Result> compute, {bool? concurrent}) =
       ComputedNoScope<Result>;
 
   Result resultOf(BuildContext context);

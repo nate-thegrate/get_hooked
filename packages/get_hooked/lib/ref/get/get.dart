@@ -25,9 +25,23 @@ extension GetHooked<V extends ValueRef> on Get<Object?, V> {
 
 /// Encapsulates a [ValueListenable] object with an interface for
 /// easy updates and automatic lifecycle management.
-extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements Object {
-  /// Returns the [ValueListenable]'s current value.
-  T get value => _hooked.value;
+extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
+    implements ValueListenable<T> {
+  /// Don't add a listener directly!
+  /// {@template get_hooked.dont}
+  /// Prefer using [Ref.watch] or something similar.
+  ///
+  /// …or if you really gotta do it, use the `.hooked` getter.
+  /// {@endtemplate}
+  @protected
+  @redeclare
+  void get addListener {}
+
+  /// Don't remove a listener directly!
+  /// {@macro get_hooked.dont}
+  @protected
+  @redeclare
+  void get removeListener {}
 
   /// Encapsulates a [ValueNotifier].
   @factory
@@ -51,22 +65,25 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
     double? initialValue,
     Duration? duration,
     Duration? reverseDuration,
-    AnimationBehavior animationBehavior = AnimationBehavior.normal,
+    AnimationBehavior? animationBehavior,
     String? debugLabel,
-    double lowerBound = 0.0,
-    double upperBound = 1.0,
+    double? lowerBound,
+    double? upperBound,
+    bool bounded = true,
   }) {
     return GetVsyncDouble._(
       Vsync.build(
         (vsync) => _AnimationController(
           vsync: vsync,
+          value: initialValue,
+          lowerBound: lowerBound ?? (bounded ? 0.0 : double.negativeInfinity),
+          upperBound: upperBound ?? (bounded ? 1.0 : double.infinity),
           duration: duration ?? Vsync.defaultDuration,
           reverseDuration: reverseDuration,
-          animationBehavior: animationBehavior,
+          animationBehavior:
+              animationBehavior ??
+              (bounded ? AnimationBehavior.normal : AnimationBehavior.preserve),
           debugLabel: debugLabel,
-          lowerBound: lowerBound,
-          upperBound: upperBound,
-          value: initialValue,
         ),
       ),
     );
@@ -131,151 +148,10 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked) implements
     return GetProxy._(_ProxyNotifier(listenable, getValue));
   }
 
-  /// Encapsulates a [ProxyNotifier2], using the provided callback to retrieve a value.
-  ///
-  /// At least one of these two values should be a [Listenable] or [Get] object,
-  /// so that the proxy knows when to send its own notifications.
+  /// Encapsulates a [Listenable] which notifies based on a [RefComputer] callback.
   @factory
-  static GetProxy2<T, L1, L2> proxy2<T, L1, L2>(
-    L1 l1,
-    L2 l2,
-    T Function(L1 l1, L2 l2) getValue, {
-    bool concurrent = false,
-  }) {
-    return GetProxy2._(_ProxyNotifier2(l1, l2, getValue, concurrent: concurrent));
-  }
-
-  /// Encapsulates a [ProxyNotifier3], using the provided callback to retrieve a value.
-  ///
-  /// At least one of these three values should be a [Listenable] or [Get] object,
-  /// so that the proxy knows when to send its own notifications.
-  @factory
-  static GetProxy3<T, L1, L2, L3> proxy3<T, L1, L2, L3>(
-    L1 l1,
-    L2 l2,
-    L3 l3,
-    T Function(L1 l1, L2 l2, L3 l3) getValue, {
-    bool concurrent = false,
-  }) {
-    return GetProxy3._(_ProxyNotifier3(l1, l2, l3, getValue, concurrent: concurrent));
-  }
-
-  /// Encapsulates a [ProxyNotifier4], using the provided callback to retrieve a value.
-  ///
-  /// At least one of these four values should be a [Listenable] or [Get] object,
-  /// so that the proxy knows when to send its own notifications.
-  @factory
-  static GetProxy4<T, L1, L2, L3, L4> proxy4<T, L1, L2, L3, L4>(
-    L1 l1,
-    L2 l2,
-    L3 l3,
-    L4 l4,
-    T Function(L1 l1, L2 l2, L3 l3, L4 l4) getValue, {
-    bool concurrent = false,
-  }) {
-    return GetProxy4._(_ProxyNotifier4(l1, l2, l3, l4, getValue, concurrent: concurrent));
-  }
-
-  /// Encapsulates a [ProxyNotifier5], using the provided callback to retrieve a value.
-  ///
-  /// At least one of these five values should be a [Listenable] or [Get] object,
-  /// so that the proxy knows when to send its own notifications.
-  @factory
-  static GetProxy5<T, L1, L2, L3, L4, L5> proxy5<T, L1, L2, L3, L4, L5>(
-    L1 l1,
-    L2 l2,
-    L3 l3,
-    L4 l4,
-    L5 l5,
-    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5) getValue, {
-    bool concurrent = false,
-  }) {
-    return GetProxy5._(_ProxyNotifier5(l1, l2, l3, l4, l5, getValue, concurrent: concurrent));
-  }
-
-  /// Encapsulates a [ProxyNotifier6], using the provided callback to retrieve a value.
-  ///
-  /// At least one of these six values should be a [Listenable] or [Get] object,
-  /// so that the proxy knows when to send its own notifications.
-  @factory
-  static GetProxy6<T, L1, L2, L3, L4, L5, L6> proxy6<T, L1, L2, L3, L4, L5, L6>(
-    L1 l1,
-    L2 l2,
-    L3 l3,
-    L4 l4,
-    L5 l5,
-    L6 l6,
-    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6) getValue, {
-    bool concurrent = false,
-  }) {
-    return GetProxy6._(_ProxyNotifier6(l1, l2, l3, l4, l5, l6, getValue, concurrent: concurrent));
-  }
-
-  /// Encapsulates a [ProxyNotifier7], using the provided callback to retrieve a value.
-  ///
-  /// At least one of these seven values should be a [Listenable] or [Get] object,
-  /// so that the proxy knows when to send its own notifications.
-  @factory
-  static GetProxy7<T, L1, L2, L3, L4, L5, L6, L7> proxy7<T, L1, L2, L3, L4, L5, L6, L7>(
-    L1 l1,
-    L2 l2,
-    L3 l3,
-    L4 l4,
-    L5 l5,
-    L6 l6,
-    L7 l7,
-    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7) getValue, {
-    bool concurrent = false,
-  }) {
-    return GetProxy7._(
-      _ProxyNotifier7(l1, l2, l3, l4, l5, l6, l7, getValue, concurrent: concurrent),
-    );
-  }
-
-  /// Encapsulates a [ProxyNotifier8], using the provided callback to retrieve a value.
-  ///
-  /// At least one of these eight values should be a [Listenable] or [Get] object,
-  /// so that the proxy knows when to send its own notifications.
-  @factory
-  static GetProxy8<T, L1, L2, L3, L4, L5, L6, L7, L8> proxy8<T, L1, L2, L3, L4, L5, L6, L7, L8>(
-    L1 l1,
-    L2 l2,
-    L3 l3,
-    L4 l4,
-    L5 l5,
-    L6 l6,
-    L7 l7,
-    L8 l8,
-    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7, L8 l8) getValue, {
-    bool concurrent = false,
-  }) {
-    return GetProxy8._(
-      _ProxyNotifier8(l1, l2, l3, l4, l5, l6, l7, l8, getValue, concurrent: concurrent),
-    );
-  }
-
-  /// Encapsulates a [ProxyNotifier9], using the provided callback to retrieve a value.
-  ///
-  /// At least one of these nine values should be a [Listenable] or [Get] object,
-  /// so that the proxy knows when to send its own notifications.
-  @factory
-  static GetProxy9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9>
-  proxy9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9>(
-    L1 l1,
-    L2 l2,
-    L3 l3,
-    L4 l4,
-    L5 l5,
-    L6 l6,
-    L7 l7,
-    L8 l8,
-    L9 l9,
-    T Function(L1 l1, L2 l2, L3 l3, L4 l4, L5 l5, L6 l6, L7 l7, L8 l8, L9 l9) getValue, {
-    bool concurrent = false,
-  }) {
-    return GetProxy9._(
-      _ProxyNotifier9(l1, l2, l3, l4, l5, l6, l7, l8, l9, getValue, concurrent: concurrent),
-    );
+  static GetComputed<Result> compute<Result>(RefComputer<Result> callback) {
+    return GetComputed._(ComputedNoScope(callback));
   }
 }
 
@@ -341,27 +217,50 @@ extension type GetMap<K, V>._(MapNotifier<K, V> _hooked)
 
 /// Encapsulates an [Animation].
 extension type GetVsync<T, A extends Animation<T>>._(A _hooked)
-    implements AnimationView<T>, Get<T, A> {
+    implements Get<T, A>, Animation<T> {
+  /// The [Vsync] associated with this animation.
+  Vsync? get maybeVsync => Vsync.cache[this];
+
   /// The [Vsync] associated with this animation.
   Vsync get vsync {
     assert(() {
-      if (Vsync.cache[this] == null) {
+      if (maybeVsync == null) {
         throw FlutterError.fromParts([
           ErrorSummary('Vsync not found: $this'),
           ErrorDescription(
-            'This is most likely caused by creating an animation without calling GetVsync.build.',
+            'This is most likely caused by creating an animation without calling Vsync.build.',
           ),
           ErrorHint('Consider initializing the animation via Get.vsync().'),
         ]);
       }
       return true;
     }());
-    return Vsync.cache[this]!;
+    return maybeVsync!;
   }
 
+  /// Don't add a listener directly!
+  /// {@macro get_hooked.dont}
+  @protected
   @redeclare
+  void get addListener {}
+
+  /// Don't remove a listener directly!
+  /// {@macro get_hooked.dont}
+  @protected
   @redeclare
-  T get value => _hooked.value;
+  void get removeListener {}
+
+  /// Don't add a listener directly!
+  /// {@macro get_hooked.dont}
+  @protected
+  @redeclare
+  void get addStatusListener {}
+
+  /// Don't remove a listener directly!
+  /// {@macro get_hooked.dont}
+  @protected
+  @redeclare
+  void get removeStatusListener {}
 }
 
 /// Encapsulates an [AnimationController].
@@ -525,14 +424,14 @@ extension type GetVsyncDouble._(AnimationController _hooked)
     double? max,
     bool reverse = false,
     Duration? period,
-    // int? count,
+    int? count,
   }) {
     return _hooked.repeat(
       min: min,
       max: max,
       reverse: reverse,
       period: period,
-      // count: count,
+      count: count, //
     );
   }
 
@@ -655,40 +554,10 @@ extension type GetVsyncValue<T>._(ValueAnimation<T> _hooked)
 /// Encapsulates an [AsyncNotifier].
 extension type GetAsync<T>._(AsyncNotifier<T> _hooked) implements Get<T?, AsyncNotifier<T>> {}
 
-// dart format off
 /// Encapsulates any [Listenable], using the provided callback to retrieve a value.
 extension type GetProxy<T, L extends Listenable>._(ProxyNotifier<T, L> _hooked)
-implements Get<T, ProxyNotifier<T, L>> {}
+    implements Get<T, ProxyNotifier<T, L>> {}
 
-/// Encapsulates a [ProxyNotifier2], using the provided callback to retrieve a value.
-extension type GetProxy2<T, L1, L2>._(ProxyNotifier2<T, L1, L2> _hooked)
-implements Get<T, ProxyNotifier2<T, L1, L2>> {}
-
-/// Encapsulates a [ProxyNotifier3], using the provided callback to retrieve a value.
-extension type GetProxy3<T, L1, L2, L3>._(ProxyNotifier3<T, L1, L2, L3> _hooked)
-implements Get<T, ProxyNotifier3<T, L1, L2, L3>> {}
-
-/// Encapsulates a [ProxyNotifier4], using the provided callback to retrieve a value.
-extension type GetProxy4<T, L1, L2, L3, L4>._(ProxyNotifier4<T, L1, L2, L3, L4> _hooked)
-implements Get<T, ProxyNotifier4<T, L1, L2, L3, L4>> {}
-
-/// Encapsulates a [ProxyNotifier5], using the provided callback to retrieve a value.
-extension type GetProxy5<T, L1, L2, L3, L4, L5>._(ProxyNotifier5<T, L1, L2, L3, L4, L5> _hooked)
-implements Get<T, ProxyNotifier5<T, L1, L2, L3, L4, L5>> {}
-
-/// Encapsulates a [ProxyNotifier6], using the provided callback to retrieve a value.
-extension type GetProxy6<T, L1, L2, L3, L4, L5, L6>._(ProxyNotifier6<T, L1, L2, L3, L4, L5, L6> _hooked)
-implements Get<T, ProxyNotifier6<T, L1, L2, L3, L4, L5, L6>> {}
-
-/// Encapsulates a [ProxyNotifier7], using the provided callback to retrieve a value.
-extension type GetProxy7<T, L1, L2, L3, L4, L5, L6, L7>._(ProxyNotifier7<T, L1, L2, L3, L4, L5, L6, L7> _hooked)
-implements Get<T, ProxyNotifier7<T, L1, L2, L3, L4, L5, L6, L7>> {}
-
-/// Encapsulates a [ProxyNotifier8], using the provided callback to retrieve a value.
-extension type GetProxy8<T, L1, L2, L3, L4, L5, L6, L7, L8>._(ProxyNotifier8<T, L1, L2, L3, L4, L5, L6, L7, L8> _hooked)
-implements Get<T, ProxyNotifier8<T, L1, L2, L3, L4, L5, L6, L7, L8>> {}
-
-/// Encapsulates a [ProxyNotifier9], using the provided callback to retrieve a value.
-extension type GetProxy9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9>._(ProxyNotifier9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9> _hooked)
-implements Get<T, ProxyNotifier9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9>> {}
-// dart format on
+/// Encapsulates a [Listenable] which notifies based on a [RefComputer] callback.
+extension type GetComputed<Result>._(ComputedNoScope<Result> _hooked)
+    implements Get<Result, ComputedNoScope<Result>> {}

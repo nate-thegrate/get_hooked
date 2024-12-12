@@ -1,9 +1,10 @@
 import 'dart:ui' as ui;
 
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 
 import '../ref/ref.dart';
+import 'raw_text.dart';
 import 'render_get.dart';
 
 /// A widget displaying a string representation of a [Get] object's value.
@@ -105,9 +106,12 @@ abstract class TextGetter<T> extends RenderScopedGetBase<T> {
     assert(debugCheckHasDirectionality(context));
     DefaultTextStyle? inherited;
     TextStyle textStyle = style;
-    if (style.inherit) {
+    if (textStyle is MaterialTextStyle) {
+      textStyle = textStyle.select(Theme.of(context).textTheme);
+    }
+    if (textStyle.inherit) {
       inherited = DefaultTextStyle.of(context);
-      textStyle = style.merge(inherited.style);
+      textStyle = inherited.style.merge(style);
       if (MediaQuery.boldTextOf(context)) {
         textStyle = textStyle.copyWith(fontWeight: FontWeight.bold);
       }
@@ -136,9 +140,12 @@ abstract class TextGetter<T> extends RenderScopedGetBase<T> {
     assert(debugCheckHasDirectionality(context));
     DefaultTextStyle? inherited;
     TextStyle textStyle = style;
+    if (textStyle is MaterialTextStyle) {
+      textStyle = textStyle.select(Theme.of(context).textTheme);
+    }
     if (style.inherit) {
       inherited = DefaultTextStyle.of(context);
-      textStyle = style.merge(inherited.style);
+      textStyle = inherited.style.merge(style);
       if (MediaQuery.boldTextOf(context)) {
         textStyle = textStyle.copyWith(fontWeight: FontWeight.bold);
       }

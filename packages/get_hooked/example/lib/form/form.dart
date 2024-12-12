@@ -1,6 +1,7 @@
-import 'package:example/main.dart';
 import 'package:flutter/material.dart';
 import 'package:get_hooked/get_hooked.dart';
+
+import '../main.dart';
 
 /// Compare this code to https://main-api.flutter.dev/flutter/widgets/Form-class.html
 ///
