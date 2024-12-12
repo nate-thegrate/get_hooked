@@ -5,6 +5,7 @@
 - `RenderGet`: a flexible, super-performant render object widget
 - Remove "arbitrary `context`" vsync mode
 - Migrate `AsyncNotifier` to riverpod's `AsyncValue` class
+- `ComputeRef`
 
 
 ## 0.2.2

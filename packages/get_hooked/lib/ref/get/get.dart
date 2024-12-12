@@ -3,12 +3,16 @@
 
 import 'dart:collection';
 
+import 'package:collection/collection.dart';
 import 'package:collection_notifiers/collection_notifiers.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
+import 'package:get_hooked/ref/ref.dart';
 import 'package:meta/meta.dart';
 
+part 'src/computed.dart';
 part 'src/dispose_guard.dart';
 part 'src/scoped_get.dart';
 

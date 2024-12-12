@@ -12,11 +12,13 @@ import 'package:flutter/scheduler.dart';
 extension SchedulerBuilding on SchedulerBinding {
   /// {@macro get_hooked.SchedulerBuilding}
   bool get building => switch (schedulerPhase) {
-    SchedulerPhase.midFrameMicrotasks || SchedulerPhase.persistentCallbacks => true,
-    SchedulerPhase.postFrameCallbacks ||
+    // Sadly, a microtask scheduled within a transient callback
+    // is not reliably executed during midFrameMicrotasks.
     SchedulerPhase.transientCallbacks ||
-    SchedulerPhase.idle =>
-      false,
+    SchedulerPhase.midFrameMicrotasks ||
+    SchedulerPhase.persistentCallbacks =>
+      true,
+    SchedulerPhase.postFrameCallbacks || SchedulerPhase.idle => false,
   };
 }
 

@@ -31,6 +31,22 @@ base mixin HookElement on ComponentElement {
   @override
   void didChangeDependencies() {
     _rebuildRequired = true;
+    for (final _HookEntry hook in _hooks) {
+      try {
+        hook.value.didChangeDependencies();
+      } catch (exception, stack) {
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: exception,
+            stack: stack,
+            library: 'hooks library',
+            context: DiagnosticsNode.message(
+              'during didChangeDependencies - ${hook.runtimeType}',
+            ),
+          ),
+        );
+      }
+    }
     super.didChangeDependencies();
   }
 

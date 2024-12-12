@@ -54,7 +54,7 @@ abstract class RenderScopedGetBase<T> extends SingleChildRenderObjectWidget {
   RenderObject createRenderObject(BuildContext context) {
     final RenderObject renderObject = render(
       context as _RenderScopedGetElement<T>,
-      context.scopedGet.value,
+      (context.scopedGet = GetScope.of(context, get)).value,
     );
     context.listener = () => listen(renderObject, context.scopedGet.value);
     return renderObject;
@@ -178,11 +178,10 @@ class _RenderScopedGetElement<T> extends SingleChildRenderObjectElement {
   Vsync? vsync;
 
   /// The callback passed to [Listenable.addListener].
-  late final VoidCallback listener;
+  late VoidCallback listener;
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    scopedGet = GetScope.of(this, get);
     super.mount(parent, newSlot);
     scopedGet.hooked.addListener(listener);
   }
@@ -200,6 +199,16 @@ class _RenderScopedGetElement<T> extends SingleChildRenderObjectElement {
   void activate() {
     super.activate();
     vsync?.ticker?.updateNotifier(this);
+  }
+
+  @override
+  void reassemble() {
+    scopedGet.hooked
+      ..removeListener(listener)
+      ..addListener(
+        listener = () => (widget as RenderScopedGetBase<T>).listen(renderObject, scopedGet.value),
+      );
+    super.reassemble();
   }
 
   @override

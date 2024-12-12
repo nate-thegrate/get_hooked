@@ -140,9 +140,6 @@ abstract class Hook<Result, Data> with Diagnosticable {
   void dispose() {}
 
   /// Called everytime the [Hook] is requested.
-  ///
-  /// [build] is where a [Hook] may use other hooks.
-  /// This restriction is made to ensure that hooks are always unconditionally requested.
   @protected
   Result build();
 
@@ -155,6 +152,9 @@ abstract class Hook<Result, Data> with Diagnosticable {
 
   /// Equivalent of [State.deactivate] for [Hook].
   void activate() {}
+
+  /// Equivalent of [State.didChangeDependencies] for [Hook].
+  void didChangeDependencies() {}
 
   /// {@macro flutter.widgets.reassemble}
   ///

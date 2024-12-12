@@ -43,7 +43,7 @@ class _SubHook<G extends GetAny> extends Hook<G, (G, Object?)> {
 /// {@tool snippet}
 ///
 /// A substitution is made by wrapping a [Get] object in a [Ref] constructor
-/// and calling a `Ref` instance method, such as [Ref.sub].
+/// and calling a `Ref` instance method, such as [Ref.subGet].
 ///
 /// ```dart
 /// GetScope(
