@@ -183,6 +183,126 @@ class RenderClippedDecoration extends RenderProxyBox {
       _ => (null, null, null),
     };
 
+    void paintShadows() {
+      switch (decoration) {
+        case ShapeDecoration(:final ShapeBorder shape, :final List<BoxShadow> shadows)
+            when shadows.isNotEmpty:
+          for (final BoxShadow boxShadow in shadows) {
+            final Paint paint = boxShadow.toPaint();
+            final Rect bounds = rect.shift(boxShadow.offset).inflate(boxShadow.spreadRadius);
+
+            assert(() {
+              if (debugDisableShadows && boxShadow.blurStyle == BlurStyle.outer) {
+                context.canvas
+                  ..save()
+                  ..clipRect(bounds);
+              }
+              return true;
+            }());
+
+            final Canvas canvas = context.canvas;
+
+            bool debugHandleDisabledShadowStart(BoxShadow boxShadow, Path path) {
+              if (debugDisableShadows && boxShadow.blurStyle == BlurStyle.outer) {
+                canvas
+                  ..save()
+                  ..clipPath(
+                    Path()
+                      ..fillType = PathFillType.evenOdd
+                      ..addRect(Rect.largest)
+                      ..addPath(path, Offset.zero),
+                  );
+              }
+              return true;
+            }
+
+            bool debugHandleDisabledShadowEnd(BoxShadow boxShadow) {
+              if (debugDisableShadows && boxShadow.blurStyle == BlurStyle.outer) {
+                canvas.restore();
+              }
+              return true;
+            }
+
+            if (shape.preferPaintInterior) {
+              for (final BoxShadow shadow in shadows) {
+                final Rect bounds = rect.shift(shadow.offset).inflate(shadow.spreadRadius);
+                assert(
+                  debugHandleDisabledShadowStart(
+                    shadow,
+                    shape.getOuterPath(bounds, textDirection: configuration.textDirection),
+                  ),
+                );
+                shape.paintInterior(
+                  canvas,
+                  bounds,
+                  paint,
+                  textDirection: configuration.textDirection,
+                );
+                assert(debugHandleDisabledShadowEnd(shadow));
+              }
+            } else {
+              for (final BoxShadow shadow in shadows) {
+                final Path path = shape.getOuterPath(
+                  rect.shift(shadow.offset).inflate(shadow.spreadRadius),
+                  textDirection: configuration.textDirection,
+                );
+                assert(debugHandleDisabledShadowStart(shadow, path));
+                canvas.drawPath(path, paint);
+                assert(debugHandleDisabledShadowEnd(shadow));
+              }
+            }
+
+            assert(() {
+              if (debugDisableShadows && boxShadow.blurStyle == BlurStyle.outer) {
+                context.canvas.restore();
+              }
+              return true;
+            }());
+          }
+        case BoxDecoration(
+              :final BoxShape shape,
+              :final BorderRadiusGeometry? borderRadius,
+              boxShadow: final List<BoxShadow> shadows?,
+            )
+            when shadows.isNotEmpty:
+          for (final BoxShadow boxShadow in shadows) {
+            final Paint paint = boxShadow.toPaint();
+            final Rect bounds = rect.shift(boxShadow.offset).inflate(boxShadow.spreadRadius);
+            assert(() {
+              if (debugDisableShadows && boxShadow.blurStyle == BlurStyle.outer) {
+                context.canvas
+                  ..save()
+                  ..clipRect(bounds);
+              }
+              return true;
+            }());
+
+            switch (shape) {
+              case BoxShape.circle:
+                assert(borderRadius == null);
+                final Offset center = rect.center;
+                final double radius = rect.shortestSide / 2.0;
+                context.canvas.drawCircle(center, radius, paint);
+              case BoxShape.rectangle:
+                if (borderRadius case null || BorderRadius.zero) {
+                  context.canvas.drawRect(rect, paint);
+                } else {
+                  context.canvas.drawRRect(
+                    borderRadius.resolve(configuration.textDirection).toRRect(rect),
+                    paint,
+                  );
+                }
+            }
+            assert(() {
+              if (debugDisableShadows && boxShadow.blurStyle == BlurStyle.outer) {
+                context.canvas.restore();
+              }
+              return true;
+            }());
+          }
+      }
+    }
+
     if (rect != _backgroundFillRect || currentData != _currentData) {
       _backgroundFillRect = rect;
       _currentData = currentData;
@@ -224,19 +344,23 @@ class RenderClippedDecoration extends RenderProxyBox {
           ..save()
           ..clipPath(clipPath, doAntiAlias: clipBehavior == Clip.antiAlias);
         if (position == DecorationPosition.background) {
+          paintShadows();
           context.canvas.drawPaint(paint);
         }
         super.paint(context, offset);
         if (position == DecorationPosition.foreground) {
+          paintShadows();
           context.canvas.drawPaint(paint);
         }
         context.canvas.restore();
       case Clip.none:
         if (position == DecorationPosition.background) {
+          paintShadows();
           context.canvas.drawPath(clipPath, paint);
         }
         super.paint(context, offset);
         if (position == DecorationPosition.foreground) {
+          paintShadows();
           context.canvas.drawPath(clipPath, paint);
         }
     }
