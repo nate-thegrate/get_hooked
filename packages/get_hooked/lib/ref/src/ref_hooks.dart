@@ -69,7 +69,11 @@ class _VsyncHook extends Hook<void, GetVsyncAny> {
   }
 
   @override
-  void activate() => vsync.ticker?.updateNotifier(context);
+  void activate() {
+    vsync
+      ..ticker?.updateNotifier(context)
+      ..updateStyleNotifier(context);
+  }
 
   @override
   void dispose() {
@@ -113,6 +117,11 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>> impleme
   }
 
   @override
+  G read<G extends GetAny>(G get, {bool useScope = true}) {
+    return useScope ? GetScope.of(context, get) : get;
+  }
+
+  @override
   T watch<T>(GetT<T> get, {bool useScope = true}) {
     final GetT<T> scoped = read(get, useScope: useScope);
     if (_needsDependencies) {
@@ -123,8 +132,17 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>> impleme
   }
 
   @override
-  G read<G extends GetAny>(G get, {bool useScope = true}) {
-    return useScope ? GetScope.of(context, get) : get;
+  R select<R, T>(GetT<T> get, R Function(T value) selector, {bool useScope = true}) {
+    final GetT<T> scoped = read(get, useScope: useScope);
+    if (_needsDependencies) {
+      final GetProxy<R, GetT<T>> rootProxy, scopedProxy;
+      rootProxy = Get.proxy(get, (g) => selector(g.value));
+      scopedProxy = get == scoped ? rootProxy : Get.proxy(scoped, (s) => selector(s.value));
+
+      _rootDependencies.add(rootProxy);
+      _scopedDependencies.add(scopedProxy);
+    }
+    return selector(scoped.value);
   }
 
   @override

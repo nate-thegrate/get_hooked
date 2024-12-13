@@ -6,6 +6,16 @@ abstract interface class ComputeRef {
   T watch<T>(GetT<T> get, {bool useScope});
 
   G read<G extends GetAny>(G get, {bool useScope});
+
+  Result select<Result, T>(GetT<T> get, Result Function(T value) selector, {bool useScope});
+}
+
+extension VsyncRef on ComputeRef {
+  G vsync<G extends GetAny>(G get, {bool useScope = true}) => read(get, useScope: useScope);
+}
+
+abstract interface class HookRef implements ComputeRef {
+  Result compute<Result>(RefComputer<Result> callback);
 }
 
 typedef RefComputer<Result> = Result Function(ComputeRef ref);
@@ -19,7 +29,7 @@ abstract class _ComputeBase<Result> with ChangeNotifier implements ValueListenab
   Result _compute() {
     final Result result = this.compute(_ref);
     assert(() {
-      if (this is! Future) return true;
+      if (result is! Future) return true;
       throw FlutterError.fromParts([
         ErrorSummary('A computed notifier returned a Future.'),
         ErrorDescription('Computed notifier callbacks should always be synchronous.'),
@@ -115,189 +125,198 @@ class ComputedNoScope<Result> extends _ComputeBase<Result> implements ComputedNo
   }
 
   @override
+  R select<R, T>(GetT<T> get, R Function(T value) selector, {bool useScope = false}) {
+    if (_firstCompute) {
+      final ValueListenable<T> valueListenable = get.hooked;
+      _dependencies.add(ProxyNotifier(valueListenable, (v) => selector(v.value)));
+    }
+    return selector(get.value);
+  }
+
+  @override
   void didChangeDependencies(BuildContext context, VoidCallback listener) {}
 }
 
-class _ComputedScopedMember<Result> extends _ComputeBase<Result> {
-  _ComputedScopedMember(this._ref, {required super.dependencies})
-    : super(_ref.compute, concurrent: _ref.concurrent);
+// class _ComputedScopedMember<Result> extends _ComputeBase<Result> {
+//   _ComputedScopedMember(this._ref, {required super.dependencies})
+//     : super(_ref.compute, concurrent: _ref.concurrent);
 
-  @override
-  final ComputedScoped<Result> _ref;
+//   @override
+//   final ComputedScoped<Result> _ref;
 
-  @override
-  bool get hasListeners => super.hasListeners;
-}
+//   @override
+//   bool get hasListeners => super.hasListeners;
+// }
 
-// ignore: invalid_internal_annotation, my preference :)
-@internal
-class ComputedScoped<Result> implements ComputedNotifier<Result> {
-  ComputedScoped(this.compute, {this.concurrent});
+// // ignore: invalid_internal_annotation, my preference :)
+// @internal
+// class ComputedScoped<Result> implements ComputedNotifier<Result> {
+//   ComputedScoped(this.compute, {this.concurrent});
 
-  final RefComputer<Result> compute;
+//   final RefComputer<Result> compute;
 
-  final bool? concurrent;
+//   final bool? concurrent;
 
-  BuildContext? _context;
+//   BuildContext? _context;
 
-  final bool _collectedDependencies = false;
-  final _dependencies = <GetAny>{};
+//   final bool _collectedDependencies = false;
+//   final _dependencies = <GetAny>{};
 
-  final _expando = Expando<Set<ValueRef>>();
-  final _notifiers = HashMap<Set<ValueRef>, _ComputedScopedMember<Result>>(
-    equals: setEquals<ValueRef>,
-    hashCode: const SetEquality<ValueRef>().hash,
-  );
+//   final _expando = Expando<Set<ValueRef>>();
+//   final _notifiers = HashMap<Set<ValueRef>, _ComputedScopedMember<Result>>(
+//     equals: setEquals<ValueRef>,
+//     hashCode: const SetEquality<ValueRef>().hash,
+//   );
 
-  Result _compute() {
-    final Result result = this.compute(this);
-    assert(() {
-      if (this is! Future) return true;
-      throw FlutterError.fromParts([
-        ErrorSummary('A computed notifier returned a Future.'),
-        ErrorDescription('Computed notifier callbacks should always be synchronous.'),
-        ErrorHint(
-          'Consider removing the `async` from the callback and/or '
-          "double-checking whether the function's return value is a Future.",
-        ),
-      ]);
-    }());
+//   Result _compute() {
+//     final Result result = this.compute(this);
+//     assert(() {
+//       if (this is! Future) return true;
+//       throw FlutterError.fromParts([
+//         ErrorSummary('A computed notifier returned a Future.'),
+//         ErrorDescription('Computed notifier callbacks should always be synchronous.'),
+//         ErrorHint(
+//           'Consider removing the `async` from the callback and/or '
+//           "double-checking whether the function's return value is a Future.",
+//         ),
+//       ]);
+//     }());
 
-    return result;
-  }
+//     return result;
+//   }
 
-  @override
-  Result resultOf(BuildContext context) {
-    final BuildContext? oldContext = _context;
-    _context = context;
-    final Result result = value;
-    _context = oldContext;
-    return result;
-  }
+//   @override
+//   Result resultOf(BuildContext context) {
+//     final BuildContext? oldContext = _context;
+//     _context = context;
+//     final Result result = value;
+//     _context = oldContext;
+//     return result;
+//   }
 
-  _ComputedScopedMember<Result> get _notifier {
-    Result? result;
-    Set<ValueRef> scopedRefs;
-    final Object expandoKey = _context ?? this;
-    if (!_collectedDependencies) result = _compute();
+//   _ComputedScopedMember<Result> get _notifier {
+//     Result? result;
+//     Set<ValueRef> scopedRefs;
+//     final Object expandoKey = _context ?? this;
+//     if (!_collectedDependencies) result = _compute();
 
-    if (_expando[expandoKey] case final refs?) {
-      scopedRefs = refs;
-    } else {
-      if (_context case final context?) {
-        scopedRefs = {for (final get in _dependencies) GetScope.of(context, get).hooked};
-      } else if (_dependencies case final Set<ValueRef> valueRefs) {
-        scopedRefs = valueRefs;
-      }
-      _expando[expandoKey] = scopedRefs;
-    }
+//     if (_expando[expandoKey] case final refs?) {
+//       scopedRefs = refs;
+//     } else {
+//       if (_context case final context?) {
+//         scopedRefs = {for (final get in _dependencies) GetScope.of(context, get).hooked};
+//       } else if (_dependencies case final Set<ValueRef> valueRefs) {
+//         scopedRefs = valueRefs;
+//       }
+//       _expando[expandoKey] = scopedRefs;
+//     }
 
-    return _notifiers[scopedRefs] ??= _ComputedScopedMember<Result>(
-      this,
-      dependencies: scopedRefs,
-    ).._value = result ?? _compute();
-  }
+//     return _notifiers[scopedRefs] ??= _ComputedScopedMember<Result>(
+//       this,
+//       dependencies: scopedRefs,
+//     ).._value = result ?? _compute();
+//   }
 
-  @override
-  G read<G extends GetAny>(G get, {bool useScope = true}) => switch (_context) {
-    final BuildContext context? when useScope => GetScope.of(context, get),
-    _ => get,
-  };
+//   @override
+//   G read<G extends GetAny>(G get, {bool useScope = true}) => switch (_context) {
+//     final BuildContext context? when useScope => GetScope.of(context, get),
+//     _ => get,
+//   };
 
-  @override
-  T watch<T>(GetT<T> get, {bool useScope = true}) {
-    if (!_collectedDependencies) {
-      _dependencies.add(get);
-    }
-    return read(get, useScope: useScope).value;
-  }
+//   @override
+//   T watch<T>(GetT<T> get, {bool useScope = true}) {
+//     if (!_collectedDependencies) {
+//       _dependencies.add(get);
+//     }
+//     return read(get, useScope: useScope).value;
+//   }
 
-  @override
-  void addListener(VoidCallback listener, {BuildContext? context}) {
-    final BuildContext? oldContext = _context;
-    _context = context;
-    _notifier.addListener(listener);
-    _context = oldContext;
-  }
+//   @override
+//   void addListener(VoidCallback listener, {BuildContext? context}) {
+//     final BuildContext? oldContext = _context;
+//     _context = context;
+//     _notifier.addListener(listener);
+//     _context = oldContext;
+//   }
 
-  @override
-  void didChangeDependencies(BuildContext context, VoidCallback listener) {
-    final BuildContext? oldContext = _context;
-    _context = context;
+//   @override
+//   void didChangeDependencies(BuildContext context, VoidCallback listener) {
+//     final BuildContext? oldContext = _context;
+//     _context = context;
 
-    final Set<ValueRef>? oldRefs = _expando[context];
-    if (oldRefs == null) {
-      assert(oopsie('A "scoped computed notifier" is missing its scoped dependencies.', context));
-      return;
-    }
-    final _ComputedScopedMember<Result>? notifier = _notifiers[oldRefs];
-    if (notifier == null) {
-      assert(
-        oopsie(
-          'A "scoped computed notifier" is missing '
-          'its inner "single scoped computed notifier".',
-          context,
-        ),
-      );
-      return;
-    }
-    final Set<ValueRef> newScopedRefs = {
-      for (final get in _dependencies) GetScope.of(context, get).hooked,
-    };
-    if (!setEquals(oldRefs, newScopedRefs)) {
-      notifier.removeListener(listener);
-      final _ComputedScopedMember<Result> newNotifier =
-          this._notifiers[newScopedRefs] ??= _ComputedScopedMember<Result>(
-            this,
-            dependencies: newScopedRefs,
-          );
+//     final Set<ValueRef>? oldRefs = _expando[context];
+//     if (oldRefs == null) {
+//       assert(oopsie('A "scoped computed notifier" is missing its scoped dependencies.', context));
+//       return;
+//     }
+//     final _ComputedScopedMember<Result>? notifier = _notifiers[oldRefs];
+//     if (notifier == null) {
+//       assert(
+//         oopsie(
+//           'A "scoped computed notifier" is missing '
+//           'its inner "single scoped computed notifier".',
+//           context,
+//         ),
+//       );
+//       return;
+//     }
+//     final Set<ValueRef> newScopedRefs = {
+//       for (final get in _dependencies) GetScope.of(context, get).hooked,
+//     };
+//     if (!setEquals(oldRefs, newScopedRefs)) {
+//       notifier.removeListener(listener);
+//       final _ComputedScopedMember<Result> newNotifier =
+//           this._notifiers[newScopedRefs] ??= _ComputedScopedMember<Result>(
+//             this,
+//             dependencies: newScopedRefs,
+//           );
 
-      final Result newValue = newNotifier.value;
-      newNotifier.addListener(listener);
-      if (newValue != notifier.value) {
-        listener();
-      }
-    }
+//       final Result newValue = newNotifier.value;
+//       newNotifier.addListener(listener);
+//       if (newValue != notifier.value) {
+//         listener();
+//       }
+//     }
 
-    _context = oldContext;
-  }
+//     _context = oldContext;
+//   }
 
-  @override
-  void removeListener(VoidCallback listener, {BuildContext? context}) {
-    final BuildContext? oldContext = _context;
-    _context = context;
-    final _ComputedScopedMember<Result> notifier = _notifier..removeListener(listener);
-    if (!notifier.hasListeners) {
-      _notifiers.remove(notifier._dependencies);
-    }
-    _context = oldContext;
-  }
+//   @override
+//   void removeListener(VoidCallback listener, {BuildContext? context}) {
+//     final BuildContext? oldContext = _context;
+//     _context = context;
+//     final _ComputedScopedMember<Result> notifier = _notifier..removeListener(listener);
+//     if (!notifier.hasListeners) {
+//       _notifiers.remove(notifier._dependencies);
+//     }
+//     _context = oldContext;
+//   }
 
-  @override
-  Result get value => _notifier.value;
+//   @override
+//   Result get value => _notifier.value;
 
-  static Never oopsie(String summary, [BuildContext? context]) {
-    assert(
-      throw FlutterError.fromParts([
-        ErrorSummary(summary),
-        if (context != null) ...[
-          ErrorDescription('This error was encountered within the following widget:'),
-          context.widget.toDiagnosticsNode(style: DiagnosticsTreeStyle.error),
-        ],
-        ErrorDescription(
-          'With how convoluted a scoped computed notifier is, '
-          'this is most likely a bug in the get_hooked package.',
-        ),
-        ErrorHint(
-          'Consider filing a bug report at '
-          'https://github.com/nate-thegrate/get_hooked/issues',
-        ),
-        ErrorHint(
-          '(If you have a code sample that can reliably reproduce the error, '
-          "that'd be amazing.)",
-        ),
-      ]),
-    );
-    throw Error();
-  }
-}
+//   static Never oopsie(String summary, [BuildContext? context]) {
+//     assert(
+//       throw FlutterError.fromParts([
+//         ErrorSummary(summary),
+//         if (context != null) ...[
+//           ErrorDescription('This error was encountered within the following widget:'),
+//           context.widget.toDiagnosticsNode(style: DiagnosticsTreeStyle.error),
+//         ],
+//         ErrorDescription(
+//           'With how convoluted a scoped computed notifier is, '
+//           'this is most likely a bug in the get_hooked package.',
+//         ),
+//         ErrorHint(
+//           'Consider filing a bug report at '
+//           'https://github.com/nate-thegrate/get_hooked/issues',
+//         ),
+//         ErrorHint(
+//           '(If you have a code sample that can reliably reproduce the error, '
+//           "that'd be amazing.)",
+//         ),
+//       ]),
+//     );
+//     throw Error();
+//   }
+// }

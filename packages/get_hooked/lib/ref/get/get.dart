@@ -1,8 +1,6 @@
 // ignore_for_file: use_setters_to_change_properties, avoid_setters_without_getters, intentional design :)
 // ignore_for_file: invalid_use_of_visible_for_testing_member
 
-import 'dart:collection';
-
 import 'package:collection/collection.dart';
 import 'package:collection_notifiers/collection_notifiers.dart';
 import 'package:flutter/foundation.dart';
@@ -44,6 +42,11 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
   void get removeListener {}
 
   /// Encapsulates a [ValueNotifier].
+  ///
+  /// See also:
+  ///
+  /// - [Get.vsyncValue], which creates smooth transitions between values,
+  ///   by using a [Vsync] to change gradually each animation frame.
   @factory
   static GetValue<T> it<T>(T initialValue) => GetValue._(_ValueNotifier(initialValue));
 
@@ -73,12 +76,12 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
   }) {
     return GetVsyncDouble._(
       Vsync.build(
-        (vsync) => _AnimationController(
+        (vsync) => _AnimationControllerStyled(
           vsync: vsync,
           value: initialValue,
           lowerBound: lowerBound ?? (bounded ? 0.0 : double.negativeInfinity),
           upperBound: upperBound ?? (bounded ? 1.0 : double.infinity),
-          duration: duration ?? Vsync.defaultDuration,
+          duration: duration,
           reverseDuration: reverseDuration,
           animationBehavior:
               animationBehavior ??
@@ -100,11 +103,11 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
   }) {
     return GetVsyncValue._(
       Vsync.build(
-        (vsync) => _ValueAnimation(
+        (vsync) => _ValueAnimationStyled(
           vsync: vsync,
           initialValue: initialValue,
-          duration: duration ?? Vsync.defaultDuration,
-          curve: curve ?? Vsync.defaultCurve,
+          duration: duration,
+          curve: curve,
           animationBehavior: animationBehavior,
           lerp: lerp,
         ),

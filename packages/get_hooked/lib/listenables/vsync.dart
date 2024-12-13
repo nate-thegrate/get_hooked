@@ -1,16 +1,21 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:get_hooked/listenables/default_animation_style.dart';
+
+import 'styled_animation.dart';
 
 /// Creates an [Animation] using a [TickerProvider].
 typedef VsyncBuilder<A extends Animation<Object?>> = A Function(Vsync vsync);
+
+typedef _StyleNotifier = ValueListenable<AnimationStyle>;
 
 /// A [TickerProvider] implementation that can arbitrarily
 /// reconfigure its attached [BuildContext].
 ///
 /// Setting a [context] allows the ticker to inherit from the ambient
 /// [TickerMode]; if the context is null, the ticker will always be active.
-class Vsync implements TickerProvider {
+class Vsync implements AnimationStyleProvider {
   /// Creates a [TickerProvider] that can arbitrarily
   /// reconfigure its attached [BuildContext].
   Vsync([BuildContext? context]) : _context = context;
@@ -23,10 +28,10 @@ class Vsync implements TickerProvider {
 
   /// Creates an animation using the provided [VsyncBuilder],
   /// and registers it to the [Vsync.cache].
-  static A build<A extends Animation<Object?>>(VsyncBuilder<A> builder) {
-    final vsync = Vsync();
+  static A build<A extends Animation<Object?>>(VsyncBuilder<A> builder, [BuildContext? context]) {
+    final vsync = Vsync(context);
     final A animation = builder(vsync);
-    Vsync.cache[animation] = vsync;
+    cache[animation] = vsync;
     return animation;
   }
 
@@ -40,9 +45,6 @@ class Vsync implements TickerProvider {
   }
 
   /// The [BuildContext] associated with this `vsync`.
-  ///
-  /// Setting a context isn't necessary if the vsync is being managed
-  /// by [Ref.vsync].
   BuildContext? get context => _context;
   BuildContext? _context;
   set context(BuildContext? newContext) {
@@ -50,20 +52,15 @@ class Vsync implements TickerProvider {
 
     if (newContext != null) {
       _ticker?.updateNotifier(newContext);
+      updateStyleNotifier(newContext);
     } else {
       _ticker?.detach();
+      _styleNotifier?.removeListener(_updateAnimation);
+      _styleNotifier = null;
     }
 
     _context = newContext;
   }
-
-  /// The default [Duration] to apply to `vsync` animations, e.g.
-  /// those created via [Get.vsync].
-  static Duration defaultDuration = Durations.medium1;
-
-  /// The default [Curve] to apply to `vsync` animations, e.g.
-  /// those created via [Get.vsync].
-  static Curve defaultCurve = Curves.linear;
 
   @override
   Ticker createTicker(TickerCallback onTick) {
@@ -79,6 +76,42 @@ class Vsync implements TickerProvider {
 
     return VsyncTicker(onTick, this);
   }
+
+  StyledAnimation<Object?>? _animation;
+
+  /// Ensures that this Vsync is subscribed to the relevant [ValueListenable].
+  ///
+  /// If the `context` argument is null, the context registered to this object
+  /// is used instead.
+  void updateStyleNotifier([BuildContext? context]) {
+    context ??= _context;
+    if (context == null) return;
+    final _StyleNotifier newNotifier = DefaultAnimationStyle.getNotifier(context);
+    if (newNotifier != _styleNotifier) {
+      _styleNotifier?.removeListener(_updateAnimation);
+      _styleNotifier = newNotifier..addListener(_updateAnimation);
+    }
+  }
+
+  void _updateAnimation() {
+    if (_styleNotifier?.value case final newStyle?) {
+      _animation?.updateStyle(newStyle);
+    }
+  }
+
+  _StyleNotifier? _styleNotifier;
+
+  @override
+  void registerAnimation(StyledAnimation<Object?> animation) {
+    assert(() {
+      if (_animation == null) return true;
+      throw FlutterError.fromParts([
+        ErrorSummary('Tried to register multiple animations to a Vsync.'),
+        ErrorDescription('Vsync is designed to manage a single animation.'),
+      ]);
+    }());
+    _animation = animation..updateStyle(_styleNotifier?.value ?? AnimationStyle());
+  }
 }
 
 /// A [Ticker] created by a [Vsync].
@@ -86,7 +119,7 @@ class Vsync implements TickerProvider {
 class VsyncTicker extends Ticker {
   /// Creates a [VsyncTicker].
   VsyncTicker(super.onTick, this.vsync) {
-    vsync._ticker = this;
+    vsync.ticker = this;
     if (vsync.context case final context? when context.mounted) {
       updateNotifier(context);
     }

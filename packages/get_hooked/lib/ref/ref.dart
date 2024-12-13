@@ -5,7 +5,7 @@ import 'package:get_hooked/listenables.dart';
 import 'get/get.dart';
 import 'hooked/hooked.dart';
 
-export 'get/get.dart' hide ComputedNoScope, ComputedScoped;
+export 'get/get.dart' hide ComputedNoScope;
 export 'hooked/hooked.dart';
 
 part 'src/get_scope.dart';

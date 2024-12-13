@@ -3,7 +3,9 @@ import 'package:flutter/foundation.dart' show ValueListenable;
 export 'package:flutter/foundation.dart' show ValueListenable;
 
 export 'listenables/async.dart';
+export 'listenables/default_animation_style.dart';
 export 'listenables/proxy.dart';
+export 'listenables/styled_animation.dart';
 export 'listenables/value_animation.dart';
 export 'listenables/vsync.dart';
 

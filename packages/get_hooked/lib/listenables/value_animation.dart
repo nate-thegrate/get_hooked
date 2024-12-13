@@ -245,6 +245,15 @@ class ValueAnimation<T> extends _AnimationControllerBase<T, ValueAnimation<T>> {
     animateTo(newTarget);
   }
 
+  late final _debugLerpError = FlutterError.fromParts([
+    ErrorSummary('The "lerp" callback of a ValueAnimation<$T>() returned `null`.'),
+    ErrorDescription('$this'),
+    ErrorDescription(
+      'A "lerp" callback should always return a non-null value when given 2 non-null inputs.',
+    ),
+    ErrorHint('Consider double-checking the linear interpolation logic.'),
+  ]);
+
   /// Triggers an animation, and returns a [TickerFuture] that completes
   /// when it finishes.
   ///
@@ -284,7 +293,12 @@ class ValueAnimation<T> extends _AnimationControllerBase<T, ValueAnimation<T>> {
 
     _from = from ?? value;
     _target = target;
-    _value = lerp(_from, _target, 0) as T;
+    final T? newValue = lerp(_from, _target, 0);
+    if (newValue is! T) {
+      assert(throw _debugLerpError);
+      return TickerFuture.complete();
+    }
+    _value = newValue;
     _statusUpdate(AnimationStatus.forward);
     return _ticker!.start();
   }
@@ -306,7 +320,12 @@ class ValueAnimation<T> extends _AnimationControllerBase<T, ValueAnimation<T>> {
       _ticker!.stop();
     } else {
       final double t = curve.transform(math.max(progress, 0.0));
-      _value = lerp(_from, _target, t) as T;
+      final T? newValue = lerp(_from, _target, t);
+      if (newValue is! T) {
+        assert(throw _debugLerpError);
+        return;
+      }
+      _value = newValue;
     }
     notifyListeners();
   }

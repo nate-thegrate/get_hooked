@@ -8,7 +8,7 @@ mixin DisposeGuard {
   /// [Ref] will automatically free associated resources when its associated
   /// [HookWidget] is no longer in use, so the `dispose()` method of a
   /// [ValueNotifier] or [AnimationController] is unnecessary.
-  /// 
+  ///
   /// The [DisposeGuard.dispose] method throws an error.
   /// {@endtemplate}
   @protected
@@ -31,8 +31,8 @@ class _ValueNotifier<T> = ValueNotifier<T> with DisposeGuard;
 class _ListNotifier<E> = ListNotifier<E> with DisposeGuard;
 class _SetNotifier<E> = SetNotifier<E> with DisposeGuard;
 class _MapNotifier<K, V> = MapNotifier<K, V> with DisposeGuard;
-class _AnimationController = AnimationController with DisposeGuard;
-class _ValueAnimation<T> = ValueAnimation<T> with DisposeGuard;
+class _AnimationControllerStyled = AnimationControllerStyled with DisposeGuard;
+class _ValueAnimationStyled<T> = ValueAnimationStyled<T> with DisposeGuard;
 class _AsyncController<T> = AsyncNotifier<T> with DisposeGuard;
 
 // dart format off
