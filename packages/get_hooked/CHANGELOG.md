@@ -1,12 +1,12 @@
 ## 0.3.0
+- Add disclaimer to README :)
 - Decided that `RenderHookElement` is too convoluted :)
   - API has been reworked into `RefPaint`
 - A bunch of benchmarking!
 - `RenderGet`: a flexible, super-performant render object widget
 - Remove "arbitrary `context`" vsync mode
 - Migrate `AsyncNotifier` to riverpod's `AsyncValue` class
-- `ComputeRef`
-
+- Add `ComputeRef` / `ComputedNotifier`
 
 ## 0.2.2
 - Small optimization for `RenderHookElement`: no longer performs a redundant
