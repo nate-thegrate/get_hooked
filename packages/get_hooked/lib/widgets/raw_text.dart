@@ -89,7 +89,7 @@ base mixin TextStyleSelector implements TextStyle {
   };
 
   @override
-  Never noSuchMethod(_) {
+  Never noSuchMethod(Invocation invocation) {
     throw UnsupportedError(
       '$MaterialTextStyle should only be passed to widgets '
       'that explicitly document support for it.',
