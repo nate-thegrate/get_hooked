@@ -6,9 +6,27 @@
 
 <br>
 
-<p align="center">
-  A Flutter package for sharing state between widgets, inspired by <a href="https://pub.dev/packages/riverpod"><b>riverpod</b></a> and <a href="https://pub.dev/packages/get_it"><b>get_it</b></a>.
-</p>
+<h1 align="center">please don't.</h1>
+
+<br>
+
+**get_hooked** handles state management by using `ValueListenable` objects as global variables.
+This practice goes against [Flutter's style guide](https://github.com/flutter/flutter/blob/master/docs/contributing/Style-guide-for-Flutter-repo.md#avoid-secret-or-global-state) and in some situations can lead to memory leaks.
+
+Futhermore, prior to the 1.0.0 release this package is subject to breaking changes without prior warning.
+
+<br>
+
+Here are a few alternatives to consider:
+
+- [**riverpod**](https://riverpod.dev): if you don't mind using build_runner, this is a fantastic option.
+- [**watch_it**](https://pub.dev/packages/watch_it): this package works great if you're already using [get_it](https://pub.dev/packages/get_it).
+- [**signals**](https://pub.dev/packages/signals): a powerful, feature-rich package with no code generation and no boilerplate.\
+The only downside is how the API deviates a bit from the Flutter framework's simple-yet-effective [**Listenable**](https://api.flutter.dev/flutter/foundation/Listenable-class.html) objects.
+
+<br>
+
+To learn more about **get_hooked**, continue reading here.
 
 <br><br>
 
@@ -634,18 +652,3 @@ from that point onward.
 
 So far, not a single person has reached out because of a problem with this package.
 Which means it's probably flawless!
-
-<br><br>
-
-<hr>
-
-<br><br>
-
-<a href="https://pub.dev/packages/get_hooked">
-  <p align="center">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/0a4dc595-24c8-4b98-bf93-1ede32b0cf03">
-      <img alt="get_hooked (logo, bottom)" src="https://github.com/user-attachments/assets/c82159f8-142d-4289-9405-a10b50fff259">
-    </picture>
-  </p>
-</a>
