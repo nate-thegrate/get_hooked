@@ -1,6 +1,7 @@
 /// @docImport 'value_animation.dart';
 library;
 
+// ignore_for_file: prefer_const_constructors, waiting for stable release
 // ignore_for_file: public_member_api_docs, pro crastinate!
 
 import 'package:flutter/foundation.dart';

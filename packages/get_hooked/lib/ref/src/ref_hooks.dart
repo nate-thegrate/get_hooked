@@ -3,8 +3,6 @@
 
 part of '../ref.dart';
 
-T _selectAll<T>(T value) => value;
-
 class _GetSelect<Result, T> extends HookData<Result> {
   const _GetSelect(this.hooked, this.selector, {required this.watching}) : super(key: hooked);
 
@@ -51,33 +49,27 @@ class _SelectHook<Result, T> extends Hook<Result, _GetSelect<Result, T>> {
 
 class _VsyncHook extends Hook<void, GetVsyncAny> {
   late GetVsyncAny get = data;
-  late Vsync vsync = get.vsync;
+  late Vsync? vsync = get.maybeVsync;
 
   @override
-  void initHook() => vsync.context = context;
-
-  @override
-  void didUpdate(GetVsyncAny oldData) {
-    final GetVsyncAny newGet = data;
-
-    if (newGet != get) {
-      dispose();
-      get = newGet;
-      vsync = get.vsync;
-      initHook();
+  void initHook() {
+    if (vsync case final vsync? when vsync.context == null) {
+      vsync.context = context;
     }
   }
 
   @override
   void activate() {
     vsync
-      ..ticker?.updateNotifier(context)
+      ?..ticker?.updateNotifier(context)
       ..updateStyleNotifier(context);
   }
 
   @override
   void dispose() {
-    if (vsync.context == context) vsync.context = null;
+    if (vsync case final vsync? when vsync.context == context) {
+      vsync.context = null;
+    }
   }
 
   @override
@@ -87,11 +79,23 @@ class _VsyncHook extends Hook<void, GetVsyncAny> {
 class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>> implements ComputeRef {
   bool _needsDependencies = true;
   final _rootDependencies = <GetAny>{};
+  final _rootVsyncs = <GetVsyncAny>{};
   final _scopedDependencies = <Listenable>{};
+  final _scopedVsyncs = <Vsync>{};
   late final _listenable = Listenable.merge(_scopedDependencies);
   late Result _result;
   bool _computed = false;
   bool _dirty = false;
+
+  // void vsync() {
+  //   assert(_needsDependencies);
+  //   final Iterable<GetVsyncAny> scopedVsyncs = _rootVsyncs.map((get) => GetScope.of(context, get)).followedBy(_scopedDependencies.whereType());
+  //   for (final getVsync in scopedVsyncs) {
+  //     if (getVsync.maybeVsync case final vsync? when vsync.context == null) {
+  //       _scopedVsyncs.add(vsync..context = context);
+  //     }
+  //   }
+  // }
 
   void _scheduleRecompute() {
     _dirty = true;
@@ -117,12 +121,32 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>> impleme
   }
 
   @override
-  G read<G extends GetAny>(G get, {bool useScope = true}) {
-    return useScope ? GetScope.of(context, get) : get;
+  G read<G extends GetAny>(G get, {bool autoVsync = true, bool useScope = true}) {
+    final G scoped = useScope ? GetScope.of(context, get) : get;
+    if (_needsDependencies && autoVsync && get is GetVsyncAny) {
+      if (scoped is! GetVsyncAny) {
+        assert(() {
+          // An invalid substitution was made, so throw the FlutterError from GetScope.
+          GetScope.of<GetVsyncAny>(context, get);
+          throw StateError(
+            'That GetScope.of(context) method should have thrown an error.\n'
+            "If somehow you've managed to trigger this message, that's wild! "
+            '$bugReport',
+          );
+        }());
+        return scoped;
+      }
+      _rootVsyncs.add(get);
+      if (scoped.maybeVsync case final vsync?
+          when vsync.context == null || vsync.context == context) {
+        _scopedVsyncs.add(vsync);
+      }
+    }
+    return scoped;
   }
 
   @override
-  T watch<T>(GetT<T> get, {bool useScope = true}) {
+  T watch<T>(GetT<T> get, {bool autoVsync = true, bool useScope = true}) {
     final GetT<T> scoped = read(get, useScope: useScope);
     if (_needsDependencies) {
       _rootDependencies.add(get);
@@ -132,7 +156,12 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>> impleme
   }
 
   @override
-  R select<R, T>(GetT<T> get, R Function(T value) selector, {bool useScope = true}) {
+  R select<R, T>(
+    GetT<T> get,
+    R Function(T value) selector, {
+    bool autoVsync = true,
+    bool useScope = true,
+  }) {
     final GetT<T> scoped = read(get, useScope: useScope);
     if (_needsDependencies) {
       final GetProxy<R, GetT<T>> rootProxy, scopedProxy;
@@ -147,7 +176,7 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>> impleme
 
   @override
   void didChangeDependencies() {
-    final Set<Listenable> newDependencies = {
+    final newDependencies = <Listenable>{
       for (final get in _rootDependencies) GetScope.of(context, get).hooked,
     };
     if (!setEquals(newDependencies, _scopedDependencies)) {
@@ -157,6 +186,31 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>> impleme
         ..addAll(newDependencies);
       _listenable.addListener(_scheduleRecompute);
     }
+
+    final newVsyncs = <Vsync>{
+      for (final getVsync in _rootVsyncs)
+        if (GetScope.of(context, getVsync).maybeVsync case final vsync?) vsync,
+    };
+    if (!setEquals(newVsyncs, _scopedVsyncs)) {
+      for (final Vsync vsync in _scopedVsyncs.difference(newVsyncs)) {
+        if (vsync.context == context) vsync.context = null;
+      }
+      for (final Vsync vsync in newVsyncs.difference(_scopedVsyncs)) {
+        assert(
+          vsync.context != context,
+          'Somehow a Vsync is already registered to this context. $bugReport',
+        );
+        vsync.context ??= context;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final Vsync vsync in _scopedVsyncs) {
+      if (vsync.context == context) vsync.context = null;
+    }
+    _listenable.removeListener(_scheduleRecompute);
   }
 
   @override

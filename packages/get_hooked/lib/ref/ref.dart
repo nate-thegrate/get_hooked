@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:get_hooked/bug_report.dart';
 import 'package:get_hooked/listenables.dart';
 
 import 'get/get.dart';
@@ -80,22 +81,74 @@ extension type Ref<V extends ValueRef>(GetV<V> _get) implements Object {
     return _SubGetFactory(_get.hooked, factory, autoDispose: autoDispose);
   }
 
+  /// If a [Substitution] was made, returns the widget that made it.
+  ///
+  /// The result could be:
+  ///
+  /// - A [GetScope], if the substitution was made there
+  /// - A [HookWidget] that called [useSubstitute]
+  /// - Another widget that used a `Ref` instance method such as [Ref.sub]
+  /// - `null`, if no substitution was made
+  ///
+  /// The result is always `null` in profile & release mode.
+  Widget? debugSubWidget(BuildContext context) {
+    Widget? result;
+    assert(() {
+      final GetAny? scopedGet = GetScope.maybeOf(context, _get);
+      if (scopedGet == null) return true;
+      final GetScope scope = context.findAncestorStateOfType<_GetScopeState>()!.widget;
+      for (final SubAny sub in scope.substitutes) {
+        if (sub.ref == _get) {
+          result = scope;
+          return true;
+        }
+      }
+      final container =
+          context.getElementForInheritedWidgetOfExactType<_OverrideContainer>()!
+              as _OverrideContainerElement;
+
+      for (final MapEntry(key: context, value: map) in container.clientSubstitutes.entries) {
+        for (final ValueRef key in map.keys) {
+          if (key == _get) {
+            result = context.widget;
+            return true;
+          }
+        }
+      }
+
+      throw StateError(
+        'The object $_get was substituted with $scopedGet, '
+        'but the substitution was not found.\n'
+        '$bugReport',
+      );
+    }());
+
+    return result;
+  }
+
   /// This hook function returns a copy of the provided [Get] object,
   /// overriding it with any replacement in an ancestor [GetScope] if applicable.
   ///
   /// Unlike [Ref.watch], this method does not subscribe to any notifications
-  /// from the object.
+  /// from the object; instead, by default it creates a dependency on the ancestor
+  /// scope (so that it receives notifications if a relevant [Substitution] is made).
   static G read<G extends GetAny>(
     G get, {
     bool createDependency = true,
     bool throwIfMissing = false,
+    bool autoVsync = true,
   }) {
-    return GetScope.of(
+    final G result = GetScope.of(
       useContext(),
       get,
       createDependency: createDependency,
       throwIfMissing: throwIfMissing,
     );
+    if (autoVsync) {
+      if (result case final GetVsyncAny getVsync) Ref.vsync(getVsync);
+    }
+
+    return result;
   }
 
   /// This hook function watches a [Get] object
@@ -127,18 +180,12 @@ extension type Ref<V extends ValueRef>(GetV<V> _get) implements Object {
   static T watch<T>(
     GetT<T> get, {
     bool watching = true,
-    bool checkVsync = true,
+    bool autoVsync = true,
     bool useScope = true,
   }) {
-    const label = 'Ref.watch';
     if (useScope) get = GetScope.of(useContext(), get);
-
-    _useVsyncValidation(get, checkVsync, label);
-
-    return HookData.use(
-      _GetSelect<T, T>(get.hooked, _selectAll<T>, watching: watching),
-      debugLabel: label,
-    );
+    if (autoVsync && get is GetVsync<T, Animation<T>>) Ref.vsync(get);
+    return useValueListenable(get, watching: watching);
   }
 
   /// Selects a value from a complex [Get] object and triggers a rebuild when
@@ -151,17 +198,14 @@ extension type Ref<V extends ValueRef>(GetV<V> _get) implements Object {
     GetT<T> get,
     Result Function(T value) selector, {
     bool watching = true,
-    bool checkVsync = true,
+    bool autoVsync = true,
     bool useScope = true,
   }) {
-    const label = 'Ref.select';
     if (useScope) get = GetScope.of(useContext(), get);
-
-    _useVsyncValidation(get, checkVsync, label);
 
     return HookData.use(
       _GetSelect<Result, T>(get.hooked, selector, watching: watching),
-      debugLabel: label,
+      debugLabel: 'Ref.select',
     );
   }
 
@@ -176,16 +220,19 @@ extension type Ref<V extends ValueRef>(GetV<V> _get) implements Object {
     );
   }
 
-  /// Provides an interface for controlling a [GetVsync] animation,
-  /// and optionally rebuilds when the animation sends a notification.
+  /// Manages this [Get] object's [Vsync].
   ///
-  /// If [watch] is true, each notification sent by the animation
+  /// The animation will inherit the [DefaultAnimationStyle]'s ambient style
+  /// along with information from the [TickerMode] regarding whether its [Ticker]
+  /// should be muted.
+  ///
+  /// If [watching] is true, each notification sent by the animation
   /// triggers a rebuild.
-  static Controls vsync<Controls extends GetVsyncAny>(Controls get, {bool watch = false}) {
-    final Controls scoped = GetScope.of(useContext(), get);
-    useListenable(watch ? scoped.hooked : null);
+  static A vsync<A extends GetVsyncAny>(A get, {bool useScope = true, bool watching = false}) {
+    if (useScope) get = GetScope.of(useContext(), get);
+    useListenable(watching ? get : null);
 
-    use(_VsyncHook.new, key: scoped, data: scoped, debugLabel: 'Ref.vsync');
-    return scoped;
+    use(_VsyncHook.new, key: get, data: get, debugLabel: 'Ref.vsync');
+    return get;
   }
 }

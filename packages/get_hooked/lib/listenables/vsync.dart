@@ -110,6 +110,7 @@ class Vsync implements AnimationStyleProvider {
         ErrorDescription('Vsync is designed to manage a single animation.'),
       ]);
     }());
+    // ignore: prefer_const_constructors, waiting for stable release
     _animation = animation..updateStyle(_styleNotifier?.value ?? AnimationStyle());
   }
 }

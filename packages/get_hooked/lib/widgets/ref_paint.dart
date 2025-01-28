@@ -201,9 +201,9 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
       case _PaintMethod.buildSemantics when _element.handledSemantics:
         break;
       case _PaintMethod.paint:
-        _listen(get.hooked, renderer.markNeedsPaint);
+        _listen(get, renderer.markNeedsPaint);
       case _PaintMethod.buildSemantics:
-        _listen(get.hooked, renderer.markNeedsSemanticsUpdate);
+        _listen(get, renderer.markNeedsSemanticsUpdate);
     }
     return get.value;
   }
@@ -265,10 +265,10 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
   /// Registers a [GetVsync] object with this [RefPaint]'s context,
   /// in a fashion similar to [Ref.vsync].
   V vsync<V extends GetVsyncAny>(V getVsync, {bool useScope = true, bool watch = false}) {
-    if (useScope) {
-      getVsync = GetScope.of(context, getVsync);
+    if (useScope) getVsync = GetScope.of(context, getVsync);
+    if (getVsync.maybeVsync case final vsync? when vsync.context == null) {
+      _element.vsyncs.add(vsync..context = _element);
     }
-    _element.vsyncs.add(getVsync.vsync..context = _element);
     if (watch) {
       this.watch(getVsync);
     }
@@ -322,7 +322,9 @@ class _RefPainterElement extends SingleChildRenderObjectElement {
   void activate() {
     super.activate();
     for (final Vsync vsync in vsyncs) {
-      vsync.ticker?.updateNotifier(this);
+      vsync
+        ..ticker?.updateNotifier(this)
+        ..updateStyleNotifier(this);
     }
   }
 
@@ -401,13 +403,15 @@ class _RenderRefPaint extends RenderProxyBox {
   void performResize() => size = constraints.biggest;
 
   @override
-  void performLayout() {}
+  void performLayout() {
+    child?.layout(constraints);
+  }
 
   @override
   void paint(PaintingContext context, Offset offset) {
     late int debugPreviousCanvasSaveCount;
-    final Canvas canvas = context.canvas;
     if (foreground) super.paint(context, offset);
+    final Canvas canvas = context.canvas;
     canvas.save();
     assert(() {
       debugPreviousCanvasSaveCount = canvas.getSaveCount();

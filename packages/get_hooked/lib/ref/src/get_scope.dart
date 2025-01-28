@@ -58,6 +58,20 @@ class GetScope extends StatefulWidget {
             ? context.dependOnInheritedWidgetOfExactType()
             : context.getInheritedWidgetOfExactType();
 
+    assert(() {
+      final ValueRef? scoped = model?.map[get];
+      if (scoped is G?) return true;
+
+      throw FlutterError.fromParts([
+        ErrorSummary('An invalid substitution was made for a $G.'),
+        ErrorDescription('A ${get.runtimeType} was substituted with a ${scoped.runtimeType}.'),
+        if (Ref(get).debugSubWidget(context) case final widget?) ...[
+          ErrorDescription('The invalid substitution was made by the following widget:'),
+          widget.toDiagnosticsNode(style: DiagnosticsTreeStyle.error),
+        ],
+      ]);
+    }());
+
     return model?._select(get);
   }
 
@@ -220,37 +234,6 @@ class _GetScopeState extends State<GetScope> {
         }
       }
     }
-
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   for (final ValueRef notifier in removed) {
-    //     // ignore: invalid_use_of_protected_member, we need to know!
-    //     if (notifier case ChangeNotifier(hasListeners: true)) {
-    //       final String type = notifier.runtimeType.toString().replaceAll('_', '');
-    //
-    //       throw FlutterError.fromParts([
-    //         ErrorSummary('$type not properly disposed.'),
-    //         ErrorDescription(
-    //           'Unlike most "Get" objects, the values passed as overrides in a Ref '
-    //           "can be short-lived, if the scope's configuration changes.",
-    //         ),
-    //         ErrorHint(
-    //           'Ensure that any listeners added to the object are removed '
-    //           "when it's disposed of.",
-    //         ),
-    //         if (notifier is DisposeGuard)
-    //           ErrorHint(
-    //             'Alternatively, instead of using one of the "Get" constructors, '
-    //             'extend the $type type directly, and use an Override(autoDispose: false).',
-    //           )
-    //         else
-    //           ErrorHint(
-    //             'Alternatively, use Override(autoDispose: false) to signify that '
-    //             'this $type should be manually disposed of by the Ref.',
-    //           ),
-    //       ]);
-    //     }
-    //   }
-    // });
   }
 
   @override
@@ -309,17 +292,17 @@ class _OverrideContainerElement extends InheritedElement {
       );
       return;
     }
-    final Map<ValueRef, ValueRef> map = {...?clientOverrides.remove(dependent), ...value};
-    clientOverrides[dependent] = map;
+    final Map<ValueRef, ValueRef> map = {...?clientSubstitutes.remove(dependent), ...value};
+    clientSubstitutes[dependent] = map;
   }
 
   @override
   void removeDependent(Element dependent) {
-    clientOverrides.remove(dependent);
+    clientSubstitutes.remove(dependent);
     super.removeDependent(dependent);
   }
 
-  late final clientOverrides = findAncestorStateOfType<_GetScopeState>()!.clientOverrides;
+  late final clientSubstitutes = findAncestorStateOfType<_GetScopeState>()!.clientOverrides;
 }
 
 /// An [InheritedModel] used by [Ref] to store its [Override]s
@@ -354,27 +337,4 @@ final class ScopeModel extends InheritedModel<ValueRef> {
     }
     return false;
   }
-}
-
-void _useVsyncValidation(Object? get, bool checkVsync, String debugLabel) {
-  assert(
-    useMemoized(() {
-      if (!checkVsync) return true;
-      if (get case final GetVsyncAny getVsync when getVsync.vsync.context == null) {
-        throw FlutterError.fromParts([
-          ErrorSummary('$debugLabel() called with a non-attached Vsync.'),
-          ErrorDescription(
-            '$debugLabel() is intended to listen to an existing value, '
-            'but the $getVsync has not been set up.',
-          ),
-          ErrorHint(
-            'Consider setting up an ancestor widget with Ref.vsync(), '
-            'or calling Ref.vsync() here instead of $debugLabel().',
-          ),
-          ErrorHint('Alternatively, call $debugLabel(checkVsync: false) to ignore this warning.'),
-        ]);
-      }
-      return true;
-    }, key: checkVsync ? get : null),
-  );
 }

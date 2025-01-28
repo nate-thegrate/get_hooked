@@ -140,7 +140,7 @@ final class _RenderScopedGet<T, Render extends RenderObject> extends RenderScope
 }
 
 class _RenderGetElement extends SingleChildRenderObjectElement {
-  _RenderGetElement(super.widget, this.get) : vsync = get is GetVsyncAny ? get.vsync : null;
+  _RenderGetElement(super.widget, this.get) : vsync = get is GetVsyncAny ? get.maybeVsync : null;
 
   final GetAny get;
 
@@ -186,19 +186,30 @@ class _RenderScopedGetElement<T> extends SingleChildRenderObjectElement {
     scopedGet.hooked.addListener(listener);
   }
 
-  void resync() {
-    if (scopedGet case GetVsyncAny(:final Vsync vsync)) {
-      this.vsync =
-          vsync
-            ..context ??= this
-            ..ticker?.updateNotifier(this);
+  void resync(GetAny get) {
+    final Vsync? vsync = get is GetVsyncAny ? get.maybeVsync : null;
+    if (vsync == this.vsync) return;
+
+    if (this.vsync case final oldVsync? when oldVsync.context == this) {
+      oldVsync.context = null;
+    }
+    if (vsync != null && (vsync.context == null || vsync.context == this)) {
+      vsync
+        ..context ??= this
+        ..ticker?.updateNotifier(this)
+        ..updateStyleNotifier(this);
     }
   }
 
   @override
   void activate() {
+    final GetT<T> scoped = scopedGet;
     super.activate();
-    vsync?.ticker?.updateNotifier(this);
+    if (GetScope.of(this, get) == scoped) {
+      vsync
+        ?..ticker?.updateNotifier(this)
+        ..updateStyleNotifier(this);
+    }
   }
 
   @override
@@ -219,7 +230,7 @@ class _RenderScopedGetElement<T> extends SingleChildRenderObjectElement {
 
     scopedGet.hooked.removeListener(listener);
     scopedGet = newGet..hooked.addListener(listener);
-    resync();
+    resync(scopedGet);
   }
 
   @override

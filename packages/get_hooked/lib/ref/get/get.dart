@@ -224,22 +224,22 @@ extension type GetVsync<T, A extends Animation<T>>._(A _hooked)
   /// The [Vsync] associated with this animation.
   Vsync? get maybeVsync => Vsync.cache[this];
 
-  /// The [Vsync] associated with this animation.
-  Vsync get vsync {
-    assert(() {
-      if (maybeVsync == null) {
-        throw FlutterError.fromParts([
-          ErrorSummary('Vsync not found: $this'),
-          ErrorDescription(
-            'This is most likely caused by creating an animation without calling Vsync.build.',
-          ),
-          ErrorHint('Consider initializing the animation via Get.vsync().'),
-        ]);
-      }
-      return true;
-    }());
-    return maybeVsync!;
-  }
+  // /// The [Vsync] associated with this animation.
+  // Vsync get vsync {
+  //   assert(() {
+  //     if (maybeVsync == null) {
+  //       throw FlutterError.fromParts([
+  //         ErrorSummary('Vsync not found: $this'),
+  //         ErrorDescription(
+  //           'This is most likely caused by creating an animation without calling Vsync.build.',
+  //         ),
+  //         ErrorHint('Consider initializing the animation via Get.vsync().'),
+  //       ]);
+  //     }
+  //     return true;
+  //   }());
+  //   return maybeVsync!;
+  // }
 
   /// Don't add a listener directly!
   /// {@macro get_hooked.dont}
@@ -265,6 +265,12 @@ extension type GetVsync<T, A extends Animation<T>>._(A _hooked)
   @redeclare
   void get removeStatusListener {}
 }
+
+/// Shorthand for specifying a [GetVsync] object's first type argument.
+typedef GetVsyncT<T> = GetVsync<T, Animation<T>>;
+
+/// Shorthand for specifying a [GetVsync] object's second type argument.
+typedef GetVsyncA<A extends Animation<Object?>> = GetVsync<Object?, A>;
 
 /// Encapsulates an [AnimationController].
 extension type GetVsyncDouble._(AnimationController _hooked)

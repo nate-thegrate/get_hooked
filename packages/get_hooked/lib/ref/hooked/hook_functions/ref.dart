@@ -2,11 +2,14 @@ part of '../hook_functions.dart';
 
 /// A class that stores a single value.
 ///
-/// It is typically created by [useRef].
+/// This is similar to a [ValueNotifier] but does not send any notifications
+/// when the value changes.
+///
+/// It is typically instantiated by [useRef].
 class ObjectRef<T> {
-  /// A class that stores a single value.
+  /// Stores a single value.
   ///
-  /// It is typically created by [useRef].
+  /// This constructor is typically called by [useRef].
   ObjectRef(this.value);
 
   /// A mutable property that will be preserved across rebuilds.
