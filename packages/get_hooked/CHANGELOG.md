@@ -1,3 +1,7 @@
+## 0.4.0
+- `MediaQuery` notifier
+  - Responds to screen metric changes before the build phase!
+
 ## 0.3.0
 - Add disclaimer to README :)
 - Decided that `RenderHookElement` is too convoluted :)

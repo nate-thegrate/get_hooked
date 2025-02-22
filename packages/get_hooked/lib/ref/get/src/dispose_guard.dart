@@ -33,7 +33,8 @@ class _SetNotifier<E> = SetNotifier<E> with DisposeGuard;
 class _MapNotifier<K, V> = MapNotifier<K, V> with DisposeGuard;
 class _AnimationControllerStyled = AnimationControllerStyled with DisposeGuard;
 class _ValueAnimationStyled<T> = ValueAnimationStyled<T> with DisposeGuard;
-class _AsyncController<T> = AsyncNotifier<T> with DisposeGuard;
+class _AsyncNotifier<T> = AsyncNotifier<T> with DisposeGuard;
+class _MediaQueryNotifier<T> = MediaQueryNotifier<T> with DisposeGuard;
 
 // dart format off
 class _ProxyNotifier<T, L extends Listenable>                = ProxyNotifier<T, L> with DisposeGuard;

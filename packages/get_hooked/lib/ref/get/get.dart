@@ -1,6 +1,8 @@
 // ignore_for_file: use_setters_to_change_properties, avoid_setters_without_getters, intentional design :)
 // ignore_for_file: invalid_use_of_visible_for_testing_member
 
+import 'dart:ui';
+
 import 'package:collection/collection.dart';
 import 'package:collection_notifiers/collection_notifiers.dart';
 import 'package:flutter/foundation.dart';
@@ -83,8 +85,7 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
           upperBound: upperBound ?? (bounded ? 1.0 : double.infinity),
           duration: duration,
           reverseDuration: reverseDuration,
-          animationBehavior:
-              animationBehavior ??
+          animationBehavior: animationBehavior ??
               (bounded ? AnimationBehavior.normal : AnimationBehavior.preserve),
           debugLabel: debugLabel,
         ),
@@ -124,7 +125,7 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
   /// Encapsulates an [AsyncNotifier] with a preconfigured [futureCallback].
   @factory
   static GetAsync<T> async<T>(AsyncValueGetter<T> futureCallback, {T? initialData}) {
-    return GetAsync._(_AsyncController(futureCallback: futureCallback, initialData: initialData));
+    return GetAsync._(_AsyncNotifier(futureCallback: futureCallback, initialData: initialData));
   }
 
   /// Encapsulates an [AsyncNotifier] with a preconfigured [streamCallback].
@@ -136,13 +137,24 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
     bool notifyOnCancel = false,
   }) {
     return GetAsync._(
-      _AsyncController(
+      _AsyncNotifier(
         streamCallback: streamCallback,
         initialData: initialData,
         cancelOnError: cancelOnError,
         notifyOnCancel: notifyOnCancel,
       ),
     );
+  }
+
+  /// Encapsulates a [MediaQueryNotifier], allowing for efficient notifications
+  /// based on screen metrics.
+  @factory
+  static GetQuery<T> mediaQuery<T>(
+    T Function(MediaQueryData data) query, {
+    FlutterView? view,
+    ViewFinder? viewFinder,
+  }) {
+    return GetQuery._(_MediaQueryNotifier(query, view: view, viewFinder: viewFinder));
   }
 
   /// Encapsulates a [ProxyNotifier], using the provided callback to retrieve a value.
@@ -562,6 +574,13 @@ extension type GetVsyncValue<T>._(ValueAnimation<T> _hooked)
 
 /// Encapsulates an [AsyncNotifier].
 extension type GetAsync<T>._(AsyncNotifier<T> _hooked) implements Get<T?, AsyncNotifier<T>> {}
+
+/// Encapsulates a [MediaQueryNotifier].
+extension type GetQuery<T>._(MediaQueryNotifier<T> _hooked)
+    implements Get<T, MediaQueryNotifier<T>> {
+  /// {@macro get_hooked.MediaQueryNotifier.assignView}
+  void assignView(FlutterView view) => _hooked.assignView(view);
+}
 
 /// Encapsulates any [Listenable], using the provided callback to retrieve a value.
 extension type GetProxy<T, L extends Listenable>._(ProxyNotifier<T, L> _hooked)

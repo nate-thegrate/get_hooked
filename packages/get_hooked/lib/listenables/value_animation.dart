@@ -67,6 +67,12 @@ abstract class _AnimationControllerBase<AnimationType, ThisType> extends Animati
   // A method that all 3 controllers have in common.
   TickerFuture animateTo(AnimationType target);
 
+  void resync(TickerProvider vsync) {
+    final Ticker oldTicker = _ticker!;
+    _ticker = vsync.createTicker(_tick);
+    _ticker!.absorbTicker(oldTicker);
+  }
+
   /// Release the resources used by this object. The object is no longer usable
   /// after this method is called.
   ///
