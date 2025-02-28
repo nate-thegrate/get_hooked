@@ -1,13 +1,14 @@
 /// @docImport 'value_animation.dart';
 library;
 
-// ignore_for_file: prefer_const_constructors, waiting for stable release
-// ignore_for_file: public_member_api_docs, pro crastinate!
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+/// Designates an [AnimationStyle] for descendant widgets to fall back to.
 sealed class DefaultAnimationStyle implements Widget {
+  /// Creates a default [AnimationStyle] widget.
+  ///
+  /// [mergeWithAncestor] defaults to `true`.
   const factory DefaultAnimationStyle({
     Key? key,
     required AnimationStyle style,
@@ -23,31 +24,25 @@ sealed class DefaultAnimationStyle implements Widget {
   /// and [ValueAnimation] objects.
   static const fallbackCurve = Curves.linear;
 
+  /// Returns the [AnimationStyle] corresponding to the nearest ancestor
+  /// [DefaultAnimationStyle] widget.
+  ///
+  /// If [createDependency] is true, the provided [context] is notified to rebuild
+  /// when the animation style changes.
   static AnimationStyle of(BuildContext context, {bool createDependency = true}) {
     final _InheritedAnimationStyle? inherited =
         createDependency
             ? context.dependOnInheritedWidgetOfExactType()
             : context.getInheritedWidgetOfExactType();
 
-    return inherited?.style ?? AnimationStyle();
+    return inherited?.style ?? const AnimationStyle();
   }
 
-  static Duration? durationOf(BuildContext context) {
-    return _AnimationStyleAspect.duration._of(context);
-  }
-
-  static Duration? reverseDurationOf(BuildContext context) {
-    return _AnimationStyleAspect.reverseDuration._of(context);
-  }
-
-  static Curve? curveOf(BuildContext context) {
-    return _AnimationStyleAspect.curve._of(context);
-  }
-
-  static Curve? reverseCurveOf(BuildContext context) {
-    return _AnimationStyleAspect.reverseCurve._of(context);
-  }
-
+  /// Returns an object that sends a notification when the default style of the corresponding
+  /// [context] changes.
+  ///
+  /// This allows an animation's configuration to stay up-to-date
+  /// without triggering unnecessary rebuilds.
   static ValueListenable<AnimationStyle> getNotifier(BuildContext context) {
     final _InheritedAnimationStyle? inheritedWidget = context.getInheritedWidgetOfExactType();
     return inheritedWidget?.notifier ?? const _FallbackAnimationStyleListenable();
@@ -62,10 +57,8 @@ class _FallbackAnimationStyleListenable implements ValueListenable<AnimationStyl
   @override
   void removeListener(VoidCallback listener) {}
 
-  static final _value = AnimationStyle();
-
   @override
-  AnimationStyle get value => _value;
+  AnimationStyle get value => const AnimationStyle();
 }
 
 enum _AnimationStyleAspect<T> {
@@ -73,17 +66,6 @@ enum _AnimationStyleAspect<T> {
   curve<Curve?>(),
   reverseDuration<Duration?>(),
   reverseCurve<Curve?>();
-
-  T? _of(BuildContext context) {
-    final _InheritedAnimationStyle? model = InheritedModel.inheritFrom<_InheritedAnimationStyle>(
-      context,
-      aspect: this,
-    );
-    if (model == null) {
-      return null;
-    }
-    return _select(model.style);
-  }
 
   // dart format off
   T _select(AnimationStyle style) => switch (this) {
@@ -150,7 +132,7 @@ class _DefaultAnimationStyleState extends State<_DefaultAnimationStyle> {
     AnimationStyle style = widget.style;
     if (widget.mergeWithAncestor) {
       final AnimationStyle ancestorStyle = DefaultAnimationStyle.of(context);
-      if (ancestorStyle != AnimationStyle()) {
+      if (ancestorStyle != const AnimationStyle()) {
         style = ancestorStyle.copyWith(
           duration: style.duration,
           curve: style.curve,

@@ -1,5 +1,3 @@
-// ignore_for_file: public_member_api_docs, as much as I'd love to document l1, l2, l3, l4…
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -23,6 +21,7 @@ extension SchedulerBuilding on SchedulerBinding {
 
 /// Can be extended to support an arbitrary number of listenables via [Listenable.merge].
 abstract class ProxyNotifierBase<T> with ChangeNotifier implements ValueListenable<T> {
+  /// Initializes fields for subclasses.
   ProxyNotifierBase(this.listenable, {required T value, this.concurrent = false})
     : _value = value;
 

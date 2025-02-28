@@ -1,4 +1,6 @@
-// ignore_for_file: public_member_api_docs, pro crastinate!
+/// @docImport 'package:flutter/scheduler.dart';
+/// @docImport 'package:get_hooked/get_hooked.dart';
+library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -8,19 +10,48 @@ import 'value_animation.dart';
 import 'vsync.dart';
 
 /// A [ValueListenable] attached to a [TickerProvider].
+///
+/// Generally this interface is implemented by [Animation] objects,
+/// but it can be used in other ways (e.g. a single object that manages multiple animations).
 abstract interface class VsyncValue<T> implements ValueListenable<T> {
+  /// The listenable's associated [Vsync].
   Vsync get vsync;
 
+  /// Called to update the listenable's associated [Vsync].
   void resync(Vsync vsync);
 }
 
+/// A `typedef` that can represent any [VsyncValue] object.
 typedef VsyncRef = VsyncValue<Object?>;
 
+/// Interface for an [Animation] that uses a [Vsync] to manage its [Ticker] and [AnimationStyle].
 abstract interface class StyledAnimation<T> implements Animation<T>, VsyncValue<T> {
+  /// Applies the [newStyle] to the animation.
   void updateStyle(AnimationStyle newStyle);
 }
 
+/// An [AnimationController] that implements the [StyledAnimation] interface.
+///
+/// [Get.vsync] returns an instance of this class.
 class AnimationControllerStyled extends AnimationController implements StyledAnimation<double> {
+  /// Creates an animation controller.
+  ///
+  /// * `value` is the initial value of the animation. If defaults to the lower
+  ///   bound.
+  ///
+  /// * [duration] is the length of time this animation should last.
+  ///
+  /// * [debugLabel] is a string to help identify this animation during
+  ///   debugging (used by [toString]).
+  ///
+  /// * [lowerBound] is the smallest value this animation can obtain and the
+  ///   value at which this animation is deemed to be dismissed.
+  ///
+  /// * [upperBound] is the largest value this animation can obtain and the
+  ///   value at which this animation is deemed to be completed.
+  ///
+  /// * `vsync` is the required [Vsync] for the current context. It can
+  ///   be changed by calling [resync].
   AnimationControllerStyled({
     required Vsync vsync,
     super.value,
@@ -53,7 +84,10 @@ class AnimationControllerStyled extends AnimationController implements StyledAni
     super.reverseDuration = value;
   }
 
+  /// The [Curve] to use by default when calling [animateTo].
   Curve? curve;
+
+  /// The [Curve] to use by default when calling [animateBack].
   Curve? reverseCurve;
 
   late AnimationStyle _style;
@@ -101,7 +135,9 @@ class AnimationControllerStyled extends AnimationController implements StyledAni
   }
 }
 
+/// A [ValueAnimation] that inherits fallback values from a [Vsync]'s default [AnimationStyle].
 class ValueAnimationStyled<T> extends ValueAnimation<T> implements StyledAnimation<T> {
+  /// Creates a new [ValueAnimation] object.
   ValueAnimationStyled({
     required Vsync vsync,
     required super.initialValue,

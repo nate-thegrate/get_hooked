@@ -1,10 +1,12 @@
-// ignore_for_file: public_member_api_docs, pro crastinate!
-
 part of '../get.dart';
 
+/// The parameter used in a [RefComputer] callback.
 abstract interface class ComputeRef {
+  /// Returns the [ValueListenable.value], and triggers a re-computation when notifications
+  /// are sent.
   T watch<T>(ValueListenable<T> get, {bool autoVsync = true, bool useScope = true});
 
+  /// Returns the [selector]'s result and triggers a re-compute when that result changes.
   Result select<Result, T>(
     ValueListenable<T> get,
     Result Function(T value) selector, {
@@ -13,10 +15,13 @@ abstract interface class ComputeRef {
   });
 }
 
+/// Soon I will turn [Ref] into a global constant that implements this interface, cause why not.
 abstract interface class HookRef implements ComputeRef {
+  /// TBD :)
   Result compute<Result>(RefComputer<Result> callback);
 }
 
+/// Signature for a callback that computes a result using a provided [ComputeRef].
 typedef RefComputer<Result> = Result Function(ComputeRef ref);
 
 abstract class _ComputeBase<Result> with ChangeNotifier implements ValueListenable<Result> {
@@ -152,9 +157,12 @@ class ComputedNoScope<Result> extends _ComputeBase<Result>
   }
 }
 
+/// A computed notifier that lives in a [GetScope].
 class ComputedScoped<Result> extends _ComputeBase<Result> implements ComputeRef {
+  /// Initializes superclass fields.
   ComputedScoped(super.compute, {super.concurrent});
 
+  /// The scope's full notifier map.
   Map<ValueRef, ValueRef> get fullDependencyMap => _fullDependencyMap;
   var _fullDependencyMap = <ValueRef, ValueRef>{};
   set fullDependencyMap(Map<ValueRef, ValueRef> value) {
@@ -165,6 +173,7 @@ class ComputedScoped<Result> extends _ComputeBase<Result> implements ComputeRef 
     dependencyMap = {for (final key in _dependencyMap.keys) key: _fullDependencyMap[key] ?? key};
   }
 
+  /// The [ValueRef] objects that this notifier depends on.
   Map<ValueRef, ValueRef> get dependencyMap => _dependencyMap;
   var _dependencyMap = <ValueRef, ValueRef>{};
   set dependencyMap(Map<ValueRef, ValueRef> value) {
@@ -183,7 +192,7 @@ class ComputedScoped<Result> extends _ComputeBase<Result> implements ComputeRef 
   @override
   ComputeRef get _ref => this;
 
-  G read<G extends ValueRef>(G get, {bool autoVsync = true, bool useScope = true}) {
+  G _read<G extends ValueRef>(G get, {bool autoVsync = true, bool useScope = true}) {
     switch (_dependencyMap[get]) {
       case null:
       case _ when !useScope:
@@ -210,13 +219,13 @@ class ComputedScoped<Result> extends _ComputeBase<Result> implements ComputeRef 
     bool autoVsync = true,
     bool useScope = true,
   }) {
-    final ValueListenable<T> g = read(get);
+    final ValueListenable<T> g = _read(get);
     return selector(g.value);
   }
 
   @override
   T watch<T>(ValueListenable<T> get, {bool autoVsync = true, bool useScope = true}) {
-    final ValueListenable<T> g = read(get);
+    final ValueListenable<T> g = _read(get);
     return g.value;
   }
 }

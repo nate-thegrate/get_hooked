@@ -1,5 +1,3 @@
-// ignore_for_file: public_member_api_docs, pro crastinate!
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
@@ -47,6 +45,7 @@ typedef _StyleNotifier = ValueListenable<AnimationStyle>;
 typedef _TickerMode = ValueListenable<bool>;
 typedef _AnimationSet = Set<StyledAnimation<Object?>>;
 
+/// A mixin that implements the [Vsync] interface.
 mixin ElementVsync on Element implements Vsync {
   Set<Ticker>? _tickers;
   _TickerMode? _tickerMode;
