@@ -4,22 +4,17 @@ import 'package:flutter/material.dart';
 
 import 'default_animation_style.dart';
 import 'value_animation.dart';
+import 'vsync.dart';
 
 abstract interface class StyledAnimation<T> implements Animation<T> {
   void updateStyle(AnimationStyle newStyle);
-}
 
-abstract interface class AnimationStyleProvider implements TickerProvider {
-  /// Registers the [StyledAnimation] object with this provider.
-  ///
-  /// [StyledAnimation.updateStyle] is called immediately, and then called again
-  /// each time there's a relevant change.
-  void registerAnimation(StyledAnimation<Object?> animation);
+  void resync(Vsync vsync);
 }
 
 class AnimationControllerStyled extends AnimationController implements StyledAnimation<double> {
   AnimationControllerStyled({
-    required AnimationStyleProvider vsync,
+    required Vsync vsync,
     super.value,
     super.duration,
     this.curve,
@@ -29,11 +24,14 @@ class AnimationControllerStyled extends AnimationController implements StyledAni
     super.lowerBound,
     super.upperBound,
     super.animationBehavior,
-  }) : _configuredDuration = duration,
+  }) : _vsync = vsync,
+       _configuredDuration = duration,
        _configuredReverseDuration = reverseDuration,
        super(vsync: vsync) {
     vsync.registerAnimation(this);
   }
+
+  Vsync _vsync;
 
   Duration? _configuredDuration;
   @override
@@ -57,14 +55,21 @@ class AnimationControllerStyled extends AnimationController implements StyledAni
   @override
   void updateStyle(AnimationStyle newStyle) {
     _style = newStyle;
-    late final Duration? newDuration = newStyle.duration;
-    late final Duration? newReverseDuration = newStyle.reverseDuration;
-    if (_configuredDuration == null && newDuration != null) {
-      super.duration = newDuration;
+    if (_configuredDuration == null) {
+      super.duration = newStyle.duration ?? Durations.medium2;
     }
-    if (_configuredReverseDuration == null && newReverseDuration != null) {
-      super.duration = newReverseDuration;
+    if (_configuredReverseDuration == null) {
+      super.duration = newStyle.reverseDuration ?? Durations.medium2;
     }
+  }
+
+  @override
+  void resync(covariant Vsync vsync) {
+    if (vsync == _vsync) return;
+
+    super.resync(vsync);
+    _vsync.unregisterAnimation(this);
+    _vsync = vsync..registerAnimation(this);
   }
 
   @override
@@ -88,13 +93,14 @@ class AnimationControllerStyled extends AnimationController implements StyledAni
 
 class ValueAnimationStyled<T> extends ValueAnimation<T> implements StyledAnimation<T> {
   ValueAnimationStyled({
-    required AnimationStyleProvider vsync,
+    required Vsync vsync,
     required super.initialValue,
     Duration? duration,
     Curve? curve,
     super.lerp,
     super.animationBehavior,
-  }) : _configuredDuration = duration,
+  }) : _vsync = vsync,
+       _configuredDuration = duration,
        _configuredCurve = curve,
        super(
          vsync: vsync,
@@ -103,6 +109,8 @@ class ValueAnimationStyled<T> extends ValueAnimation<T> implements StyledAnimati
        ) {
     vsync.registerAnimation(this);
   }
+
+  Vsync _vsync;
 
   Duration? _configuredDuration;
   @override
@@ -128,5 +136,13 @@ class ValueAnimationStyled<T> extends ValueAnimation<T> implements StyledAnimati
     if (_configuredCurve == null && newCurve != null) {
       super.curve = newCurve;
     }
+  }
+
+  @override
+  void resync(covariant Vsync vsync) {
+    super.resync(vsync);
+
+    _vsync.unregisterAnimation(this);
+    _vsync = vsync..registerAnimation(this);
   }
 }

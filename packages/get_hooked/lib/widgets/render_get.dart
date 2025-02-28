@@ -139,12 +139,10 @@ final class _RenderScopedGet<T, Render extends RenderObject> extends RenderScope
   Render render(BuildContext context, T value) => _render(context, value);
 }
 
-class _RenderGetElement extends SingleChildRenderObjectElement {
-  _RenderGetElement(super.widget, this.get) : vsync = get is GetVsyncAny ? get.maybeVsync : null;
+class _RenderGetElement extends SingleChildRenderObjectElement with ElementVsync {
+  _RenderGetElement(super.widget, this.get);
 
-  final GetAny get;
-
-  final Vsync? vsync;
+  final ValueRef get;
 
   /// The callback passed to [Listenable.addListener].
   late final VoidCallback listener;
@@ -152,30 +150,27 @@ class _RenderGetElement extends SingleChildRenderObjectElement {
   @override
   void mount(Element? parent, Object? newSlot) {
     super.mount(parent, newSlot);
-    get.hooked.addListener(listener);
-  }
-
-  @override
-  void activate() {
-    super.activate();
-    vsync?.ticker?.updateNotifier(this);
+    get.addListener(listener);
+    if (get case final Animation<Object?> animation) {
+      registry.activate(animation);
+    }
   }
 
   @override
   void unmount() {
-    vsync?.context = null;
-    get.hooked.removeListener(listener);
+    if (get case final Animation<Object?> animation) {
+      registry.reset(animation);
+    }
+    get.removeListener(listener);
     super.unmount();
   }
 }
 
-class _RenderScopedGetElement<T> extends SingleChildRenderObjectElement {
+class _RenderScopedGetElement<T> extends SingleChildRenderObjectElement with ElementVsync {
   _RenderScopedGetElement(super.widget, this.get);
 
-  final GetT<T> get;
-  late GetT<T> scopedGet;
-
-  Vsync? vsync;
+  final ValueListenable<T> get;
+  late ValueListenable<T> scopedGet;
 
   /// The callback passed to [Listenable.addListener].
   late VoidCallback listener;
@@ -183,60 +178,38 @@ class _RenderScopedGetElement<T> extends SingleChildRenderObjectElement {
   @override
   void mount(Element? parent, Object? newSlot) {
     super.mount(parent, newSlot);
-    scopedGet.hooked.addListener(listener);
-  }
-
-  void resync(GetAny get) {
-    final Vsync? vsync = get is GetVsyncAny ? get.maybeVsync : null;
-    if (vsync == this.vsync) return;
-
-    if (this.vsync case final oldVsync? when oldVsync.context == this) {
-      oldVsync.context = null;
-    }
-    if (vsync != null && (vsync.context == null || vsync.context == this)) {
-      vsync
-        ..context ??= this
-        ..ticker?.updateNotifier(this)
-        ..updateStyleNotifier(this);
-    }
-  }
-
-  @override
-  void activate() {
-    final GetT<T> scoped = scopedGet;
-    super.activate();
-    if (GetScope.of(this, get) == scoped) {
-      vsync
-        ?..ticker?.updateNotifier(this)
-        ..updateStyleNotifier(this);
+    scopedGet.addListener(listener);
+    if (scopedGet case final Animation<Object?> animation) {
+      registry.activate(animation);
     }
   }
 
   @override
   void reassemble() {
-    scopedGet.hooked
-      ..removeListener(listener)
-      ..addListener(
-        listener = () => (widget as RenderScopedGetBase<T>).listen(renderObject, scopedGet.value),
-      );
+    assert(() {
+      scopedGet
+        ..removeListener(listener)
+        ..addListener(
+          listener = () => (widget as RenderScopedGetBase<T>).listen(renderObject, scopedGet.value),
+        );
+      return true;
+    }());
     super.reassemble();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final GetT<T> newGet = GetScope.of(this, get);
+    final ValueListenable<T> newGet = GetScope.of(this, get);
     if (newGet == scopedGet) return;
 
-    scopedGet.hooked.removeListener(listener);
-    scopedGet = newGet..hooked.addListener(listener);
-    resync(scopedGet);
+    scopedGet.removeListener(listener);
+    scopedGet = newGet..addListener(listener);
   }
 
   @override
   void unmount() {
-    vsync?.context = null;
-    scopedGet.hooked.removeListener(listener);
+    scopedGet.removeListener(listener);
     super.unmount();
   }
 }

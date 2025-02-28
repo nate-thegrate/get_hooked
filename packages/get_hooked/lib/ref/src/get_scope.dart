@@ -48,7 +48,7 @@ class GetScope extends StatefulWidget {
   /// If the [Get] object is overridden in an ancestor [Ref], returns that object.
   ///
   /// Returns `null` otherwise.
-  static G? maybeOf<G extends GetAny>(
+  static G? maybeOf<G extends ValueRef>(
     BuildContext context,
     G get, {
     bool createDependency = true,
@@ -84,7 +84,7 @@ class GetScope extends StatefulWidget {
   ///
   /// * [GetScope.maybeOf], which returns `null` if the relevant [Override]
   ///   is not found in the ancestor [Ref].
-  static G of<G extends GetAny>(
+  static G of<G extends ValueRef>(
     BuildContext context,
     G get, {
     bool createDependency = true,
@@ -187,7 +187,7 @@ extension on ValueRef {
   };
 }
 
-class _GetScopeState extends State<GetScope> {
+class _GetScopeState extends State<GetScope> with TickerProviderStateMixin, _AnimationProvider {
   late Iterable<SubAny> widgetSubs = widget.substitutes;
   late final widgetMap = <ValueRef, ValueRef>{
     for (final substitute in widgetSubs) substitute.ref: substitute.replacement,
@@ -200,7 +200,7 @@ class _GetScopeState extends State<GetScope> {
   }
 
   late final VoidCallback rebuild = (context as Element).markNeedsBuild;
-  late final clientOverrides = Get.map(<Element, Map<ValueRef, ValueRef>>{})
+  late final clientSubstitutes = Get.map(<Element, Map<ValueRef, ValueRef>>{})
     ..hooked.addListener(rebuild);
 
   @override
@@ -238,7 +238,7 @@ class _GetScopeState extends State<GetScope> {
 
   @override
   void dispose() {
-    clientOverrides.hooked.removeListener(rebuild);
+    clientSubstitutes.hooked.removeListener(rebuild);
     super.dispose();
   }
 
@@ -247,7 +247,7 @@ class _GetScopeState extends State<GetScope> {
     final map = <ValueRef, ValueRef>{};
 
     for (final Map<ValueRef, ValueRef> refMap
-        in clientOverrides.values.toList(growable: false).reversed) {
+        in clientSubstitutes.values.toList(growable: false).reversed) {
       for (final MapEntry(:key, :value) in refMap.entries) {
         map[key] ??= value;
       }
@@ -263,7 +263,63 @@ class _GetScopeState extends State<GetScope> {
       }
     }
 
+    for (final ValueRef value in map.values) {
+      if (value is Animation<Object?>) registry.activate(value);
+    }
+
     return _OverrideContainer(child: ScopeModel(map: map, child: widget.child));
+  }
+}
+
+typedef _StyleNotifier = ValueListenable<AnimationStyle>;
+typedef _AnimationSet = Set<StyledAnimation<Object?>>;
+
+mixin _AnimationProvider on State<GetScope>, TickerProvider implements Vsync {
+  _AnimationSet? _animations;
+  _StyleNotifier? _styleNotifier;
+
+  void _updateStyles() {
+    final _AnimationSet? animations = _animations;
+    final AnimationStyle? style = _styleNotifier?.value;
+    if (animations == null || style == null) {
+      assert(throw StateError('animation set is $animations; style is $style\n$bugReport'));
+      return;
+    }
+
+    for (final StyledAnimation<Object?> animation in animations) {
+      animation.updateStyle(style);
+    }
+  }
+
+  @override
+  void registerAnimation(StyledAnimation<Object?> animation) {
+    final _StyleNotifier notifier =
+        _styleNotifier ??= DefaultAnimationStyle.getNotifier(context)..addListener(_updateStyles);
+
+    (_animations ??= {}).add(animation);
+    animation.updateStyle(notifier.value);
+  }
+
+  @override
+  void unregisterAnimation(StyledAnimation<Object?> animation) {
+    _animations?.remove(animation);
+  }
+
+  @override
+  void activate() {
+    super.activate();
+    final _StyleNotifier newNotifier = DefaultAnimationStyle.getNotifier(context);
+    if (newNotifier == _styleNotifier) return;
+
+    _styleNotifier?.removeListener(_updateStyles);
+    _styleNotifier = newNotifier..addListener(_updateStyles);
+    _updateStyles();
+  }
+
+  @override
+  void dispose() {
+    _styleNotifier?.removeListener(_updateStyles);
+    super.dispose();
   }
 }
 
@@ -302,7 +358,7 @@ class _OverrideContainerElement extends InheritedElement {
     super.removeDependent(dependent);
   }
 
-  late final clientSubstitutes = findAncestorStateOfType<_GetScopeState>()!.clientOverrides;
+  late final clientSubstitutes = findAncestorStateOfType<_GetScopeState>()!.clientSubstitutes;
 }
 
 /// An [InheritedModel] used by [Ref] to store its [Override]s
@@ -319,8 +375,8 @@ final class ScopeModel extends InheritedModel<ValueRef> {
   /// The key is the original object; the value is the new object.
   final Map<ValueRef, ValueRef> map;
 
-  G? _select<G extends GetAny>(G get) => switch (map[get]) {
-    final G gotIt => gotIt,
+  V? _select<V extends ValueRef>(V get) => switch (map[get]) {
+    final V gotIt => gotIt,
     _ => null,
   };
 

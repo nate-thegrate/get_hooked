@@ -22,7 +22,7 @@ Here are a few alternatives to consider:
 - [**riverpod**](https://riverpod.dev): if you don't mind using build_runner, this is a fantastic option.
 - [**watch_it**](https://pub.dev/packages/watch_it): this package works great if you're already using [get_it](https://pub.dev/packages/get_it).
 - [**signals**](https://pub.dev/packages/signals): a powerful, feature-rich package with no code generation and no boilerplate.\
-The only downside is how the API deviates a bit from the Flutter framework's simple-yet-effective [**Listenable**](https://api.flutter.dev/flutter/foundation/Listenable-class.html) objects.
+The only downside is how the API deviates a bit from the Flutter framework's simple-yet-effective [**Listenable**](https://api.flutter.dev/flutter/foundation/Listenable-class.html) paradigm.
 
 <br>
 

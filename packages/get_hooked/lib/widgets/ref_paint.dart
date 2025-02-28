@@ -187,7 +187,7 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
   }
 
   /// Returns the [Get] object's value, and triggers a re-render when it changes.
-  T watch<T>(GetT<T> get) {
+  T watch<T>(ValueListenable<T> get) {
     final renderer = _element.renderObject as _RenderRefPaint;
     switch (renderer._method!) {
       case _PaintMethod.hitTest:
@@ -233,16 +233,16 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
 
     // dart format off
     final bool handled = switch (method) {
-      _PaintMethod.hitTest        => throw StateError('hit-testing'),
-      _PaintMethod.paint          => _element.handledPaint,
+      _PaintMethod.hitTest => throw StateError('hit-testing'),
+      _PaintMethod.paint => _element.handledPaint,
       _PaintMethod.buildSemantics => _element.handledSemantics,
     };
 
     if (handled) return currentValue;
 
     final VoidCallback mark = switch (method) {
-      _PaintMethod.hitTest        => throw StateError('hit-testing'),
-      _PaintMethod.paint          => renderer.markNeedsPaint,
+      _PaintMethod.hitTest => throw StateError('hit-testing'),
+      _PaintMethod.paint => renderer.markNeedsPaint,
       _PaintMethod.buildSemantics => renderer.markNeedsSemanticsUpdate,
     }; // dart format on
 
@@ -264,19 +264,17 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
 
   /// Registers a [GetVsync] object with this [RefPaint]'s context,
   /// in a fashion similar to [Ref.vsync].
-  V vsync<V extends GetVsyncAny>(V getVsync, {bool useScope = true, bool watch = false}) {
+  A vsync<A extends Animation<Object?>>(A getVsync, {bool useScope = true, bool watch = false}) {
     if (useScope) getVsync = GetScope.of(context, getVsync);
-    if (getVsync.maybeVsync case final vsync? when vsync.context == null) {
-      _element.vsyncs.add(vsync..context = _element);
-    }
+    _element.registry.activate(getVsync);
     if (watch) {
-      this.watch(getVsync);
+      this.watch<Object?>(getVsync);
     }
     return getVsync;
   }
 }
 
-class _RefPainterElement extends SingleChildRenderObjectElement {
+class _RefPainterElement extends SingleChildRenderObjectElement with ElementVsync {
   _RefPainterElement(RefPaint super.widget);
 
   Size? _size;
@@ -288,6 +286,7 @@ class _RefPainterElement extends SingleChildRenderObjectElement {
     for (final VoidCallback dispose in disposers) {
       dispose();
     }
+    disposers.clear();
     handledPaint = handledSemantics = false;
     renderObject
       ..markNeedsPaint()
@@ -295,7 +294,6 @@ class _RefPainterElement extends SingleChildRenderObjectElement {
   }
 
   final disposers = <VoidCallback>{};
-  final vsyncs = <Vsync>{};
 
   PaintingContext? paintingContext;
 
@@ -318,16 +316,6 @@ class _RefPainterElement extends SingleChildRenderObjectElement {
       ..markNeedsSemanticsUpdate();
   }
 
-  @override
-  void activate() {
-    super.activate();
-    for (final Vsync vsync in vsyncs) {
-      vsync
-        ..ticker?.updateNotifier(this)
-        ..updateStyleNotifier(this);
-    }
-  }
-
   /// Ensures that any changes to subscriptions are picked up after a Hot Reload.
   @override
   void reassemble() {
@@ -340,11 +328,7 @@ class _RefPainterElement extends SingleChildRenderObjectElement {
     for (final VoidCallback dispose in disposers) {
       dispose();
     }
-    for (final Vsync vsync in vsyncs) {
-      if (vsync.context == this) {
-        vsync.context = null;
-      }
-    }
+    disposers.clear();
     super.unmount();
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/bug_report.dart';
 import 'package:get_hooked/listenables.dart';
@@ -15,6 +16,14 @@ part 'src/substitute.dart';
 
 /// A callback that returns a [Get] object that wraps the specified [ValueListenable].
 typedef GetGetter<V extends ValueRef> = ValueGetter<GetV<V>>;
+
+/// An animation object is synced to an [Vsync] via the first build context
+/// that uses it.
+void _autoVsync(GetAny get) {
+  if (get is GetVsyncAny && (get is AnimationController || get is StyledAnimation<Object?>)) {
+    use(_VsyncHook.new, key: get, data: get, debugLabel: 'auto-vsync');
+  }
+}
 
 /// A namespace for [Hook] functions that interact with [Get] objects.
 ///
@@ -48,11 +57,11 @@ typedef GetGetter<V extends ValueRef> = ValueGetter<GetV<V>>;
 /// );
 /// ```
 /// {@end-tool}
-extension type Ref<V extends ValueRef>(GetV<V> _get) implements Object {
+extension type Ref<V extends ValueRef>(V _get) implements Object {
   /// Uses a [Listenable] (of the [Get] object's representation type)
   /// to create a [Substitution] which can be passed into a [GetScope].
   Substitution<V> sub(V newListenable, {bool autoDispose = true}) {
-    return _SubEager(_get.hooked, newListenable, autoDispose: autoDispose);
+    return _SubEager(_get, newListenable, autoDispose: autoDispose);
   }
 
   /// Uses a different [Get] object to create a [Substitution]
@@ -68,7 +77,7 @@ extension type Ref<V extends ValueRef>(GetV<V> _get) implements Object {
   /// passing a constructor tear-off like [ListNotifier.new] is preferred to `ListNotifier()`,
   /// since the latter would create a new [Listenable] object each time the widget is built.
   Substitution<V> subGetter(ValueGetter<V> factory, {bool autoDispose = true}) {
-    return _SubFactory(_get.hooked, factory, autoDispose: autoDispose);
+    return _SubFactory(_get, factory, autoDispose: autoDispose);
   }
 
   /// Uses a callback (typically a constructor) to create a [Substitution]
@@ -78,7 +87,7 @@ extension type Ref<V extends ValueRef>(GetV<V> _get) implements Object {
   /// passing a constructor tear-off such as [Get.vsync] is preferred to `Get.vsync()`,
   /// since the latter would create a new animation controller each time the widget is built.
   Substitution<V> subGetGetter(GetGetter<V> factory, {bool autoDispose = true}) {
-    return _SubGetFactory(_get.hooked, factory, autoDispose: autoDispose);
+    return _SubGetFactory(_get, factory, autoDispose: autoDispose);
   }
 
   /// If a [Substitution] was made, returns the widget that made it.
@@ -94,7 +103,7 @@ extension type Ref<V extends ValueRef>(GetV<V> _get) implements Object {
   Widget? debugSubWidget(BuildContext context) {
     Widget? result;
     assert(() {
-      final GetAny? scopedGet = GetScope.maybeOf(context, _get);
+      final ValueRef? scopedGet = GetScope.maybeOf(context, _get);
       if (scopedGet == null) return true;
       final GetScope scope = context.findAncestorStateOfType<_GetScopeState>()!.widget;
       for (final SubAny sub in scope.substitutes) {
@@ -144,9 +153,7 @@ extension type Ref<V extends ValueRef>(GetV<V> _get) implements Object {
       createDependency: createDependency,
       throwIfMissing: throwIfMissing,
     );
-    if (autoVsync) {
-      if (result case final GetVsyncAny getVsync) Ref.vsync(getVsync);
-    }
+    if (autoVsync) _autoVsync(get);
 
     return result;
   }
@@ -184,7 +191,7 @@ extension type Ref<V extends ValueRef>(GetV<V> _get) implements Object {
     bool useScope = true,
   }) {
     if (useScope) get = GetScope.of(useContext(), get);
-    if (autoVsync && get is GetVsync<T, Animation<T>>) Ref.vsync(get);
+    if (autoVsync) _autoVsync(get);
     return useValueListenable(get, watching: watching);
   }
 
@@ -218,21 +225,5 @@ extension type Ref<V extends ValueRef>(GetV<V> _get) implements Object {
       data: computeCallback,
       debugLabel: 'compute<$Result>',
     );
-  }
-
-  /// Manages this [Get] object's [Vsync].
-  ///
-  /// The animation will inherit the [DefaultAnimationStyle]'s ambient style
-  /// along with information from the [TickerMode] regarding whether its [Ticker]
-  /// should be muted.
-  ///
-  /// If [watching] is true, each notification sent by the animation
-  /// triggers a rebuild.
-  static A vsync<A extends GetVsyncAny>(A get, {bool useScope = true, bool watching = false}) {
-    if (useScope) get = GetScope.of(useContext(), get);
-    useListenable(watching ? get : null);
-
-    use(_VsyncHook.new, key: get, data: get, debugLabel: 'Ref.vsync');
-    return get;
   }
 }

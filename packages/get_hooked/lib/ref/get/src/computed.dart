@@ -5,18 +5,12 @@ part of '../get.dart';
 abstract interface class ComputeRef {
   T watch<T>(GetT<T> get, {bool autoVsync = true, bool useScope = true});
 
-  G read<G extends GetAny>(G get, {bool autoVsync = true, bool useScope = true});
-
   Result select<Result, T>(
     GetT<T> get,
     Result Function(T value) selector, {
     bool autoVsync = true,
     bool useScope = true,
   });
-}
-
-extension VsyncRef on ComputeRef {
-  G vsync<G extends GetAny>(G get, {bool useScope = true}) => read(get, useScope: useScope);
 }
 
 abstract interface class HookRef implements ComputeRef {
@@ -112,11 +106,8 @@ class ComputedNoScope<Result> extends _ComputeBase<Result> implements ComputeRef
   final Set<ValueRef> _dependencies = {};
 
   @override
-  G read<G extends GetAny>(G get, {bool autoVsync = true, bool useScope = false}) => get;
-
-  @override
   T watch<T>(GetT<T> get, {bool autoVsync = true, bool useScope = false}) {
-    if (_firstCompute) _dependencies.add(get.hooked);
+    if (_firstCompute) _dependencies.add(get);
     return get.value;
   }
 
@@ -165,7 +156,6 @@ class ComputedScoped<Result> extends _ComputeBase<Result> implements ComputeRef 
   @override
   ComputeRef get _ref => this;
 
-  @override
   G read<G extends GetAny>(G get, {bool autoVsync = true, bool useScope = true}) {
     switch (_dependencyMap[get]) {
       case null:

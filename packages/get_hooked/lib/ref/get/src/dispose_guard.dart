@@ -3,7 +3,19 @@ part of '../get.dart';
 /// Mixin for [Get] objects with a [dispose] method.
 ///
 /// {@macro get_hooked.DisposeGuard}
-mixin DisposeGuard {
+mixin DisposeGuard on Listenable {
+  @protected
+  @override
+  void addListener(VoidCallback listener) {
+    super.addListener(listener);
+  }
+
+  @protected
+  @override
+  void removeListener(VoidCallback listener) {
+    super.removeListener(listener);
+  }
+
   /// {@template get_hooked.DisposeGuard}
   /// [Ref] will automatically free associated resources when its associated
   /// [HookWidget] is no longer in use, so the `dispose()` method of a
@@ -18,8 +30,12 @@ mixin DisposeGuard {
       throw FlutterError.fromParts([
         ErrorSummary('$runtimeType.dispose() was invoked.'),
         ErrorDescription(
-          '"Get" objects, including this $runtimeType, persist throughout the app\'s lifecycle, '
-          'and calling "dispose" renders them unable to function from that point onward.',
+          'This $runtimeType uses the "dispose guard" mixin, which is meant for '
+          "Listenable objects that persist throughout the app's lifecycle.",
+        ),
+        ErrorDescription(
+          'Calling the `dispose()` method renders the object unable to function '
+          'from that point onward.',
         ),
         ErrorHint('Consider removing the dispose() invocation.'),
       ]),

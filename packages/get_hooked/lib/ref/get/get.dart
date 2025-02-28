@@ -49,23 +49,18 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
   ///
   /// - [Get.vsyncValue], which creates smooth transitions between values,
   ///   by using a [Vsync] to change gradually each animation frame.
-  @factory
   static GetValue<T> it<T>(T initialValue) => GetValue._(_ValueNotifier(initialValue));
 
   /// Encapsulates a [ListNotifier], and can be used as a [List] directly.
-  @factory
   static GetList<E> list<E>([Iterable<E> list = const []]) => GetList._(_ListNotifier(list));
 
   /// Encapsulates a [SetNotifier], and can be used as a [Set] directly.
-  @factory
   static GetSet<E> set<E>([Iterable<E> set = const {}]) => GetSet._(_SetNotifier(set));
 
   /// Encapsulates a [MapNotifier], and can be used as a [Map] directly.
-  @factory
   static GetMap<K, V> map<K, V>([Map<K, V> map = const {}]) => GetMap._(_MapNotifier(map));
 
   /// Encapsulates an [AnimationController].
-  @factory
   static GetVsyncDouble vsync({
     double? initialValue,
     Duration? duration,
@@ -76,25 +71,22 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
     double? upperBound,
     bool bounded = true,
   }) {
-    return GetVsyncDouble._(
-      Vsync.build(
-        (vsync) => _AnimationControllerStyled(
-          vsync: vsync,
-          value: initialValue,
-          lowerBound: lowerBound ?? (bounded ? 0.0 : double.negativeInfinity),
-          upperBound: upperBound ?? (bounded ? 1.0 : double.infinity),
-          duration: duration,
-          reverseDuration: reverseDuration,
-          animationBehavior: animationBehavior ??
-              (bounded ? AnimationBehavior.normal : AnimationBehavior.preserve),
-          debugLabel: debugLabel,
-        ),
-      ),
+    final animation = _AnimationControllerStyled(
+      vsync: Vsync.fallback,
+      value: initialValue,
+      lowerBound: lowerBound ?? (bounded ? 0.0 : double.negativeInfinity),
+      upperBound: upperBound ?? (bounded ? 1.0 : double.infinity),
+      duration: duration,
+      reverseDuration: reverseDuration,
+      animationBehavior:
+          animationBehavior ?? (bounded ? AnimationBehavior.normal : AnimationBehavior.preserve),
+      debugLabel: debugLabel,
     );
+    Vsync.register(animation);
+    return GetVsyncDouble._(animation);
   }
 
   /// Encapsulates a [ValueAnimation].
-  @factory
   static GetVsyncValue<T> vsyncValue<T>(
     T initialValue, {
     Duration? duration,
@@ -102,34 +94,24 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
     AnimationBehavior animationBehavior = AnimationBehavior.normal,
     LerpCallback<T>? lerp,
   }) {
-    return GetVsyncValue._(
-      Vsync.build(
-        (vsync) => _ValueAnimationStyled(
-          vsync: vsync,
-          initialValue: initialValue,
-          duration: duration,
-          curve: curve,
-          animationBehavior: animationBehavior,
-          lerp: lerp,
-        ),
-      ),
+    final animation = _ValueAnimationStyled<T>(
+      vsync: Vsync.fallback,
+      initialValue: initialValue,
+      duration: duration,
+      curve: curve,
+      animationBehavior: animationBehavior,
+      lerp: lerp,
     );
-  }
-
-  /// Encapsulates any [Animation] via the provided [VsyncBuilder].
-  @factory
-  static GetVsync<T, A> customVsync<T, A extends Animation<T>>(VsyncBuilder<A> builder) {
-    return GetVsync._(Vsync.build(builder));
+    Vsync.register(animation);
+    return GetVsyncValue<T>._(animation);
   }
 
   /// Encapsulates an [AsyncNotifier] with a preconfigured [futureCallback].
-  @factory
   static GetAsync<T> async<T>(AsyncValueGetter<T> futureCallback, {T? initialData}) {
     return GetAsync._(_AsyncNotifier(futureCallback: futureCallback, initialData: initialData));
   }
 
   /// Encapsulates an [AsyncNotifier] with a preconfigured [streamCallback].
-  @factory
   static GetAsync<T> stream<T>(
     StreamCallback<T> streamCallback, {
     T? initialData,
@@ -148,7 +130,9 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
 
   /// Encapsulates a [MediaQueryNotifier], allowing for efficient notifications
   /// based on screen metrics.
-  @factory
+  ///
+  /// The [view] and [viewFinder] parameters are used to disambiguate
+  /// multi-window applications. See [MediaQueryNotifier] for more information.
   static GetQuery<T> mediaQuery<T>(
     T Function(MediaQueryData data) query, {
     FlutterView? view,
@@ -158,13 +142,11 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
   }
 
   /// Encapsulates a [ProxyNotifier], using the provided callback to retrieve a value.
-  @factory
   static GetProxy<T, L> proxy<T, L extends Listenable>(L listenable, T Function(L) getValue) {
     return GetProxy._(_ProxyNotifier(listenable, getValue));
   }
 
   /// Encapsulates a [Listenable] which notifies based on a [RefComputer] callback.
-  @factory
   static GetComputed<Result> compute<Result>(RefComputer<Result> callback) {
     return GetComputed._(ComputedNoScope(callback));
   }
@@ -208,7 +190,6 @@ extension type GetList<E>._(ListNotifier<E> _hooked)
     implements List<E>, Get<List<E>, ListNotifier<E>> {
   /// Returns an [UnmodifiableListView] of this object.
   @redeclare
-  @redeclare
   List<E> get value => UnmodifiableListView(this);
 }
 
@@ -216,7 +197,6 @@ extension type GetList<E>._(ListNotifier<E> _hooked)
 extension type GetSet<E>._(SetNotifier<E> _hooked)
     implements Set<E>, Get<Set<E>, SetNotifier<E>> {
   /// Returns an [UnmodifiableSetView] of this object.
-  @redeclare
   @redeclare
   Set<E> get value => UnmodifiableSetView(this);
 }
@@ -226,32 +206,75 @@ extension type GetMap<K, V>._(MapNotifier<K, V> _hooked)
     implements Map<K, V>, Get<Map<K, V>, MapNotifier<K, V>> {
   /// Returns an [UnmodifiableMapView] of this object.
   @redeclare
-  @redeclare
   Map<K, V> get value => UnmodifiableMapView(this);
+}
+
+/// Gives access to the [VsyncRegistry] within an [Vsync] declaration.
+extension VsyncRegistryExtension on Vsync {
+  /// A [VsyncRegistry] interface of this provider.
+  VsyncRegistry get registry => VsyncRegistry._(this);
+}
+
+/// Encapsulates a "weak map" of animation objects.
+///
+/// Can be conceptualized as follows:
+///
+/// ```dart
+/// <Animation, bool>{
+///   animation1: false, // This animation's ticker is perpetually unmuted
+///   animation2: true,  // This animation is being managed by a scoped ticker provider
+/// }
+/// ```
+///
+/// If an animation is assigned a value of `false`, [Ref.vsync] will automatically
+/// assign it a ticker provider via [activate] and then will [reset] when the widget's
+/// context is unmounted.
+extension type VsyncRegistry._(Vsync _vsync) {
+  void _resync(Animation<Object?> animation, {Vsync? vsync}) {
+    vsync ??= _vsync;
+    GetVsync.registry[animation] = vsync;
+
+    switch (animation) {
+      case final StyledAnimation<Object?> animation:
+        animation.resync(vsync);
+      case final AnimationController controller:
+        controller.resync(vsync);
+    }
+  }
+
+  /// Adds this animation to the registry, so functions like [Ref.vsync] know to
+  /// overwrite its ticker provider when appropriate.
+  void register(Animation<Object?> animation) {
+    GetVsync.registry[animation] = Vsync.fallback;
+  }
+
+  /// Assigns a [vsync] to an [animation], if it's registered and hasn't already been assigned one.
+  bool activate(Animation<Object?> animation) {
+    if (GetVsync.registry[animation] == Vsync.fallback) {
+      _resync(animation);
+      return true;
+    }
+    return false;
+  }
+
+  /// Resets the animation to the fallback (perpetually unmuted) ticker provider.
+  bool reset(Animation<Object?> animation) {
+    if (GetVsync.registry[animation] == _vsync) {
+      _resync(animation, vsync: Vsync.fallback);
+      return true;
+    }
+    return false;
+  }
 }
 
 /// Encapsulates an [Animation].
 extension type GetVsync<T, A extends Animation<T>>._(A _hooked)
     implements Get<T, A>, Animation<T> {
-  /// The [Vsync] associated with this animation.
-  Vsync? get maybeVsync => Vsync.cache[this];
-
-  // /// The [Vsync] associated with this animation.
-  // Vsync get vsync {
-  //   assert(() {
-  //     if (maybeVsync == null) {
-  //       throw FlutterError.fromParts([
-  //         ErrorSummary('Vsync not found: $this'),
-  //         ErrorDescription(
-  //           'This is most likely caused by creating an animation without calling Vsync.build.',
-  //         ),
-  //         ErrorHint('Consider initializing the animation via Get.vsync().'),
-  //       ]);
-  //     }
-  //     return true;
-  //   }());
-  //   return maybeVsync!;
-  // }
+  /// Animations intended to be managed by an [Vsync].
+  ///
+  /// Used in [Ref] methods to determine whether an animation should be registered with
+  /// the local build context.
+  static final registry = Expando<Vsync>();
 
   /// Don't add a listener directly!
   /// {@macro get_hooked.dont}
