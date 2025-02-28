@@ -1,15 +1,23 @@
 // ignore_for_file: public_member_api_docs, pro crastinate!
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'default_animation_style.dart';
 import 'value_animation.dart';
 import 'vsync.dart';
 
-abstract interface class StyledAnimation<T> implements Animation<T> {
-  void updateStyle(AnimationStyle newStyle);
+/// A [ValueListenable] attached to a [TickerProvider].
+abstract interface class VsyncValue<T> implements ValueListenable<T> {
+  Vsync get vsync;
 
   void resync(Vsync vsync);
+}
+
+typedef VsyncRef = VsyncValue<Object?>;
+
+abstract interface class StyledAnimation<T> implements Animation<T>, VsyncValue<T> {
+  void updateStyle(AnimationStyle newStyle);
 }
 
 class AnimationControllerStyled extends AnimationController implements StyledAnimation<double> {
@@ -30,8 +38,6 @@ class AnimationControllerStyled extends AnimationController implements StyledAni
        super(vsync: vsync) {
     vsync.registerAnimation(this);
   }
-
-  Vsync _vsync;
 
   Duration? _configuredDuration;
   @override
@@ -62,6 +68,10 @@ class AnimationControllerStyled extends AnimationController implements StyledAni
       super.duration = newStyle.reverseDuration ?? Durations.medium2;
     }
   }
+
+  @override
+  Vsync get vsync => _vsync;
+  Vsync _vsync;
 
   @override
   void resync(covariant Vsync vsync) {
@@ -110,8 +120,6 @@ class ValueAnimationStyled<T> extends ValueAnimation<T> implements StyledAnimati
     vsync.registerAnimation(this);
   }
 
-  Vsync _vsync;
-
   Duration? _configuredDuration;
   @override
   set duration(Duration value) {
@@ -137,6 +145,10 @@ class ValueAnimationStyled<T> extends ValueAnimation<T> implements StyledAnimati
       super.curve = newCurve;
     }
   }
+
+  @override
+  Vsync get vsync => _vsync;
+  Vsync _vsync;
 
   @override
   void resync(covariant Vsync vsync) {

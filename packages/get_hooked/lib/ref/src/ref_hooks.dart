@@ -49,8 +49,7 @@ class _SelectHook<Result, T> extends Hook<Result, _GetSelect<Result, T>> {
 
 typedef _TickerMode = ValueListenable<bool>;
 
-class _VsyncHook extends Hook<void, GetVsyncAny> implements Vsync {
-  late GetVsyncAny get = data;
+class _VsyncHook extends Hook<void, VsyncRef> implements Vsync {
   Ticker? _ticker;
   StyledAnimation<Object?>? _animation;
   _StyleNotifier? _styleNotifier;
@@ -58,7 +57,7 @@ class _VsyncHook extends Hook<void, GetVsyncAny> implements Vsync {
 
   @override
   void initHook() {
-    registry.activate(data);
+    registry.add(data);
   }
 
   void _updateStyle() {
@@ -117,7 +116,7 @@ class _VsyncHook extends Hook<void, GetVsyncAny> implements Vsync {
   void dispose() {
     _styleNotifier?.removeListener(_updateStyle);
     _tickerMode?.removeListener(_updateTickerMode);
-    registry.reset(data);
+    registry.remove(data);
     super.dispose();
   }
 
@@ -210,8 +209,8 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
 
   final _selections = <_ScopedSelection<Object?, Object?>>{};
 
-  final _rootAnimations = <Animation<Object?>>{};
-  var _managedAnimations = <Animation<Object?>>{};
+  final _rootAnimations = <VsyncRef>{};
+  var _managedAnimations = <VsyncRef>{};
 
   late Result result;
   bool _dirty = true;
@@ -237,33 +236,36 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
 
   G _read<G extends ValueRef>(G get, {bool autoVsync = true, bool useScope = true}) {
     final G scoped = useScope ? GetScope.of(context, get) : get;
-    if (_needsDependencies && autoVsync && get is Animation<Object?>) {
-      if (scoped is! Animation<Object?>) {
-        assert(() {
-          // An invalid substitution was made, so throw the FlutterError from GetScope.
-          GetScope.of<Animation<Object?>>(context, get);
-          throw StateError(
-            'That GetScope.of(context) method should have thrown an error.\n'
-            "If somehow you've managed to trigger this message, that's wild! "
-            '$bugReport',
-          );
-        }());
+    if (get case final VsyncRef v when _needsDependencies && autoVsync) {
+      if (scoped is! VsyncRef) {
+        assert(
+          throw FlutterError.fromParts([
+            ErrorSummary('An invalid substitution was made for a $G.'),
+            ErrorDescription(
+              'A ${get.runtimeType} was substituted with a ${scoped.runtimeType}.',
+            ),
+            if (Ref(get).debugSubWidget(context) case final widget?) ...[
+              ErrorDescription('The invalid substitution was made by the following widget:'),
+              widget.toDiagnosticsNode(style: DiagnosticsTreeStyle.error),
+            ],
+          ]),
+        );
         return scoped;
       }
-      _rootAnimations.add(get);
-      if (get == scoped) {
+      _rootAnimations.add(v);
+      if (v == scoped) {
         // If a substitution was made, the GetScope acts as the ticker provider.
         // Otherwise, this hook does it.
-        _managedAnimations.add(get);
-        registry.activate(get);
+        _managedAnimations.add(v);
+        registry.add(v);
       }
     }
     return scoped;
   }
 
   @override
-  T watch<T>(GetT<T> get, {bool autoVsync = true, bool useScope = true}) {
-    final GetT<T> scoped = _read(get, useScope: useScope);
+  T watch<T>(ValueListenable<T> get, {bool autoVsync = true, bool useScope = true}) {
+    final ValueListenable<T> scoped = _read(get, useScope: useScope);
     if (_needsDependencies) {
       _rootDependencies.add(get);
       _scopedDependencies.add(scoped);
@@ -296,13 +298,13 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
       _listenable.addListener(markMayNeedRebuild);
     }
 
-    final animations = <Animation<Object?>>{
-      for (final Animation<Object?> animation in _rootAnimations)
+    final animations = <VsyncRef>{
+      for (final VsyncRef animation in _rootAnimations)
         if (GetScope.maybeOf(context, animation) == null) animation,
     };
     if (!setEquals(animations, _managedAnimations)) {
-      _managedAnimations.difference(animations).forEach(registry.reset);
-      animations.difference(_managedAnimations).forEach(registry.activate);
+      _managedAnimations.difference(animations).forEach(registry.remove);
+      animations.difference(_managedAnimations).forEach(registry.add);
       _managedAnimations = animations;
     }
 
@@ -314,7 +316,7 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
   @override
   void dispose() {
     _listenable.removeListener(markMayNeedRebuild);
-    _managedAnimations.forEach(registry.reset);
+    _managedAnimations.forEach(registry.remove);
     for (final _ScopedSelection<Object?, Object?> selection in _selections) {
       selection.dispose();
     }

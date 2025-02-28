@@ -6,10 +6,10 @@ import 'package:get_hooked/listenables.dart';
 
 import '../ref/ref.dart';
 
-extension<T> on T {
+extension<T extends ValueRef> on T {
   T of(BuildContext context) {
-    if (this case final GetAny get) {
-      if (GetScope.of<GetAny>(context, get) case final T result) return result;
+    if (this case final ValueRef get) {
+      if (GetScope.of<ValueRef>(context, get) case final T result) return result;
     }
     return this;
   }
@@ -156,7 +156,7 @@ extension type PainterRef._(_RefPainterElement _element) implements Object {
   ///
   /// This will be identical to the input, unless a [Substitution] was made
   /// in the ancestor [GetScope].
-  G read<G extends GetAny>(G get, {bool createDependency = true, bool throwIfMissing = false}) {
+  G read<G extends ValueRef>(G get, {bool createDependency = true, bool throwIfMissing = false}) {
     return GetScope.of(
       context,
       get,
@@ -210,12 +210,12 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
 
   /// Returns the [selector]'s output, and triggers a re-render when it changes.
   Result select<Result, T>(
-    GetT<T> get,
+    ValueListenable<T> get,
     Result Function(T value) selector, {
     bool useScope = true,
   }) {
     if (useScope) get = get.of(context);
-    return _select(get.hooked, () => selector(get.value));
+    return _select(get, () => selector(get.value));
   }
 
   /// Returns the [selector]'s value.
@@ -264,9 +264,9 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
 
   /// Registers a [GetVsync] object with this [RefPaint]'s context,
   /// in a fashion similar to [Ref.vsync].
-  A vsync<A extends Animation<Object?>>(A getVsync, {bool useScope = true, bool watch = false}) {
+  A vsync<A extends VsyncRef>(A getVsync, {bool useScope = true, bool watch = false}) {
     if (useScope) getVsync = GetScope.of(context, getVsync);
-    _element.registry.activate(getVsync);
+    _element.registry.add(getVsync);
     if (watch) {
       this.watch<Object?>(getVsync);
     }

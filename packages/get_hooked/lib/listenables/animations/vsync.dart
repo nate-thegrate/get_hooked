@@ -7,6 +7,10 @@ import 'package:flutter/widgets.dart';
 import 'default_animation_style.dart';
 import 'styled_animation.dart';
 
+/// A [TickerProvider] that also applies an [AnimationStyle].
+///
+/// Most implementations will use the style from the nearest ancestor
+/// [DefaultAnimationStyle] widget.
 abstract interface class Vsync implements TickerProvider {
   /// Registers the [StyledAnimation] object with this provider.
   ///
@@ -19,10 +23,6 @@ abstract interface class Vsync implements TickerProvider {
   /// This is generally called when the animation is disposed of, or in rare cases where
   /// it switches between providers.
   void unregisterAnimation(StyledAnimation<Object?> animation);
-
-  static void register(StyledAnimation<Object?> animation) {
-    fallback.registerAnimation(animation);
-  }
 
   /// A "default" provider that never mutes its tickers.
   static const Vsync fallback = _Vsync();

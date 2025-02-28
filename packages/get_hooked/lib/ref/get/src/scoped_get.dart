@@ -70,7 +70,7 @@ class _ScopeSet<E> extends ScopedGet<Set<E>> implements SetNotifier<E> {}
 
 class _ScopeMap<K, V> extends ScopedGet<Map<K, V>> implements MapNotifier<K, V> {}
 
-class _ScopeVsync extends ScopedGet<double> implements AnimationController {}
+class _ScopeVsync extends ScopedGet<double> implements AnimationControllerStyled {}
 
 class _ScopeAsync<T> extends ScopedGet<T?> implements AsyncNotifier<T> {}
 

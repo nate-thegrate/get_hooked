@@ -3,10 +3,10 @@
 part of '../get.dart';
 
 abstract interface class ComputeRef {
-  T watch<T>(GetT<T> get, {bool autoVsync = true, bool useScope = true});
+  T watch<T>(ValueListenable<T> get, {bool autoVsync = true, bool useScope = true});
 
   Result select<Result, T>(
-    GetT<T> get,
+    ValueListenable<T> get,
     Result Function(T value) selector, {
     bool autoVsync = true,
     bool useScope = true,
@@ -88,8 +88,31 @@ abstract class _ComputeBase<Result> with ChangeNotifier implements ValueListenab
 
 // ignore: invalid_internal_annotation, my preference :)
 @internal
-class ComputedNoScope<Result> extends _ComputeBase<Result> implements ComputeRef {
-  ComputedNoScope(super.compute, {super.concurrent});
+class ComputedNoScope<Result> extends _ComputeBase<Result>
+    implements ComputeRef, VsyncValue<Result> {
+  /// If a vsync is specified, it will sync animations referenced via [watch] or [select].
+  ComputedNoScope(super.compute, {super.concurrent, Vsync vsync = Vsync.fallback})
+    : _vsync = vsync;
+
+  @override
+  Vsync get vsync => _vsync;
+  Vsync _vsync;
+
+  @override
+  void resync(Vsync vsync) {
+    if (vsync == _vsync) return;
+    if (_vsync != Vsync.fallback) _animations?.forEach(_vsync.registry.remove);
+    _vsync = vsync;
+    if (vsync != Vsync.fallback) _animations?.forEach(vsync.registry.add);
+  }
+
+  Set<VsyncRef>? _animations;
+  void _autoVsync(Listenable listenable) {
+    if (listenable is! VsyncRef) return;
+    (_animations ??= {}).add(listenable);
+
+    if (_vsync != Vsync.fallback) _vsync.registry.add(listenable);
+  }
 
   @override
   ComputeRef get _ref => this;
@@ -106,21 +129,24 @@ class ComputedNoScope<Result> extends _ComputeBase<Result> implements ComputeRef
   final Set<ValueRef> _dependencies = {};
 
   @override
-  T watch<T>(GetT<T> get, {bool autoVsync = true, bool useScope = false}) {
-    if (_firstCompute) _dependencies.add(get);
+  T watch<T>(ValueListenable<T> get, {bool autoVsync = true, bool useScope = false}) {
+    if (_firstCompute) {
+      _dependencies.add(get);
+      if (autoVsync) _autoVsync(get);
+    }
     return get.value;
   }
 
   @override
   R select<R, T>(
-    GetT<T> get,
+    ValueListenable<T> get,
     R Function(T value) selector, {
     bool autoVsync = true,
     bool useScope = false,
   }) {
     if (_firstCompute) {
-      final ValueListenable<T> valueListenable = get.hooked;
-      _dependencies.add(ProxyNotifier(valueListenable, (v) => selector(v.value)));
+      _dependencies.add(ProxyNotifier(get, (v) => selector(v.value)));
+      if (autoVsync) _autoVsync(get);
     }
     return selector(get.value);
   }
@@ -147,7 +173,8 @@ class ComputedScoped<Result> extends _ComputeBase<Result> implements ComputeRef 
 
     _listenable.removeListener(_scheduleUpdate);
     _dependencyMap = value;
-    _listenable.addListener(_scheduleUpdate..call());
+    _listenable.addListener(_scheduleUpdate);
+    _scheduleUpdate();
   }
 
   @override
@@ -156,7 +183,7 @@ class ComputedScoped<Result> extends _ComputeBase<Result> implements ComputeRef 
   @override
   ComputeRef get _ref => this;
 
-  G read<G extends GetAny>(G get, {bool autoVsync = true, bool useScope = true}) {
+  G read<G extends ValueRef>(G get, {bool autoVsync = true, bool useScope = true}) {
     switch (_dependencyMap[get]) {
       case null:
       case _ when !useScope:
@@ -178,18 +205,18 @@ class ComputedScoped<Result> extends _ComputeBase<Result> implements ComputeRef 
 
   @override
   R select<R, T>(
-    GetT<T> get,
+    ValueListenable<T> get,
     R Function(T value) selector, {
     bool autoVsync = true,
     bool useScope = true,
   }) {
-    final GetT<T> g = read(get);
+    final ValueListenable<T> g = read(get);
     return selector(g.value);
   }
 
   @override
-  T watch<T>(GetT<T> get, {bool autoVsync = true, bool useScope = true}) {
-    final GetT<T> g = read(get);
+  T watch<T>(ValueListenable<T> get, {bool autoVsync = true, bool useScope = true}) {
+    final ValueListenable<T> g = read(get);
     return g.value;
   }
 }

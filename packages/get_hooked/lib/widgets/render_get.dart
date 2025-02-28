@@ -15,7 +15,7 @@ abstract class RenderGetBase extends SingleChildRenderObjectWidget {
   /// The [Get] object attached to this widget.
   ///
   /// This getter should always return the same object.
-  GetAny get get;
+  ValueRef get get;
 
   /// Creates a [RenderObject] (which is then passed to [createRenderObject]).
   RenderObject render(BuildContext context);
@@ -42,7 +42,7 @@ abstract class RenderScopedGetBase<T> extends SingleChildRenderObjectWidget {
   /// The [Get] object attached to this widget.
   ///
   /// This getter should always return the same object.
-  GetT<T> get get;
+  ValueListenable<T> get get;
 
   /// Creates a [RenderObject] (which is then passed to [createRenderObject]).
   RenderObject render(BuildContext context, T value);
@@ -69,7 +69,7 @@ abstract final class RenderGet<Render extends RenderObject> implements SingleChi
   /// A simple widget that subscribes to a [Get] object and updates a [RenderObject] accordingly.
   const factory RenderGet({
     Key? key,
-    required GetAny get,
+    required ValueRef get,
     required Render Function(BuildContext context) render,
     required void Function(Render render) listen,
     Widget? child,
@@ -82,7 +82,7 @@ abstract final class RenderGet<Render extends RenderObject> implements SingleChi
   @factory
   static RenderGet<Render> scoped<Render extends RenderObject, T>({
     Key? key,
-    required GetT<T> get,
+    required ValueListenable<T> get,
     required Render Function(BuildContext context, T value) render,
     required void Function(Render render, T value) listen,
     Widget? child,
@@ -102,7 +102,7 @@ final class _RenderGet<Render extends RenderObject> extends RenderGetBase implem
        _listen = listen;
 
   @override
-  final GetAny get;
+  final ValueRef get;
 
   final Render Function(BuildContext context) _render;
 
@@ -127,7 +127,7 @@ final class _RenderScopedGet<T, Render extends RenderObject> extends RenderScope
        _render = render;
 
   @override
-  final GetT<T> get;
+  final ValueListenable<T> get;
 
   final void Function(Render render, T value) _listen;
 
@@ -151,15 +151,15 @@ class _RenderGetElement extends SingleChildRenderObjectElement with ElementVsync
   void mount(Element? parent, Object? newSlot) {
     super.mount(parent, newSlot);
     get.addListener(listener);
-    if (get case final Animation<Object?> animation) {
-      registry.activate(animation);
+    if (get case final VsyncRef animation) {
+      registry.add(animation);
     }
   }
 
   @override
   void unmount() {
-    if (get case final Animation<Object?> animation) {
-      registry.reset(animation);
+    if (get case final VsyncRef animation) {
+      registry.remove(animation);
     }
     get.removeListener(listener);
     super.unmount();
@@ -179,8 +179,8 @@ class _RenderScopedGetElement<T> extends SingleChildRenderObjectElement with Ele
   void mount(Element? parent, Object? newSlot) {
     super.mount(parent, newSlot);
     scopedGet.addListener(listener);
-    if (scopedGet case final Animation<Object?> animation) {
-      registry.activate(animation);
+    if (scopedGet case final VsyncRef animation) {
+      registry.add(animation);
     }
   }
 

@@ -1,5 +1,5 @@
-// ignore_for_file: use_setters_to_change_properties, avoid_setters_without_getters, intentional design :)
-// ignore_for_file: invalid_use_of_visible_for_testing_member
+/// @docImport 'package:flutter/material.dart';
+library;
 
 import 'dart:ui';
 
@@ -25,8 +25,7 @@ extension GetHooked<V extends ValueRef> on Get<Object?, V> {
 
 /// Encapsulates a [ValueListenable] object with an interface for
 /// easy updates and automatic lifecycle management.
-extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
-    implements ValueListenable<T> {
+extension type Get<T, V extends ValueListenable<T>>._(V _hooked) implements ValueListenable<T> {
   /// Don't add a listener directly!
   /// {@template get_hooked.dont}
   /// Prefer using [Ref.watch] or something similar.
@@ -82,7 +81,6 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
           animationBehavior ?? (bounded ? AnimationBehavior.normal : AnimationBehavior.preserve),
       debugLabel: debugLabel,
     );
-    Vsync.register(animation);
     return GetVsyncDouble._(animation);
   }
 
@@ -102,7 +100,6 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
       animationBehavior: animationBehavior,
       lerp: lerp,
     );
-    Vsync.register(animation);
     return GetVsyncValue<T>._(animation);
   }
 
@@ -152,18 +149,6 @@ extension type Get<T, V extends ValueListenable<T>>.custom(V _hooked)
   }
 }
 
-/// A generic type implemented by all [Get] objects.
-typedef GetAny = Get<Object?, ValueRef>;
-
-/// Shorthand for specifying a [Get] object's first type argument.
-typedef GetT<T> = Get<T, ValueListenable<T>>;
-
-/// Shorthand for specifying a [Get] object's second type argument.
-typedef GetV<V extends ValueRef> = Get<Object?, V>;
-
-/// A generic type implemented by all [GetVsync] objects.
-typedef GetVsyncAny = GetVsync<Object?, Animation<Object?>>;
-
 /// Encapsulates a [ValueNotifier].
 extension type GetValue<T>._(ValueNotifier<T> _hooked) implements Get<T, ValueNotifier<T>> {
   // ignore: annotate_redeclares, false positive
@@ -209,73 +194,9 @@ extension type GetMap<K, V>._(MapNotifier<K, V> _hooked)
   Map<K, V> get value => UnmodifiableMapView(this);
 }
 
-/// Gives access to the [VsyncRegistry] within an [Vsync] declaration.
-extension VsyncRegistryExtension on Vsync {
-  /// A [VsyncRegistry] interface of this provider.
-  VsyncRegistry get registry => VsyncRegistry._(this);
-}
-
-/// Encapsulates a "weak map" of animation objects.
-///
-/// Can be conceptualized as follows:
-///
-/// ```dart
-/// <Animation, bool>{
-///   animation1: false, // This animation's ticker is perpetually unmuted
-///   animation2: true,  // This animation is being managed by a scoped ticker provider
-/// }
-/// ```
-///
-/// If an animation is assigned a value of `false`, [Ref.vsync] will automatically
-/// assign it a ticker provider via [activate] and then will [reset] when the widget's
-/// context is unmounted.
-extension type VsyncRegistry._(Vsync _vsync) {
-  void _resync(Animation<Object?> animation, {Vsync? vsync}) {
-    vsync ??= _vsync;
-    GetVsync.registry[animation] = vsync;
-
-    switch (animation) {
-      case final StyledAnimation<Object?> animation:
-        animation.resync(vsync);
-      case final AnimationController controller:
-        controller.resync(vsync);
-    }
-  }
-
-  /// Adds this animation to the registry, so functions like [Ref.vsync] know to
-  /// overwrite its ticker provider when appropriate.
-  void register(Animation<Object?> animation) {
-    GetVsync.registry[animation] = Vsync.fallback;
-  }
-
-  /// Assigns a [vsync] to an [animation], if it's registered and hasn't already been assigned one.
-  bool activate(Animation<Object?> animation) {
-    if (GetVsync.registry[animation] == Vsync.fallback) {
-      _resync(animation);
-      return true;
-    }
-    return false;
-  }
-
-  /// Resets the animation to the fallback (perpetually unmuted) ticker provider.
-  bool reset(Animation<Object?> animation) {
-    if (GetVsync.registry[animation] == _vsync) {
-      _resync(animation, vsync: Vsync.fallback);
-      return true;
-    }
-    return false;
-  }
-}
-
 /// Encapsulates an [Animation].
 extension type GetVsync<T, A extends Animation<T>>._(A _hooked)
     implements Get<T, A>, Animation<T> {
-  /// Animations intended to be managed by an [Vsync].
-  ///
-  /// Used in [Ref] methods to determine whether an animation should be registered with
-  /// the local build context.
-  static final registry = Expando<Vsync>();
-
   /// Don't add a listener directly!
   /// {@macro get_hooked.dont}
   @protected
@@ -308,8 +229,8 @@ typedef GetVsyncT<T> = GetVsync<T, Animation<T>>;
 typedef GetVsyncA<A extends Animation<Object?>> = GetVsync<Object?, A>;
 
 /// Encapsulates an [AnimationController].
-extension type GetVsyncDouble._(AnimationController _hooked)
-    implements GetVsync<double, AnimationController> {
+extension type GetVsyncDouble._(AnimationControllerStyled _hooked)
+    implements GetVsync<double, AnimationControllerStyled> {
   // ignore: annotate_redeclares, false positive
   set value(double newValue) {
     _hooked.value = newValue;

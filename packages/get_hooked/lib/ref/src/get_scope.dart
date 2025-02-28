@@ -5,8 +5,8 @@ part of '../ref.dart';
 extension GetFromContext on BuildContext {
   /// Allows accessing the relevant value from an ancestor [GetScope] in a reasonably
   /// concise manner.
-  Get<T, V> get<T, V extends ValueListenable<T>>(
-    Get<T, V> get, {
+  V get<V extends ValueListenable<Object?>>(
+    V get, {
     bool createDependency = true,
     bool throwIfMissing = false,
   }) {
@@ -114,29 +114,26 @@ class GetScope extends StatefulWidget {
   /// is unmounted.
   static void add(
     BuildContext context, {
-    Map<GetAny, GetAny> getObjects = const {},
-    Map<GetAny, ValueRef> listenables = const {},
+    Map<ValueRef, ValueRef> listenables = const {},
     bool throwIfMissing = true,
   }) {
     final _OverrideContainer? container = context.dependOnInheritedWidgetOfExactType(
-      aspect: {
-        for (final MapEntry(:key, :value) in getObjects.entries) key: value.hooked,
-        ...listenables,
-      },
+      aspect: listenables,
     );
 
     assert(() {
-      if (container != null || !throwIfMissing) return true;
-
-      throw FlutterError.fromParts([
-        ErrorSummary('Ancestor GetScope not found.'),
-        ErrorDescription(
-          'GetScope.add() was called using a BuildContext '
-          'that was unable to locate an ancestor GetScope.',
-        ),
-        ErrorDescription('The widget that attempted this call was:'),
-        context.widget.toDiagnosticsNode(),
-      ]);
+      if (container == null && throwIfMissing) {
+        throw FlutterError.fromParts([
+          ErrorSummary('Ancestor GetScope not found.'),
+          ErrorDescription(
+            'GetScope.add() was called using a BuildContext '
+            'that was unable to locate an ancestor GetScope.',
+          ),
+          ErrorDescription('The widget that attempted this call was:'),
+          context.widget.toDiagnosticsNode(),
+        ]);
+      }
+      return true;
     }());
   }
 
@@ -263,8 +260,8 @@ class _GetScopeState extends State<GetScope> with TickerProviderStateMixin, _Ani
       }
     }
 
-    for (final ValueRef value in map.values) {
-      if (value is Animation<Object?>) registry.activate(value);
+    for (final Listenable value in map.values) {
+      if (value is VsyncRef) registry.add(value);
     }
 
     return _OverrideContainer(child: ScopeModel(map: map, child: widget.child));
@@ -342,7 +339,7 @@ class _OverrideContainerElement extends InheritedElement {
     if (value is! Map<ValueRef, ValueRef>) {
       assert(
         throw ArgumentError(
-          'GetScope expected a map of overrides, got ${value.runtimeType}',
+          'GetScope expected a map of substitutions, got ${value.runtimeType}',
           'value',
         ),
       );
@@ -380,16 +377,15 @@ final class ScopeModel extends InheritedModel<ValueRef> {
     _ => null,
   };
 
-  // ignore: annotate_overrides, name overlap
+  @override
   bool updateShouldNotify(ScopeModel oldWidget) {
     return !mapEquals(map, oldWidget.map);
   }
 
-  // ignore: annotate_overrides, name overlap
+  @override
   bool updateShouldNotifyDependent(ScopeModel oldWidget, Set<ValueRef> dependencies) {
     for (final ValueRef dependency in dependencies) {
-      final GetAny get = Get.custom(dependency);
-      if (_select(get) != oldWidget._select(get)) return true;
+      if (_select(dependency) != oldWidget._select(dependency)) return true;
     }
     return false;
   }

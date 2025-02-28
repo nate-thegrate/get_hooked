@@ -8,11 +8,11 @@ part of '../ref.dart';
 ///
 /// The substitution is automatically removed when the widget's [BuildContext]
 /// is unmounted.
-G useSubstitute<G extends GetAny>(G get, Object replacer, {Object? key}) {
+G useSubstitute<G extends ValueRef>(G get, Object replacer, {Object? key}) {
   return use(_SubHook.new, data: (get, replacer), key: key, debugLabel: 'useSubstitute<$G>');
 }
 
-class _SubHook<G extends GetAny> extends Hook<G, (G, Object?)> {
+class _SubHook<G extends ValueRef> extends Hook<G, (G, Object?)> {
   late final G newGet;
 
   @override
@@ -30,7 +30,7 @@ class _SubHook<G extends GetAny> extends Hook<G, (G, Object?)> {
       );
     }());
     newGet = replacer is G ? replacer : replaced;
-    GetScope.add(context, getObjects: {replaced: newGet});
+    GetScope.add(context, listenables: {replaced: newGet});
   }
 
   @override
@@ -117,7 +117,7 @@ final class _SubGetFactory<V extends ValueRef> extends Substitution<V> {
   final GetGetter<V> factory;
 
   @override
-  late final V replacement = factory().hooked;
+  late final V replacement = factory();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {

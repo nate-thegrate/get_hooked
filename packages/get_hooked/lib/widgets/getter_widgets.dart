@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -11,7 +12,7 @@ import 'render_get.dart';
 abstract class TextGetter<T> extends RenderScopedGetBase<T> {
   /// Creates a widget displaying a string representation of a [Get] object's value.
   const factory TextGetter(
-    GetT<T> get, {
+    ValueListenable<T> get, {
     Key? key,
     String Function(T value) describe,
     TextStyle style,
@@ -28,7 +29,7 @@ abstract class TextGetter<T> extends RenderScopedGetBase<T> {
   /// Creates a widget displaying a string representation of a [Get] object's value.
   // TODO(nate-thegrate): ComputeRef here, so we don't need both a get getter & describe callback
   const factory TextGetter.ref(
-    ValueGetter<GetT<T>> get, {
+    ValueGetter<ValueListenable<T>> get, {
     Key? key,
     String Function(T value) describe,
     TextStyle style,
@@ -59,7 +60,7 @@ abstract class TextGetter<T> extends RenderScopedGetBase<T> {
 
   /// The [Get] object to display in text form.
   @override
-  GetT<T> get get;
+  ValueListenable<T> get get;
 
   /// Optionally turns the [Get] object's value into a [String] description.
   ///
@@ -193,7 +194,7 @@ class _TextGetter<T> extends TextGetter<T> {
   }) : super.construct();
 
   @override
-  final GetT<T> get;
+  final ValueListenable<T> get;
 }
 
 class _TextRef<T> extends TextGetter<T> {
@@ -212,8 +213,8 @@ class _TextRef<T> extends TextGetter<T> {
     super.textWidthBasis,
   }) : super.construct();
 
-  final ValueGetter<GetT<T>> getter;
+  final ValueGetter<ValueListenable<T>> getter;
 
   @override
-  GetT<T> get get => getter();
+  ValueListenable<T> get get => getter();
 }

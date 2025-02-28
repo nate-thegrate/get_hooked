@@ -15,12 +15,12 @@ part 'src/ref_hooks.dart';
 part 'src/substitute.dart';
 
 /// A callback that returns a [Get] object that wraps the specified [ValueListenable].
-typedef GetGetter<V extends ValueRef> = ValueGetter<GetV<V>>;
+typedef GetGetter<V extends ValueRef> = ValueGetter<V>;
 
 /// An animation object is synced to an [Vsync] via the first build context
 /// that uses it.
-void _autoVsync(GetAny get) {
-  if (get is GetVsyncAny && (get is AnimationController || get is StyledAnimation<Object?>)) {
+void _autoVsync(ValueRef get) {
+  if (get is VsyncRef) {
     use(_VsyncHook.new, key: get, data: get, debugLabel: 'auto-vsync');
   }
 }
@@ -66,8 +66,8 @@ extension type Ref<V extends ValueRef>(V _get) implements Object {
 
   /// Uses a different [Get] object to create a [Substitution]
   /// which can be passed into a [GetScope].
-  Substitution<V> subGet(GetV<V> newGet, {bool autoDispose = true}) {
-    return sub(newGet.hooked, autoDispose: autoDispose);
+  Substitution<V> subGet(V newGet, {bool autoDispose = true}) {
+    return sub(newGet, autoDispose: autoDispose);
   }
 
   /// Uses a callback (typically a constructor) to create a [Substitution]
@@ -141,7 +141,7 @@ extension type Ref<V extends ValueRef>(V _get) implements Object {
   /// Unlike [Ref.watch], this method does not subscribe to any notifications
   /// from the object; instead, by default it creates a dependency on the ancestor
   /// scope (so that it receives notifications if a relevant [Substitution] is made).
-  static G read<G extends GetAny>(
+  static G read<G extends ValueRef>(
     G get, {
     bool createDependency = true,
     bool throwIfMissing = false,
@@ -185,7 +185,7 @@ extension type Ref<V extends ValueRef>(V _get) implements Object {
   /// * [GetScope.of], for retrieving an [Override]'s new value outside of
   ///   a [HookWidget.build] method.
   static T watch<T>(
-    GetT<T> get, {
+    ValueListenable<T> get, {
     bool watching = true,
     bool autoVsync = true,
     bool useScope = true,
@@ -202,7 +202,7 @@ extension type Ref<V extends ValueRef>(V _get) implements Object {
   ///
   /// {@macro get_hooked.Ref.watch}
   static Result select<Result, T>(
-    GetT<T> get,
+    ValueListenable<T> get,
     Result Function(T value) selector, {
     bool watching = true,
     bool autoVsync = true,
@@ -211,7 +211,7 @@ extension type Ref<V extends ValueRef>(V _get) implements Object {
     if (useScope) get = GetScope.of(useContext(), get);
 
     return HookData.use(
-      _GetSelect<Result, T>(get.hooked, selector, watching: watching),
+      _GetSelect<Result, T>(get, selector, watching: watching),
       debugLabel: 'Ref.select',
     );
   }

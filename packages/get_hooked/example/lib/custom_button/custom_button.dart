@@ -91,7 +91,7 @@ class _DecoratedBox extends RenderGetBase {
   const _DecoratedBox({super.child});
 
   @override
-  GetT<Decoration> get get => GetButton.decoration;
+  ValueListenable<Decoration> get get => GetButton.decoration;
 
   @override
   RenderClippedDecoration render(BuildContext context) {
@@ -108,7 +108,7 @@ class _SizedBox extends RenderGetBase {
   const _SizedBox({super.child});
 
   @override
-  GetT<double> get get => GetButton.hovered;
+  ValueListenable<double> get get => GetButton.hovered;
 
   BoxConstraints get constriants {
     return BoxConstraints.tight(Size((get.value + 2) * 50, 50));

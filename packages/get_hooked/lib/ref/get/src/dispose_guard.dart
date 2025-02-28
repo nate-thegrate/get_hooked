@@ -54,12 +54,4 @@ class _MediaQueryNotifier<T> = MediaQueryNotifier<T> with DisposeGuard;
 
 // dart format off
 class _ProxyNotifier<T, L extends Listenable>                = ProxyNotifier<T, L> with DisposeGuard;
-class _ProxyNotifier2<T, L1, L2>                             = ProxyNotifier2<T, L1, L2> with DisposeGuard;
-class _ProxyNotifier3<T, L1, L2, L3>                         = ProxyNotifier3<T, L1, L2, L3> with DisposeGuard;
-class _ProxyNotifier4<T, L1, L2, L3, L4>                     = ProxyNotifier4<T, L1, L2, L3, L4> with DisposeGuard;
-class _ProxyNotifier5<T, L1, L2, L3, L4, L5>                 = ProxyNotifier5<T, L1, L2, L3, L4, L5> with DisposeGuard;
-class _ProxyNotifier6<T, L1, L2, L3, L4, L5, L6>             = ProxyNotifier6<T, L1, L2, L3, L4, L5, L6> with DisposeGuard;
-class _ProxyNotifier7<T, L1, L2, L3, L4, L5, L6, L7>         = ProxyNotifier7<T, L1, L2, L3, L4, L5, L6, L7> with DisposeGuard;
-class _ProxyNotifier8<T, L1, L2, L3, L4, L5, L6, L7, L8>     = ProxyNotifier8<T, L1, L2, L3, L4, L5, L6, L7, L8> with DisposeGuard;
-class _ProxyNotifier9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9> = ProxyNotifier9<T, L1, L2, L3, L4, L5, L6, L7, L8, L9> with DisposeGuard;
 // dart format on
