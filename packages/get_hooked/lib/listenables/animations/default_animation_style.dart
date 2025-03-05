@@ -4,6 +4,9 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+/// Temporary variable, will be factored out once `const AnimationStyle` makes it to stable.
+final _emptyStyle = AnimationStyle();
+
 /// Designates an [AnimationStyle] for descendant widgets to fall back to.
 sealed class DefaultAnimationStyle implements Widget {
   /// Creates a default [AnimationStyle] widget.
@@ -35,7 +38,7 @@ sealed class DefaultAnimationStyle implements Widget {
             ? context.dependOnInheritedWidgetOfExactType()
             : context.getInheritedWidgetOfExactType();
 
-    return inherited?.style ?? const AnimationStyle();
+    return inherited?.style ?? _emptyStyle;
   }
 
   /// Returns an object that sends a notification when the default style of the corresponding
@@ -58,7 +61,7 @@ class _FallbackAnimationStyleListenable implements ValueListenable<AnimationStyl
   void removeListener(VoidCallback listener) {}
 
   @override
-  AnimationStyle get value => const AnimationStyle();
+  AnimationStyle get value => _emptyStyle;
 }
 
 enum _AnimationStyleAspect<T> {
@@ -132,7 +135,7 @@ class _DefaultAnimationStyleState extends State<_DefaultAnimationStyle> {
     AnimationStyle style = widget.style;
     if (widget.mergeWithAncestor) {
       final AnimationStyle ancestorStyle = DefaultAnimationStyle.of(context);
-      if (ancestorStyle != const AnimationStyle()) {
+      if (ancestorStyle != _emptyStyle) {
         style = ancestorStyle.copyWith(
           duration: style.duration,
           curve: style.curve,

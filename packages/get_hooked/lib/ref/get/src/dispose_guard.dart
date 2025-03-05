@@ -51,7 +51,4 @@ class _AnimationControllerStyled = AnimationControllerStyled with DisposeGuard;
 class _ValueAnimationStyled<T> = ValueAnimationStyled<T> with DisposeGuard;
 class _AsyncNotifier<T> = AsyncNotifier<T> with DisposeGuard;
 class _MediaQueryNotifier<T> = MediaQueryNotifier<T> with DisposeGuard;
-
-// dart format off
-class _ProxyNotifier<T, L extends Listenable>                = ProxyNotifier<T, L> with DisposeGuard;
-// dart format on
+class _ProxyNotifier<T, L extends Listenable> = ProxyNotifier<T, L> with DisposeGuard;

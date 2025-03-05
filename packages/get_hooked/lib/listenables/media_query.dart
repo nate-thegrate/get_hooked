@@ -20,8 +20,8 @@ class MediaQueryNotifier<T>
   /// The `view` and `viewFinder` parameters allow configuring multiple notifiers
   /// (or mutating an existing one) for multi-window applications.
   MediaQueryNotifier(this.query, {FlutterView? view, ViewFinder? viewFinder})
-      : _view = view,
-        _viewFinder = viewFinder ?? _defaultViewFinder {
+    : _view = view,
+      _viewFinder = viewFinder ?? _defaultViewFinder {
     WidgetsBinding.instance.addObserver(this);
     _value = _newValue;
   }
@@ -38,15 +38,30 @@ class MediaQueryNotifier<T>
   T get value => _value;
   late T _value;
   T get _newValue => query(MediaQueryData.fromView(_view ?? _viewFinder()));
-
-  @protected
-  @override
-  void didChangeMetrics() {
+  void _checkValueChanged() {
     final T newValue = _newValue;
     if (newValue == _value) return;
 
     _value = newValue;
     notifyListeners();
+  }
+
+  @protected
+  @override
+  void didChangeMetrics() {
+    _checkValueChanged();
+  }
+
+  @protected
+  @override
+  void didChangePlatformBrightness() {
+    _checkValueChanged();
+  }
+
+  @protected
+  @override
+  void didChangeTextScaleFactor() {
+    _checkValueChanged();
   }
 
   FlutterView? _view;
