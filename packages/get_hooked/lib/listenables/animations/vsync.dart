@@ -34,7 +34,7 @@ class _Vsync implements Vsync {
 
   @override
   void registerAnimation(StyledAnimation<Object?> animation) {
-    animation.updateStyle(const AnimationStyle());
+    animation.updateStyle(AnimationStyle());
   }
 
   @override
@@ -45,8 +45,11 @@ typedef _StyleNotifier = ValueListenable<AnimationStyle>;
 typedef _TickerMode = ValueListenable<bool>;
 typedef _AnimationSet = Set<StyledAnimation<Object?>>;
 
+/// A [BuildContext] that also functions as a ticker provider.
+abstract interface class VsyncContext implements Vsync, BuildContext {}
+
 /// A mixin that implements the [Vsync] interface.
-mixin ElementVsync on Element implements Vsync {
+mixin ElementVsync on Element implements VsyncContext {
   Set<Ticker>? _tickers;
   _TickerMode? _tickerMode;
 

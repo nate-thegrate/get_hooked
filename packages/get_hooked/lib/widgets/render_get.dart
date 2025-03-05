@@ -15,10 +15,10 @@ abstract class RenderGetBase extends SingleChildRenderObjectWidget {
   /// The [Get] object attached to this widget.
   ///
   /// This getter should always return the same object.
-  ValueRef get get;
+  Listenable get get;
 
   /// Creates a [RenderObject] (which is then passed to [createRenderObject]).
-  RenderObject render(BuildContext context);
+  RenderObject render(VsyncContext context);
 
   /// Used to make a closure for [Listenable.addListener].
   void listen(covariant RenderObject renderObject);
@@ -45,7 +45,7 @@ abstract class RenderScopedGetBase<T> extends SingleChildRenderObjectWidget {
   ValueListenable<T> get get;
 
   /// Creates a [RenderObject] (which is then passed to [createRenderObject]).
-  RenderObject render(BuildContext context, T value);
+  RenderObject render(VsyncContext context, T value);
 
   /// Used to make a closure for [Listenable.addListener].
   void listen(covariant RenderObject renderObject, T value);
@@ -70,7 +70,7 @@ abstract final class RenderGet<Render extends RenderObject> implements SingleChi
   const factory RenderGet({
     Key? key,
     required ValueRef get,
-    required Render Function(BuildContext context) render,
+    required Render Function(VsyncContext context) render,
     required void Function(Render render) listen,
     Widget? child,
   }) = _RenderGet<Render>;
@@ -83,7 +83,7 @@ abstract final class RenderGet<Render extends RenderObject> implements SingleChi
   static RenderGet<Render> scoped<Render extends RenderObject, T>({
     Key? key,
     required ValueListenable<T> get,
-    required Render Function(BuildContext context, T value) render,
+    required Render Function(VsyncContext context, T value) render,
     required void Function(Render render, T value) listen,
     Widget? child,
   }) {
@@ -95,7 +95,7 @@ final class _RenderGet<Render extends RenderObject> extends RenderGetBase implem
   const _RenderGet({
     super.key,
     required this.get,
-    required Render Function(BuildContext context) render,
+    required Render Function(VsyncContext context) render,
     required void Function(Render render) listen,
     super.child,
   }) : _render = render,
@@ -104,10 +104,10 @@ final class _RenderGet<Render extends RenderObject> extends RenderGetBase implem
   @override
   final ValueRef get;
 
-  final Render Function(BuildContext context) _render;
+  final Render Function(VsyncContext context) _render;
 
   @override
-  Render render(BuildContext context) => _render(context);
+  Render render(VsyncContext context) => _render(context);
 
   final void Function(Render render) _listen;
 
@@ -121,7 +121,7 @@ final class _RenderScopedGet<T, Render extends RenderObject> extends RenderScope
     super.key,
     required this.get,
     required void Function(Render render, T value) listen,
-    required Render Function(BuildContext context, T value) render,
+    required Render Function(VsyncContext context, T value) render,
     super.child,
   }) : _listen = listen,
        _render = render;
@@ -134,15 +134,15 @@ final class _RenderScopedGet<T, Render extends RenderObject> extends RenderScope
   @override
   void listen(Render renderObject, T value) => _listen(renderObject, value);
 
-  final Render Function(BuildContext context, T value) _render;
+  final Render Function(VsyncContext context, T value) _render;
   @override
-  Render render(BuildContext context, T value) => _render(context, value);
+  Render render(VsyncContext context, T value) => _render(context, value);
 }
 
 class _RenderGetElement extends SingleChildRenderObjectElement with ElementVsync {
   _RenderGetElement(super.widget, this.get);
 
-  final ValueRef get;
+  final Listenable get;
 
   /// The callback passed to [Listenable.addListener].
   late final VoidCallback listener;
