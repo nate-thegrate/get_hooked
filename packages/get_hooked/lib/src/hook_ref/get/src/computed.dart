@@ -1,29 +1,5 @@
 part of '../get.dart';
 
-/// The parameter used in a [RefComputer] callback.
-abstract interface class ComputeRef {
-  /// Returns the [ValueListenable.value], and triggers a re-computation when notifications
-  /// are sent.
-  T watch<T>(ValueListenable<T> get, {bool autoVsync = true, bool useScope = true});
-
-  /// Returns the [selector]'s result and triggers a re-compute when that result changes.
-  Result select<Result, T>(
-    ValueListenable<T> get,
-    Result Function(T value) selector, {
-    bool autoVsync = true,
-    bool useScope = true,
-  });
-}
-
-/// Soon I will turn [Ref] into a global constant that implements this interface, cause why not.
-abstract interface class HookRef implements ComputeRef {
-  /// TBD :)
-  Result compute<Result>(RefComputer<Result> callback);
-}
-
-/// Signature for a callback that computes a result using a provided [ComputeRef].
-typedef RefComputer<Result> = Result Function(ComputeRef ref);
-
 abstract class _ComputeBase<Result> with ChangeNotifier implements ValueListenable<Result> {
   _ComputeBase(this.compute, {this.concurrent});
 
@@ -91,6 +67,8 @@ abstract class _ComputeBase<Result> with ChangeNotifier implements ValueListenab
   }
 }
 
+typedef _Animation = VsyncValue<Object?>;
+
 // ignore: invalid_internal_annotation, my preference :)
 @internal
 class ComputedNoScope<Result> extends _ComputeBase<Result>
@@ -111,9 +89,9 @@ class ComputedNoScope<Result> extends _ComputeBase<Result>
     if (vsync != Vsync.fallback) _animations?.forEach(vsync.registry.add);
   }
 
-  Set<VsyncRef>? _animations;
+  Set<_Animation>? _animations;
   void _autoVsync(Listenable listenable) {
-    if (listenable is! VsyncRef) return;
+    if (listenable is! _Animation) return;
     (_animations ??= {}).add(listenable);
 
     if (_vsync != Vsync.fallback) _vsync.registry.add(listenable);
@@ -131,7 +109,7 @@ class ComputedNoScope<Result> extends _ComputeBase<Result>
   }
 
   @override
-  final Set<ValueRef> _dependencies = {};
+  final Set<Listenable> _dependencies = {};
 
   @override
   T watch<T>(ValueListenable<T> get, {bool autoVsync = true, bool useScope = false}) {
@@ -157,26 +135,28 @@ class ComputedNoScope<Result> extends _ComputeBase<Result>
   }
 }
 
-/// A computed notifier that lives in a [GetScope].
+/// A computed notifier that lives in a [SubScope].
 class ComputedScoped<Result> extends _ComputeBase<Result> implements ComputeRef {
   /// Initializes superclass fields.
   ComputedScoped(super.compute, {super.concurrent});
 
   /// The scope's full notifier map.
-  Map<ValueRef, ValueRef> get fullDependencyMap => _fullDependencyMap;
-  var _fullDependencyMap = <ValueRef, ValueRef>{};
-  set fullDependencyMap(Map<ValueRef, ValueRef> value) {
+  SubMap<ValueListenable<Object?>> get fullDependencyMap => _fullDependencyMap;
+  var _fullDependencyMap = SubMap<_V>();
+  set fullDependencyMap(SubMap<ValueListenable<Object?>> value) {
     assert(!identical(value, _dependencyMap));
     if (mapEquals(value, _fullDependencyMap)) return;
 
-    _fullDependencyMap = value;
-    dependencyMap = {for (final key in _dependencyMap.keys) key: _fullDependencyMap[key] ?? key};
+    _fullDependencyMap = SubMap(value);
+    dependencyMap = SubMap({
+      for (final key in _dependencyMap.keys) key: _fullDependencyMap[key] ?? key,
+    });
   }
 
   /// The [ValueRef] objects that this notifier depends on.
-  Map<ValueRef, ValueRef> get dependencyMap => _dependencyMap;
-  var _dependencyMap = <ValueRef, ValueRef>{};
-  set dependencyMap(Map<ValueRef, ValueRef> value) {
+  SubMap<ValueListenable<Object?>> get dependencyMap => _dependencyMap;
+  var _dependencyMap = SubMap<_V>();
+  set dependencyMap(SubMap<ValueListenable<Object?>> value) {
     assert(!identical(value, _dependencyMap));
     if (mapEquals(value, _dependencyMap)) return;
 
@@ -192,7 +172,7 @@ class ComputedScoped<Result> extends _ComputeBase<Result> implements ComputeRef 
   @override
   ComputeRef get _ref => this;
 
-  G _read<G extends ValueRef>(G get, {bool autoVsync = true, bool useScope = true}) {
+  G _read<G extends _V>(G get, {bool autoVsync = true, bool useScope = true}) {
     switch (_dependencyMap[get]) {
       case null:
       case _ when !useScope:

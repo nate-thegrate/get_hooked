@@ -1,32 +1,13 @@
-part of '../ref.dart';
-
-/// Allows accessing the relevant value from an ancestor [GetScope] in a reasonably
-/// concise manner.
-extension GetFromContext on BuildContext {
-  /// Allows accessing the relevant value from an ancestor [GetScope] in a reasonably
-  /// concise manner.
-  V get<V extends ValueListenable<Object?>>(
-    V get, {
-    bool createDependency = true,
-    bool throwIfMissing = false,
-  }) {
-    return GetScope.of(
-      this,
-      get,
-      createDependency: createDependency,
-      throwIfMissing: throwIfMissing,
-    );
-  }
-}
+part of '../substitution.dart';
 
 /// A widget that allows setting [Substitution]s for [Get] objects.
 ///
-/// [Ref] static methods will point to the objects specified in the [substitutes]
+/// [ref] static methods will point to the objects specified in the [substitutes]
 /// by default.
-class GetScope extends StatefulWidget {
-  /// Enables [Ref.watch] calls to point to new values,
+class SubScope<Interface extends Object> extends StatefulWidget {
+  /// Enables [ref.watch] calls to point to new values,
   /// as specified by the [substitutes].
-  const GetScope({
+  const SubScope({
     super.key,
     this.substitutes = const {},
     this.inherit = true,
@@ -34,45 +15,47 @@ class GetScope extends StatefulWidget {
   });
 
   /// An iterable (typically a [Set]) that points [Get] objects to new values.
-  final Iterable<SubAny> substitutes;
+  final Iterable<Substitution<Interface>> substitutes;
 
   /// The widget below this one in the tree.
   final Widget child;
 
-  /// Whether this [GetScope] should also include substitutes from an ancestor scope,
+  /// Whether this [SubScope] should also include substitutes from an ancestor scope,
   /// if applicable.
   ///
   /// Ancestor substitutes are ignored if the same value is substituted in this scope.
   final bool inherit;
 
-  /// If the [Get] object is overridden in an ancestor [Ref], returns that object.
+  /// If the [Get] object is overridden in an ancestor [ref], returns that object.
   ///
   /// Returns `null` otherwise.
-  static G? maybeOf<G extends ValueRef>(
+  static T? maybeOf<Interface extends Object, T>(
     BuildContext context,
-    G get, {
+    T placeholder, {
     bool createDependency = true,
   }) {
-    final ScopeModel? model =
+    final SubModel<Interface>? model =
         createDependency
             ? context.dependOnInheritedWidgetOfExactType()
             : context.getInheritedWidgetOfExactType();
 
     assert(() {
-      final ValueRef? scoped = model?.map[get];
-      if (scoped is G?) return true;
+      final Object? scoped = model?.map[placeholder];
+      if (scoped is T?) return true;
 
       throw FlutterError.fromParts([
-        ErrorSummary('An invalid substitution was made for a $G.'),
-        ErrorDescription('A ${get.runtimeType} was substituted with a ${scoped.runtimeType}.'),
-        if (Ref(get).debugSubWidget(context) case final widget?) ...[
+        ErrorSummary('An invalid substitution was made for a $T.'),
+        ErrorDescription(
+          'A ${placeholder.runtimeType} was substituted with a ${scoped.runtimeType}.',
+        ),
+        if (Substitution.debugSubWidget(context, placeholder) case final widget?) ...[
           ErrorDescription('The invalid substitution was made by the following widget:'),
           widget.toDiagnosticsNode(style: DiagnosticsTreeStyle.error),
         ],
       ]);
     }());
 
-    return model?._select(get);
+    return model?._select(placeholder);
   }
 
   /// Returns the [Get] object that overrides this one.
@@ -82,44 +65,42 @@ class GetScope extends StatefulWidget {
   ///
   /// See also:
   ///
-  /// * [GetScope.maybeOf], which returns `null` if the relevant [Override]
-  ///   is not found in the ancestor [Ref].
-  static G of<G extends ValueRef>(
+  /// * [SubScope.maybeOf], which returns `null` if the relevant [Override]
+  ///   is not found in the ancestor [ref].
+  static T of<Interface extends Object, T>(
     BuildContext context,
-    G get, {
+    T placeholder, {
     bool createDependency = true,
     bool throwIfMissing = false,
   }) {
     assert(() {
-      if (!throwIfMissing || maybeOf(context, get) != null) return true;
+      if (!throwIfMissing || maybeOf(context, placeholder) != null) return true;
 
-      final GetScope? ancestor = context.getInheritedWidgetOfExactType();
+      final SubScope? ancestor = context.getInheritedWidgetOfExactType();
       throw FlutterError.fromParts([
         if (ancestor == null)
           ErrorSummary('No ancestor Ref found.')
         else
-          ErrorSummary('The $G was not found in the ancestor Ref.'),
+          ErrorSummary('The $T was not found in the ancestor Ref.'),
         ErrorHint(
           'Double-check that the provided context contains an ancestor Ref '
           'with the appropriate Override.',
         ),
       ]);
     }());
-    return maybeOf(context, get, createDependency: createDependency) ?? get;
+    return maybeOf(context, placeholder, createDependency: createDependency) ?? placeholder;
   }
 
-  /// Adds more substitutions to the existing ancestor [GetScope].
+  /// Adds more substitutions to the existing ancestor [SubScope].
   ///
   /// These substitutes are automatically removed when the associated [BuildContext]
   /// is unmounted.
-  static void add(
+  static void add<Interface extends Object>(
     BuildContext context, {
-    Map<ValueRef, ValueRef> listenables = const {},
+    Map<Interface, Interface> map = const {},
     bool throwIfMissing = true,
   }) {
-    final _OverrideContainer? container = context.dependOnInheritedWidgetOfExactType(
-      aspect: listenables,
-    );
+    final _OverrideContainer? container = context.dependOnInheritedWidgetOfExactType(aspect: map);
 
     assert(() {
       if (container == null && throwIfMissing) {
@@ -138,14 +119,14 @@ class GetScope extends StatefulWidget {
   }
 
   @override
-  State<GetScope> createState() => _GetScopeState();
+  State<SubScope> createState() => _SubScopeState();
 }
 
-extension on Iterable<SubAny> {
+extension<Interface extends Object> on Iterable<Substitution<Interface>> {
   bool debugCheckDuplicates([BuildContext? context]) {
-    final refs = <ValueRef>{};
+    final refs = <Object>{};
     assert(debugCheckDuplicates(context));
-    for (final SubAny(:ref) in this) {
+    for (final Substitution(:ref) in this) {
       if (refs.add(ref)) continue;
       throw FlutterError.fromParts([
         ErrorSummary('Duplicate overrides found for the same Get object.'),
@@ -164,17 +145,17 @@ extension on Iterable<SubAny> {
     return true;
   }
 
-  SubAny? maybeLocate(ValueRef ref) {
+  Substitution<Interface>? maybeLocate(Object? ref) {
     for (final sub in this) {
       if (sub.ref == ref) return sub;
     }
     return null;
   }
 
-  SubAny locate(ValueRef ref) => maybeLocate(ref)!;
+  Substitution<Interface> locate(Object? ref) => maybeLocate(ref)!;
 }
 
-extension on ValueRef {
+extension on Object {
   void dispose() => switch (this) {
     DisposeGuard() => null,
     final ChangeNotifier changeNotifier => changeNotifier.dispose(),
@@ -184,9 +165,10 @@ extension on ValueRef {
   };
 }
 
-class _GetScopeState extends State<GetScope> with TickerProviderStateMixin, _AnimationProvider {
-  late Iterable<SubAny> widgetSubs = widget.substitutes;
-  late final widgetMap = <ValueRef, ValueRef>{
+class _SubScopeState<Interface extends Object> extends State<SubScope<Interface>>
+    with TickerProviderStateMixin, _AnimationProvider {
+  late Iterable<Substitution<Interface>> widgetSubs = widget.substitutes;
+  late final widgetMap = <Interface, Interface>{
     for (final substitute in widgetSubs) substitute.ref: substitute.replacement,
   };
 
@@ -197,34 +179,32 @@ class _GetScopeState extends State<GetScope> with TickerProviderStateMixin, _Ani
   }
 
   late final VoidCallback rebuild = (context as Element).markNeedsBuild;
-  late final clientSubstitutes = Get.map(<Element, Map<ValueRef, ValueRef>>{})
-    ..hooked.addListener(rebuild);
+  late final clientSubstitutes = MapNotifier(<Element, SubMap<Interface>>{})
+    ..addListener(rebuild);
 
   @override
-  void didUpdateWidget(GetScope oldWidget) {
+  void didUpdateWidget(SubScope<Interface> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final Iterable<SubAny> newSubs = widget.substitutes;
+    final Iterable<Substitution<Interface>> newSubs = widget.substitutes;
     assert(newSubs.debugCheckDuplicates(context));
 
-    for (final ValueRef ref in widgetMap.keys) {
+    for (final Object ref in widgetMap.keys) {
       if (newSubs.maybeLocate(ref) == null) {
-        final ValueRef oldReplacement = widgetMap.remove(ref)!;
-        final SubAny oldSub = widgetSubs.locate(ref);
-        if (oldSub.autoDispose) oldReplacement.dispose();
+        final Object? oldReplacement = widgetMap.remove(ref);
+        final Substitution<Interface> oldSub = widgetSubs.locate(ref);
+        if (oldSub.autoDispose) oldReplacement?.dispose();
       }
     }
 
-    for (final SubAny newSub in newSubs) {
+    for (final newSub in newSubs) {
       if (widgetMap[newSub.ref] case final oldReplacement?) {
-        final SubAny oldSub = widgetSubs.locate(newSub.ref);
+        final Substitution<Interface> oldSub = widgetSubs.locate(newSub.ref);
         switch ((oldSub, newSub)) {
           case (_SubFactory(:final factory), _SubFactory(factory: final newFactory))
               when factory == newFactory:
-          case (_SubGetFactory(:final factory), _SubGetFactory(factory: final newFactory))
-              when factory == newFactory:
             continue;
         }
-        final ValueRef newReplacement = newSub.replacement;
+        final Interface newReplacement = newSub.replacement;
         if (newReplacement != oldReplacement) {
           widgetMap[newSub.ref] = newReplacement;
           if (oldSub.autoDispose) oldReplacement.dispose();
@@ -235,15 +215,15 @@ class _GetScopeState extends State<GetScope> with TickerProviderStateMixin, _Ani
 
   @override
   void dispose() {
-    clientSubstitutes.hooked.removeListener(rebuild);
+    clientSubstitutes.removeListener(rebuild);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final map = <ValueRef, ValueRef>{};
+    final map = SubMap<Interface>();
 
-    for (final Map<ValueRef, ValueRef> refMap
+    for (final Map<Interface, Interface> refMap
         in clientSubstitutes.values.toList(growable: false).reversed) {
       for (final MapEntry(:key, :value) in refMap.entries) {
         map[key] ??= value;
@@ -253,25 +233,26 @@ class _GetScopeState extends State<GetScope> with TickerProviderStateMixin, _Ani
       map[key] ??= value;
     }
     if (widget.inherit) {
-      if (context.dependOnInheritedWidgetOfExactType<ScopeModel>() case final model?) {
+      if (context.dependOnInheritedWidgetOfExactType<SubModel<Interface>>() case final model?) {
         for (final MapEntry(:key, :value) in model.map.entries) {
           map[key] ??= value;
         }
       }
     }
 
-    for (final Listenable value in map.values) {
-      if (value is VsyncRef) registry.add(value);
+    for (final Object value in map.values) {
+      if (value is VsyncValue<Object?>) registry.add(value);
     }
 
-    return _OverrideContainer(child: ScopeModel(map: map, child: widget.child));
+    return _OverrideContainer(child: SubModel(map: map, child: widget.child));
   }
 }
 
 typedef _StyleNotifier = ValueListenable<AnimationStyle>;
 typedef _AnimationSet = Set<StyledAnimation<Object?>>;
 
-mixin _AnimationProvider on State<GetScope>, TickerProvider implements Vsync {
+mixin _AnimationProvider<T extends Object> on State<SubScope<T>>, TickerProvider
+    implements Vsync {
   _AnimationSet? _animations;
   _StyleNotifier? _styleNotifier;
 
@@ -320,23 +301,23 @@ mixin _AnimationProvider on State<GetScope>, TickerProvider implements Vsync {
   }
 }
 
-class _OverrideContainer extends InheritedWidget {
+class _OverrideContainer<Interface extends Object> extends InheritedWidget {
   const _OverrideContainer({required super.child});
 
   @override
   bool updateShouldNotify(covariant InheritedWidget oldWidget) => false;
 
   @override
-  InheritedElement createElement() => _OverrideContainerElement(this);
+  InheritedElement createElement() => _OverrideContainerElement<Interface>(this);
 }
 
-class _OverrideContainerElement extends InheritedElement {
+class _OverrideContainerElement<Interface extends Object> extends InheritedElement {
   _OverrideContainerElement(_OverrideContainer super.widget);
 
   @override
   void setDependencies(Element dependent, Object? value) {
     super.setDependencies(dependent, value);
-    if (value is! Map<ValueRef, ValueRef>) {
+    if (value is! Map<Interface, Interface>) {
       assert(
         throw ArgumentError(
           'GetScope expected a map of substitutions, got ${value.runtimeType}',
@@ -345,7 +326,7 @@ class _OverrideContainerElement extends InheritedElement {
       );
       return;
     }
-    final Map<ValueRef, ValueRef> map = {...?clientSubstitutes.remove(dependent), ...value};
+    final map = SubMap<Interface>({...?clientSubstitutes.remove(dependent), ...value});
     clientSubstitutes[dependent] = map;
   }
 
@@ -355,36 +336,35 @@ class _OverrideContainerElement extends InheritedElement {
     super.removeDependent(dependent);
   }
 
-  late final clientSubstitutes = findAncestorStateOfType<_GetScopeState>()!.clientSubstitutes;
+  late final clientSubstitutes =
+      findAncestorStateOfType<_SubScopeState<Interface>>()!.clientSubstitutes;
 }
 
-/// An [InheritedModel] used by [Ref] to store its [Override]s
+/// An [InheritedModel] used by [ref] to store its [Override]s
 /// and notify dependent widgets.
 ///
-/// [Ref] contains methods which can be used in [Hook] functions
+/// [ref] contains methods which can be used in [Hook] functions
 /// along with ___ render object stuff.
-final class ScopeModel extends InheritedModel<ValueRef> {
+final class SubModel<Interface extends Object> extends InheritedModel<Interface> {
   /// Creates an [InheritedModel] that stores [Override]s
-  const ScopeModel({super.key, required this.map, required super.child});
+  const SubModel({super.key, required this.map, required super.child});
 
   /// The override map.
   ///
   /// The key is the original object; the value is the new object.
-  final Map<ValueRef, ValueRef> map;
+  final SubMap<Interface> map;
 
-  V? _select<V extends ValueRef>(V get) => switch (map[get]) {
+  V? _select<V>(V get) => switch (map[get]) {
     final V gotIt => gotIt,
     _ => null,
   };
 
   @override
-  bool updateShouldNotify(ScopeModel oldWidget) {
-    return !mapEquals(map, oldWidget.map);
-  }
+  bool updateShouldNotify(SubModel oldWidget) => !mapEquals(map, oldWidget.map);
 
   @override
-  bool updateShouldNotifyDependent(ScopeModel oldWidget, Set<ValueRef> dependencies) {
-    for (final ValueRef dependency in dependencies) {
+  bool updateShouldNotifyDependent(SubModel<Interface> oldWidget, Set<Interface> dependencies) {
+    for (final Interface dependency in dependencies) {
       if (_select(dependency) != oldWidget._select(dependency)) return true;
     }
     return false;

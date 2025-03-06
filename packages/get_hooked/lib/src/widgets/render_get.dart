@@ -4,8 +4,9 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
+import 'package:get_hooked/src/element_vsync_mixin.dart';
 
-import '../ref/ref.dart';
+import '../hook_ref/hook_ref.dart';
 
 /// Extend this class to create a widget with a single child.
 abstract class RenderGetBase extends SingleChildRenderObjectWidget {
@@ -69,7 +70,7 @@ abstract final class RenderGet<Render extends RenderObject> implements SingleChi
   /// A simple widget that subscribes to a [Get] object and updates a [RenderObject] accordingly.
   const factory RenderGet({
     Key? key,
-    required ValueRef get,
+    required Listenable get,
     required Render Function(VsyncContext context) render,
     required void Function(Render render) listen,
     Widget? child,
@@ -77,7 +78,7 @@ abstract final class RenderGet<Render extends RenderObject> implements SingleChi
 
   /// A simple widget that subscribes to a [Get] object and updates a [RenderObject] accordingly.
   ///
-  /// This constructor ensures that the appropriate object from an ancestor [GetScope] is used,
+  /// This constructor ensures that the appropriate object from an ancestor [SubScope] is used,
   /// if applicable.
   @factory
   static RenderGet<Render> scoped<Render extends RenderObject, T>({
@@ -102,7 +103,7 @@ final class _RenderGet<Render extends RenderObject> extends RenderGetBase implem
        _listen = listen;
 
   @override
-  final ValueRef get;
+  final Listenable get;
 
   final Render Function(VsyncContext context) _render;
 
@@ -139,6 +140,8 @@ final class _RenderScopedGet<T, Render extends RenderObject> extends RenderScope
   Render render(VsyncContext context, T value) => _render(context, value);
 }
 
+typedef _Animation = VsyncValue<Object?>;
+
 class _RenderGetElement extends SingleChildRenderObjectElement with ElementVsync {
   _RenderGetElement(super.widget, this.get);
 
@@ -151,14 +154,14 @@ class _RenderGetElement extends SingleChildRenderObjectElement with ElementVsync
   void mount(Element? parent, Object? newSlot) {
     super.mount(parent, newSlot);
     get.addListener(listener);
-    if (get case final VsyncRef animation) {
+    if (get case final _Animation animation) {
       registry.add(animation);
     }
   }
 
   @override
   void unmount() {
-    if (get case final VsyncRef animation) {
+    if (get case final _Animation animation) {
       registry.remove(animation);
     }
     get.removeListener(listener);
@@ -179,7 +182,7 @@ class _RenderScopedGetElement<T> extends SingleChildRenderObjectElement with Ele
   void mount(Element? parent, Object? newSlot) {
     super.mount(parent, newSlot);
     scopedGet.addListener(listener);
-    if (scopedGet case final VsyncRef animation) {
+    if (scopedGet case final _Animation animation) {
       registry.add(animation);
     }
   }

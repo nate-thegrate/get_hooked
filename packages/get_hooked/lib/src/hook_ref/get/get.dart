@@ -9,18 +9,64 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
-import 'package:get_hooked/ref/ref.dart';
+import 'package:get_hooked/src/hook_ref/hook_ref.dart';
+import 'package:get_hooked/src/substitution/substitution.dart';
 import 'package:meta/meta.dart';
 
 part 'src/computed.dart';
 part 'src/dispose_guard.dart';
 part 'src/scoped_get.dart';
 
-/// Allows the hook functions defined in [Ref] to access
+typedef _V = ValueListenable<Object?>;
+
+/// Allows the hook functions defined in [ref] to access
 /// a [Get] object's [ValueListenable].
-extension GetHooked<V extends ValueRef> on Get<Object?, V> {
+//
+// ignore: library_private_types_in_public_api, I'm a rule-breaker
+extension GetHooked<V extends _V> on Get<Object?, V> {
   /// Don't get hooked.
   V get hooked => _hooked;
+}
+
+/// Allows [Substitution]s for [Get] objects.
+class GetScope extends SubScope<_V> {
+  /// Creates a widget that allows [Substitution]s for [Get] objects.
+  const GetScope({super.key, super.substitutes, super.inherit = true, required super.child});
+
+  /// Returns the [ValueListenable] object relevant to .
+  ///
+  /// If no such object is found, returns the object provided as input,
+  /// or throws an error if [throwIfMissing] is true.
+  ///
+  /// See also:
+  ///
+  /// * [SubScope.maybeOf], which returns `null` if the relevant [Substitution]
+  ///   is not found in the ancestor [ref].
+  static G of<G extends ValueListenable<Object?>>(
+    BuildContext context,
+    G get, {
+    bool createDependency = true,
+    bool throwIfMissing = false,
+  }) {
+    return SubScope.of<_V, G>(
+      context,
+      get,
+      createDependency: createDependency,
+      throwIfMissing: throwIfMissing,
+    );
+  }
+
+  /// If the [ValueListenable] object is subbed in an ancestor scope, returns that object.
+  ///
+  /// Returns `null` otherwise.
+  static V? maybeOf<V extends ValueListenable<Object?>>(
+    BuildContext context,
+    V get, {
+    bool createDependency = true,
+    bool throwIfMissing = false,
+  }) {
+    return SubScope.maybeOf<_V, V>(context, get, createDependency: createDependency);
+  }
 }
 
 /// Encapsulates a [ValueListenable] object with an interface for
@@ -28,7 +74,7 @@ extension GetHooked<V extends ValueRef> on Get<Object?, V> {
 extension type Get<T, V extends ValueListenable<T>>._(V _hooked) implements ValueListenable<T> {
   /// Don't add a listener directly!
   /// {@template get_hooked.dont}
-  /// Prefer using [Ref.watch] or something similar.
+  /// Prefer using [ref.watch] or something similar.
   ///
   /// …or if you really gotta do it, use the `.hooked` getter.
   /// {@endtemplate}

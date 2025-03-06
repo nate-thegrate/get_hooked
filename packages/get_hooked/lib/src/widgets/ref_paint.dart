@@ -3,16 +3,13 @@ import 'dart:collection';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
+import 'package:get_hooked/src/element_vsync_mixin.dart';
+import 'package:get_hooked/src/substitution/substitution.dart';
 
-import '../ref/ref.dart';
+import '../hook_ref/hook_ref.dart';
 
-extension<T extends ValueRef> on T {
-  T of(BuildContext context) {
-    if (this case final ValueRef get) {
-      if (GetScope.of<ValueRef>(context, get) case final T result) return result;
-    }
-    return this;
-  }
+extension<T extends ValueListenable<Object?>> on T {
+  T of(BuildContext context) => GetScope.of(context, this);
 }
 
 /// A variation of [CustomPaint] that interfaces with [Get] objects.
@@ -23,7 +20,7 @@ abstract class RefPaint extends SingleChildRenderObjectWidget {
   /// Creates a custom-painted widget using the provided [RefPaintCallback].
   ///
   /// The [PaintingRef] interface allows `ref.watch()` calls to be made
-  /// in the same fashion as [Ref.watch].
+  /// in the same fashion as [ref.watch].
   const factory RefPaint.compose(
     RefPaintCallback paintCallback, {
     Key? key,
@@ -155,8 +152,12 @@ extension type PainterRef._(_RefPainterElement _element) implements Object {
   /// Returns the relevant [Get] object based on the current [context].
   ///
   /// This will be identical to the input, unless a [Substitution] was made
-  /// in the ancestor [GetScope].
-  G read<G extends ValueRef>(G get, {bool createDependency = true, bool throwIfMissing = false}) {
+  /// in the ancestor [SubScope].
+  G read<G extends ValueListenable<Object?>>(
+    G get, {
+    bool createDependency = true,
+    bool throwIfMissing = false,
+  }) {
     return GetScope.of(
       context,
       get,
@@ -168,22 +169,56 @@ extension type PainterRef._(_RefPainterElement _element) implements Object {
 
 /// An interface used by [RefPaint.paint] and [RefPaint.buildSemantics].
 extension type PaintingRef._(_RefPainterElement _element) implements PainterRef {
+  PaintingContext? get _context => _element.paintingContext;
+
   /// Called by a [RefPaint] widget to stage a [Canvas] on which to paint.
   ///
   /// This method sets compositor hints regarding whether the layer [isComplex]
   /// or is likely to change.
-  Canvas stageCanvas({bool isComplex = false, bool willChange = false}) {
+  Canvas get canvas {
+    assert(_debugCheckPainting('canvas'));
+    return _context!.canvas;
+  }
+
+  /// Hints that the painting in the current layer is complex and would benefit
+  /// from caching.
+  ///
+  /// If this hint is not set, the compositor will apply its own heuristics to
+  /// decide whether the current layer is complex enough to benefit from
+  /// caching.
+  ///
+  /// Calling this ensures a [Canvas] is available. Only draw calls on the
+  /// current canvas will be hinted; the hint is not propagated to new canvases
+  /// created after a new layer is added to the painting context.
+  void setIsComplexHint() {
+    assert(_debugCheckPainting('setIsComplexHint()'));
+    _context?.setIsComplexHint();
+  }
+
+  /// Hints that the painting in the current layer is likely to change next frame.
+  ///
+  /// This hint tells the compositor not to cache the current layer because the
+  /// cache will not be used in the future. If this hint is not set, the
+  /// compositor will apply its own heuristics to decide whether the current
+  /// layer is likely to be reused in the future.
+  ///
+  /// Calling this ensures a [Canvas] is available. Only draw calls on the
+  /// current canvas will be hinted; the hint is not propagated to new canvases
+  /// created after a new layer is added to the painting context.
+  void setWillChangeHint() {
+    assert(_debugCheckPainting('setWillChangeHint()'));
+    _context?.setWillChangeHint();
+  }
+
+  bool _debugCheckPainting(String fieldName) {
     assert(() {
-      if (_element.paintingContext != null) return true;
+      if (_context != null) return true;
       throw FlutterError.fromParts([
-        ErrorSummary('PaintingRef.stageCanvas() called during buildSemantics.'),
+        ErrorSummary('PaintingRef.$fieldName accessed during buildSemantics.'),
         ErrorHint('Consider removing this method call from the buildSemantics() method body.'),
       ]);
     }());
-    final PaintingContext context = _element.paintingContext!;
-    if (isComplex) context.setIsComplexHint();
-    if (willChange) context.setWillChangeHint();
-    return context.canvas;
+    return true;
   }
 
   /// Returns the [Get] object's value, and triggers a re-render when it changes.
@@ -263,8 +298,8 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
   }
 
   /// Registers a [GetVsync] object with this [RefPaint]'s context,
-  /// in a fashion similar to [Ref.vsync].
-  A vsync<A extends VsyncRef>(A getVsync, {bool useScope = true, bool watch = false}) {
+  /// in a fashion similar to [ref.vsync].
+  A vsync<A extends VsyncValue<Object?>>(A getVsync, {bool useScope = true, bool watch = false}) {
     if (useScope) getVsync = GetScope.of(context, getVsync);
     _element.registry.add(getVsync);
     if (watch) {
@@ -297,7 +332,7 @@ class _RefPainterElement extends SingleChildRenderObjectElement with ElementVsyn
 
   PaintingContext? paintingContext;
 
-  bool get hasScope => getInheritedWidgetOfExactType<ScopeModel>() != null;
+  bool get hasScope => getInheritedWidgetOfExactType<SubModel<Listenable>>() != null;
   late bool _hasScope;
   @override
   void mount(Element? parent, Object? newSlot) {

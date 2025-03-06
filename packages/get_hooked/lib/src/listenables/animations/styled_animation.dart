@@ -21,9 +21,6 @@ abstract interface class VsyncValue<T> implements ValueListenable<T> {
   void resync(Vsync vsync);
 }
 
-/// A `typedef` that can represent any [VsyncValue] object.
-typedef VsyncRef = VsyncValue<Object?>;
-
 /// Interface for an [Animation] that uses a [Vsync] to manage its [Ticker] and [AnimationStyle].
 abstract interface class StyledAnimation<T> implements Animation<T>, VsyncValue<T> {
   /// Applies the [newStyle] to the animation.

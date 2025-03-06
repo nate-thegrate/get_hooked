@@ -1,4 +1,4 @@
-part of '../get.dart';
+import 'package:flutter/foundation.dart';
 
 /// Mixin for [Get] objects with a [dispose] method.
 ///
@@ -17,7 +17,7 @@ mixin DisposeGuard on Listenable {
   }
 
   /// {@template get_hooked.DisposeGuard}
-  /// [Ref] will automatically free associated resources when its associated
+  /// [ref] will automatically free associated resources when its associated
   /// [HookWidget] is no longer in use, so the `dispose()` method of a
   /// [ValueNotifier] or [AnimationController] is unnecessary.
   ///
@@ -42,13 +42,3 @@ mixin DisposeGuard on Listenable {
     );
   }
 }
-
-class _ValueNotifier<T> = ValueNotifier<T> with DisposeGuard;
-class _ListNotifier<E> = ListNotifier<E> with DisposeGuard;
-class _SetNotifier<E> = SetNotifier<E> with DisposeGuard;
-class _MapNotifier<K, V> = MapNotifier<K, V> with DisposeGuard;
-class _AnimationControllerStyled = AnimationControllerStyled with DisposeGuard;
-class _ValueAnimationStyled<T> = ValueAnimationStyled<T> with DisposeGuard;
-class _AsyncNotifier<T> = AsyncNotifier<T> with DisposeGuard;
-class _MediaQueryNotifier<T> = MediaQueryNotifier<T> with DisposeGuard;
-class _ProxyNotifier<T, L extends Listenable> = ProxyNotifier<T, L> with DisposeGuard;

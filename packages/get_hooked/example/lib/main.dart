@@ -16,7 +16,7 @@ class App extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    return switch (Ref.watch(getScreen)) {
+    return switch (ref.watch(getScreen)) {
       Screen.counter => const Counter(),
       Screen.form => const FormExampleApp(),
       Screen.benchmark => const BenchmarkApp(),

@@ -13,7 +13,7 @@ extension VsyncRegistryExtension on Vsync {
 /// this registry was created to track animations' [Vsync]s.
 extension type VsyncRegistry._(Vsync _vsync) {
   /// Assigns a [vsync] to an [animation], if it's registered and hasn't already been assigned one.
-  bool add(VsyncRef animation) {
+  bool add(VsyncValue<Object?> animation) {
     if (animation.vsync == Vsync.fallback) {
       animation.resync(_vsync);
       return true;
@@ -22,7 +22,7 @@ extension type VsyncRegistry._(Vsync _vsync) {
   }
 
   /// Resets the animation to the fallback (perpetually unmuted) ticker provider.
-  bool remove(VsyncRef animation) {
+  bool remove(VsyncValue<Object?> animation) {
     if (animation.vsync == _vsync) {
       animation.resync(Vsync.fallback);
       return true;

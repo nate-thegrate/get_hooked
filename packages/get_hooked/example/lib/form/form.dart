@@ -37,7 +37,7 @@ class FormExample extends Column {
   static Widget textField(BuildContext context) => TextField(
     decoration: InputDecoration(
       hintText: 'Enter your email',
-      errorText: Ref.watch(getValidation) ? null : 'Please enter some text',
+      errorText: ref.watch(getValidation) ? null : 'Please enter some text',
     ),
     onChanged: getEmail.emit,
   );

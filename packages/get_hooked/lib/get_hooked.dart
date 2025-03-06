@@ -1,3 +1,3 @@
 export 'listenables.dart';
-export 'ref/ref.dart';
+export 'src/hook_ref/hook_ref.dart';
 export 'widgets.dart';

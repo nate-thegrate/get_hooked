@@ -1,7 +1,7 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member, these hooks are meant to access internal stuff :)
 // ignore_for_file: avoid_positional_boolean_parameters, private hook functions are more readable this way
 
-part of '../ref.dart';
+part of '../hook_ref.dart';
 
 class _GetSelect<Result, T> extends HookData<Result> {
   const _GetSelect(this.hooked, this.selector, {required this.watching}) : super(key: hooked);
@@ -48,8 +48,10 @@ class _SelectHook<Result, T> extends Hook<Result, _GetSelect<Result, T>> {
 }
 
 typedef _TickerMode = ValueListenable<bool>;
+typedef _StyleNotifier = ValueListenable<AnimationStyle>;
+typedef _Animation = VsyncValue<Object?>;
 
-class _VsyncHook extends Hook<void, VsyncRef> implements Vsync {
+class _VsyncHook extends Hook<void, _Animation> implements Vsync {
   Ticker? _ticker;
   StyledAnimation<Object?>? _animation;
   _StyleNotifier? _styleNotifier;
@@ -203,14 +205,14 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
     with _RefAnimationProvider
     implements ComputeRef {
   bool _needsDependencies = true;
-  final _rootDependencies = <ValueRef>{};
+  final _rootDependencies = <Listenable>{};
   var _scopedDependencies = <Listenable>{};
   Listenable get _listenable => Listenable.merge(_scopedDependencies);
 
-  final _selections = <_ScopedSelection<Object?, Object?>>{};
+  final _selections = <ScopedSelection<Object?, Object?>>{};
 
-  final _rootAnimations = <VsyncRef>{};
-  var _managedAnimations = <VsyncRef>{};
+  final _rootAnimations = <_Animation>{};
+  var _managedAnimations = <_Animation>{};
 
   late Result result;
   bool _dirty = true;
@@ -234,17 +236,21 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
     _listenable.addListener(markMayNeedRebuild);
   }
 
-  G _read<G extends ValueRef>(G get, {bool autoVsync = true, bool useScope = true}) {
-    final G scoped = useScope ? GetScope.of(context, get) : get;
-    if (get case final VsyncRef v when _needsDependencies && autoVsync) {
-      if (scoped is! VsyncRef) {
+  G _read<G extends ValueListenable<Object?>>(
+    G get, {
+    bool autoVsync = true,
+    bool useScope = true,
+  }) {
+    final G scoped = useScope ? SubScope.of(context, get) : get;
+    if (get case final _Animation animation when _needsDependencies && autoVsync) {
+      if (scoped is! _Animation) {
         assert(
           throw FlutterError.fromParts([
             ErrorSummary('An invalid substitution was made for a $G.'),
             ErrorDescription(
               'A ${get.runtimeType} was substituted with a ${scoped.runtimeType}.',
             ),
-            if (Ref(get).debugSubWidget(context) case final widget?) ...[
+            if (Substitution.debugSubWidget(context, get) case final widget?) ...[
               ErrorDescription('The invalid substitution was made by the following widget:'),
               widget.toDiagnosticsNode(style: DiagnosticsTreeStyle.error),
             ],
@@ -252,12 +258,12 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
         );
         return scoped;
       }
-      _rootAnimations.add(v);
-      if (v == scoped) {
+      _rootAnimations.add(animation);
+      if (animation == scoped) {
         // If a substitution was made, the GetScope acts as the ticker provider.
         // Otherwise, this hook does it.
-        _managedAnimations.add(v);
-        registry.add(v);
+        _managedAnimations.add(animation);
+        registry.add(animation);
       }
     }
     return scoped;
@@ -282,7 +288,7 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
   }) {
     final ValueListenable<T> scoped = _read(get, useScope: useScope, autoVsync: autoVsync);
     if (_needsDependencies) {
-      _selections.add(_ScopedSelection<R, T>(context, get, selector, markMayNeedRebuild));
+      _selections.add(ScopedSelection<R, T>(context, get, selector, markMayNeedRebuild));
     }
     return selector(scoped.value);
   }
@@ -290,7 +296,7 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
   @override
   void didChangeDependencies() {
     final newDependencies = <Listenable>{
-      for (final get in _rootDependencies) GetScope.of(context, get),
+      for (final get in _rootDependencies) SubScope.of(context, get),
     };
     if (!setEquals(newDependencies, _scopedDependencies)) {
       _listenable.removeListener(markMayNeedRebuild);
@@ -298,9 +304,9 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
       _listenable.addListener(markMayNeedRebuild);
     }
 
-    final animations = <VsyncRef>{
-      for (final VsyncRef animation in _rootAnimations)
-        if (GetScope.maybeOf(context, animation) == null) animation,
+    final animations = <_Animation>{
+      for (final _Animation animation in _rootAnimations)
+        if (SubScope.maybeOf(context, animation) == null) animation,
     };
     if (!setEquals(animations, _managedAnimations)) {
       _managedAnimations.difference(animations).forEach(registry.remove);
@@ -308,7 +314,7 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
       _managedAnimations = animations;
     }
 
-    for (final _ScopedSelection<Object?, Object?> selection in _selections) {
+    for (final ScopedSelection<Object?, Object?> selection in _selections) {
       selection.rescope();
     }
   }
@@ -317,7 +323,7 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
   void dispose() {
     _listenable.removeListener(markMayNeedRebuild);
     _managedAnimations.forEach(registry.remove);
-    for (final _ScopedSelection<Object?, Object?> selection in _selections) {
+    for (final ScopedSelection<Object?, Object?> selection in _selections) {
       selection.dispose();
     }
   }
@@ -328,43 +334,5 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
     if (_dirty) result = compute();
     _dirty = true;
     return result;
-  }
-}
-
-/// Listens to the scoped version of [root], calling [listener] when the selected value changes.
-class _ScopedSelection<Result, T> {
-  _ScopedSelection(this.context, this.root, this.selector, this.listener)
-    : scoped = GetScope.of(context, root) {
-    scoped.addListener(_scopedListener);
-    value = selector(scoped.value);
-  }
-
-  final BuildContext context;
-  final ValueListenable<T> root;
-  ValueListenable<T> scoped;
-
-  final Result Function(T) selector;
-  late Result value;
-  final VoidCallback listener;
-
-  void _scopedListener() {
-    final Result newValue = selector(scoped.value);
-    if (newValue == value) return;
-
-    value = newValue;
-    listener();
-  }
-
-  void rescope() {
-    final ValueListenable<T> newScoped = GetScope.of(context, root);
-    if (newScoped == scoped) return;
-
-    scoped.removeListener(_scopedListener);
-    scoped = newScoped..addListener(_scopedListener);
-    _scopedListener();
-  }
-
-  void dispose() {
-    scoped.removeListener(_scopedListener);
   }
 }

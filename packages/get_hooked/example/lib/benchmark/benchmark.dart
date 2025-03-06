@@ -92,7 +92,7 @@ class ColorSlice extends HookWidget {
   Widget build(BuildContext context) {
     final funBox = Expanded(
       flex: 3,
-      child: switch (Ref.watch(getSetup)) {
+      child: switch (ref.watch(getSetup)) {
         Setup.animatedContainer => ValueListenableBuilder(
           valueListenable: getHue.hooked,
           builder: (context, hue, child) {
@@ -110,21 +110,16 @@ class ColorSlice extends HookWidget {
         ),
         Setup.refWatchBuilder => HookBuilder(
           builder: (context) {
-            final Color color = Ref.watch(getColor);
+            final Color color = ref.watch(getColor);
             return ColoredBox(color: color, child: child);
           },
         ),
         Setup.refWatchClass => const RefWatchClass(),
-        Setup.customPaint => CustomPaint(
-          painter: CustomPainterClass(),
-          child: child,
-        ),
+        Setup.customPaint => CustomPaint(painter: CustomPainterClass(), child: child),
         Setup.refPaint => RefPaint.compose((PaintingRef ref) {
-          final Canvas canvas = ref.stageCanvas(willChange: true);
-          canvas.drawRect(
-            Offset.zero & ref.size,
-            Paint()..color = ref.watch(getColor),
-          );
+          ref
+            ..setWillChangeHint()
+            ..canvas.drawRect(Offset.zero & ref.size, Paint()..color = ref.watch(getColor));
         }),
         Setup.refPaintClass => const RefPaintClass(),
         Setup.renderGet => RenderGet(
@@ -179,7 +174,7 @@ class RefWatchClass extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color color = Ref.watch(getColor);
+    final Color color = ref.watch(getColor);
     return ColoredBox(color: color, child: child);
   }
 }
@@ -190,7 +185,7 @@ class BenchmarkDropdown extends HookWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButton(
-      value: Ref.watch(getSetup),
+      value: ref.watch(getSetup),
       items: useMemoized(
         () => [
           for (final value in Setup.values)
@@ -207,11 +202,9 @@ class RefPaintClass extends RefPaint {
 
   @override
   void paint(PaintingRef ref) {
-    final Canvas canvas = ref.stageCanvas(willChange: true);
-    canvas.drawRect(
-      Offset.zero & ref.size,
-      Paint()..color = ref.watch(getColor),
-    );
+    ref
+      ..setWillChangeHint()
+      ..canvas.drawRect(Offset.zero & ref.size, Paint()..color = ref.watch(getColor));
   }
 }
 
@@ -267,7 +260,7 @@ class BottomButton extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Setup value = Ref.watch(getSetup);
+    final Setup value = ref.watch(getSetup);
     return Expanded(
       child: FilledButton(
         style: FilledButton.styleFrom(
@@ -288,8 +281,7 @@ class CustomRenderObject extends SingleChildRenderObjectWidget {
   const CustomRenderObject({super.key}) : super(child: child);
 
   @override
-  RenderBox createRenderObject(BuildContext context) =>
-      _RenderAnimatedColoredBox();
+  RenderBox createRenderObject(BuildContext context) => _RenderAnimatedColoredBox();
 }
 
 class _RenderAnimatedColoredBox extends RenderProxyBoxWithHitTestBehavior {
