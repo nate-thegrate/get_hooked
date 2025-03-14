@@ -2,16 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/src/hook_ref/hook_ref.dart';
-import 'package:get_hooked/src/scoped_selection.dart';
 import 'package:get_hooked/src/substitution/substitution.dart';
 
 import '../listenables.dart';
 
-typedef _V = ValueListenable<Object?>;
 typedef _StyleNotifier = ValueListenable<AnimationStyle>;
 typedef _TickerMode = ValueListenable<bool>;
-typedef _AnimationSet = Set<VsyncValue<Object?>>;
-typedef _Selection = ScopedSelection<Object?, Object?>;
+typedef _AnimationSet = Set<StyledAnimation<Object?>>;
 
 /// A mixin that implements the [Vsync] interface.
 mixin ElementVsync on Element implements VsyncContext {
@@ -51,7 +48,7 @@ mixin ElementVsync on Element implements VsyncContext {
   }
 
   void _updateStyles() {
-    for (final StyledAnimation<Object?> animation in _animations?.whereType() ?? const {}) {
+    for (final StyledAnimation<Object?> animation in _animations ?? const {}) {
       animation.updateStyle(_styleNotifier!.value);
     }
   }
@@ -88,21 +85,9 @@ mixin ElementVsync on Element implements VsyncContext {
   }
 }
 
-typedef _Selectors = Map<Listenable, _Selection>;
-
-extension on _Selectors {
-  Result select<Result, T>(ValueListenable<T> listenable) {
-    if (this[listenable] case ScopedSelection(:final Result value)) {
-      return value;
-    }
-    throw StateError('unexpected map entry: (key: "$listenable", value: "${this[listenable]}")');
-  }
-}
-
 /// Allows any [Element] declaration to act as a [ComputeContext].
 mixin ElementCompute on Element implements ComputeContext {
-  final _dependencies = SubMap<_V>({});
-  final _Selectors _selectors = {};
+  final _disposers = <VoidCallback>{};
   bool _needsDependencies = true;
 
   /// Subtypes implement this method to trigger an update.
@@ -171,30 +156,17 @@ mixin ElementCompute on Element implements ComputeContext {
   }
 
   @override
-  void unmount() {
-    for (final Ticker ticker in _tickers ?? const {}) {
-      ticker.dispose();
-    }
-    _tickerMode?.removeListener(_updateTickers);
-    _styleNotifier?.removeListener(_updateStyles);
-    _animations?.forEach(registry.remove);
-    for (final _Selection selection in _selectors.values) {
-      selection.dispose();
-    }
-    super.unmount();
-  }
-
-  @override
   T watch<T>(ValueListenable<T> get, {bool autoVsync = true, bool useScope = true}) {
+    final ValueListenable<T> scoped = useScope && _hasScope ? GetScope.of(this, get) : get;
     if (_needsDependencies) {
-      if (autoVsync && get is VsyncValue<T>) {
-        registry.add(get);
+      scoped.addListener(recompute);
+      _disposers.add(() => scoped.removeListener(recompute));
+
+      if (get == scoped && autoVsync && get is VsyncValue<T>) {
+        if (registry.add(get)) _disposers.add(() => registry.remove(get));
       }
-      final ValueListenable<T> scoped = useScope ? GetScope.of(this, get) : get;
-      _dependencies[get] = scoped;
-      return scoped.value;
     }
-    return _dependencies.get(get).value;
+    return scoped.value;
   }
 
   @override
@@ -204,48 +176,88 @@ mixin ElementCompute on Element implements ComputeContext {
     bool autoVsync = true,
     bool useScope = true,
   }) {
+    final ValueListenable<T> scoped = useScope && _hasScope ? GetScope.of(this, get) : get;
+    Result currentValue = selector(scoped.value);
     if (_needsDependencies) {
-      final ScopedSelection<Result, T> selection =
-          _selectors[get] = ScopedSelection<Result, T>(this, get, selector, recompute);
-      return selection.value;
+      void checkSelection() {
+        final Result newValue = selector(get.value);
+        if (newValue != currentValue) {
+          currentValue = newValue;
+          recompute();
+        }
+      }
+
+      scoped.addListener(checkSelection);
+      _disposers.add(() => scoped.removeListener(checkSelection));
+
+      if (get == scoped && autoVsync && get is VsyncValue<T>) {
+        if (registry.add(get)) _disposers.add(() => registry.remove(get));
+      }
     }
-    return _selectors.select(get);
+    return currentValue;
   }
+
+  bool get _hasScopeNow =>
+      getInheritedWidgetOfExactType<SubModel<ValueListenable<Object?>>>() != null;
+  bool _hasScope = true;
 
   @override
   void mount(Element? parent, Object? newSlot) {
     super.mount(parent, newSlot);
+    recompute();
+    _needsDependencies = false;
+    _hasScope = _hasScopeNow;
+  }
+
+  void _resetListeners() {
+    for (final VoidCallback dispose in _disposers) {
+      dispose();
+    }
+    _disposers.clear();
+    _needsDependencies = true;
+    recompute();
     _needsDependencies = false;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final Set<_V> oldDependencies = _dependencies.values.toSet();
-    final newDependencies = <_V>{
-      for (final dependency in _dependencies.keys) GetScope.of(this, dependency),
-    };
-    if (!setEquals(oldDependencies, newDependencies)) {
-      Listenable.merge(oldDependencies.difference(newDependencies)).removeListener(recompute);
-      Listenable.merge(newDependencies.difference(oldDependencies)).addListener(recompute);
-    }
-    for (final _Selection selection in _selectors.values) {
-      selection.rescope();
-    }
+    final bool hasScopeNow = _hasScopeNow;
+    if (_hasScope || hasScopeNow) _resetListeners();
+    _hasScope = hasScopeNow;
   }
 
   @override
   void reassemble() {
-    _animations?.forEach(registry.remove);
-    for (final _Selection selection in _selectors.values) {
-      selection.dispose();
-    }
-    _dependencies.clear();
-    _selectors.clear();
-    _needsDependencies = true;
     super.reassemble();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _needsDependencies = false;
-    });
+    _resetListeners();
+  }
+
+  @override
+  void unmount() {
+    for (final VoidCallback dispose in _disposers) {
+      dispose();
+    }
+    _disposers.clear();
+
+    for (final Ticker ticker in _tickers ?? const {}) {
+      ticker.dispose();
+    }
+    _tickerMode?.removeListener(_updateTickers);
+    _styleNotifier?.removeListener(_updateStyles);
+    _animations?.forEach(registry.remove);
+    super.unmount();
   }
 }
+
+mixin _Render<R extends RenderObject> on RenderObjectElement {
+  @override
+  late final R renderObject = super.renderObject as R;
+}
+
+/// A convenience class for making a [SingleChildRenderObjectWidget] with a
+/// [RefComputer].
+//
+// dart format off
+abstract class SingleChildComputeElement<Render extends RenderObject> =
+    SingleChildRenderObjectElement with ElementCompute, _Render<Render>;

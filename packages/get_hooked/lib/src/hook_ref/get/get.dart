@@ -28,47 +28,6 @@ extension GetHooked<V extends _V> on Get<Object?, V> {
   V get hooked => _hooked;
 }
 
-/// Allows [Substitution]s for [Get] objects.
-class GetScope extends SubScope<_V> {
-  /// Creates a widget that allows [Substitution]s for [Get] objects.
-  const GetScope({super.key, super.substitutes, super.inherit = true, required super.child});
-
-  /// Returns the [ValueListenable] object relevant to .
-  ///
-  /// If no such object is found, returns the object provided as input,
-  /// or throws an error if [throwIfMissing] is true.
-  ///
-  /// See also:
-  ///
-  /// * [SubScope.maybeOf], which returns `null` if the relevant [Substitution]
-  ///   is not found in the ancestor [ref].
-  static G of<G extends ValueListenable<Object?>>(
-    BuildContext context,
-    G get, {
-    bool createDependency = true,
-    bool throwIfMissing = false,
-  }) {
-    return SubScope.of<_V, G>(
-      context,
-      get,
-      createDependency: createDependency,
-      throwIfMissing: throwIfMissing,
-    );
-  }
-
-  /// If the [ValueListenable] object is subbed in an ancestor scope, returns that object.
-  ///
-  /// Returns `null` otherwise.
-  static V? maybeOf<V extends ValueListenable<Object?>>(
-    BuildContext context,
-    V get, {
-    bool createDependency = true,
-    bool throwIfMissing = false,
-  }) {
-    return SubScope.maybeOf<_V, V>(context, get, createDependency: createDependency);
-  }
-}
-
 /// Encapsulates a [ValueListenable] object with an interface for
 /// easy updates and automatic lifecycle management.
 extension type Get<T, V extends ValueListenable<T>>._(V _hooked) implements ValueListenable<T> {

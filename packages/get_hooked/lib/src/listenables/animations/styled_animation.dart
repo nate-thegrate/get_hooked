@@ -13,6 +13,9 @@ import 'vsync.dart';
 ///
 /// Generally this interface is implemented by [Animation] objects,
 /// but it can be used in other ways (e.g. a single object that manages multiple animations).
+///
+/// See also: [VsyncRegistry], which can automatically [resync] these objects
+/// when ticker providers are introduced.
 abstract interface class VsyncValue<T> implements ValueListenable<T> {
   /// The listenable's associated [Vsync].
   Vsync get vsync;

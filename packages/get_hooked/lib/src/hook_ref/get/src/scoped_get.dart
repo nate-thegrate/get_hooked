@@ -1,5 +1,65 @@
 part of '../get.dart';
 
+/// Allows accessing the relevant value from an ancestor [SubScope] in a reasonably
+/// concise manner.
+extension GetFromContext on BuildContext {
+  /// Allows accessing the relevant value from an ancestor [SubScope] in a reasonably
+  /// concise manner.
+  V get<V extends ValueListenable<Object?>>(
+    V listenable, {
+    bool createDependency = true,
+    bool throwIfMissing = false,
+  }) {
+    return GetScope.of(
+      this,
+      listenable,
+      createDependency: createDependency,
+      throwIfMissing: throwIfMissing,
+    );
+  }
+}
+
+/// Allows [Substitution]s for [Get] objects.
+class GetScope extends SubScope<_V> {
+  /// Creates a widget that allows [Substitution]s for [Get] objects.
+  const GetScope({super.key, super.substitutes, super.inherit = true, required super.child});
+
+  /// Returns the [ValueListenable] object relevant to .
+  ///
+  /// If no such object is found, returns the object provided as input,
+  /// or throws an error if [throwIfMissing] is true.
+  ///
+  /// See also:
+  ///
+  /// * [SubScope.maybeOf], which returns `null` if the relevant [Substitution]
+  ///   is not found in the ancestor [ref].
+  static V of<V extends ValueListenable<Object?>>(
+    BuildContext context,
+    V listenable, {
+    bool createDependency = true,
+    bool throwIfMissing = false,
+  }) {
+    return SubScope.of<_V, V>(
+      context,
+      listenable,
+      createDependency: createDependency,
+      throwIfMissing: throwIfMissing,
+    );
+  }
+
+  /// If the [ValueListenable] object is subbed in an ancestor scope, returns that object.
+  ///
+  /// Returns `null` otherwise.
+  static V? maybeOf<V extends ValueListenable<Object?>>(
+    BuildContext context,
+    V get, {
+    bool createDependency = true,
+    bool throwIfMissing = false,
+  }) {
+    return SubScope.maybeOf<_V, V>(context, get, createDependency: createDependency);
+  }
+}
+
 /// Might as well use a fun little class for the scope errors!
 class GetScopeError extends UnsupportedError {
   /// Might as well use a fun little class for the scope errors!

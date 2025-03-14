@@ -1,12 +1,11 @@
 part of '../get.dart';
 
-abstract class _ComputeBase<Result> with ChangeNotifier implements ValueListenable<Result> {
+abstract class _ComputeBase<Result> with ChangeNotifier implements Ref, ValueListenable<Result> {
   _ComputeBase(this.compute, {this.concurrent});
 
-  ComputeRef get _ref;
   final RefComputer<Result> compute;
   Result _compute() {
-    final Result result = this.compute(_ref);
+    final Result result = this.compute(this);
     assert(() {
       if (result is! Future) return true;
       throw FlutterError.fromParts([
@@ -39,7 +38,7 @@ abstract class _ComputeBase<Result> with ChangeNotifier implements ValueListenab
 
   void _performUpdate() {
     _updateInProgress = false;
-    final Result newValue = this.compute(_ref);
+    final Result newValue = this.compute(this);
     if (_value == newValue) return;
 
     _value = newValue;
@@ -71,8 +70,7 @@ typedef _Animation = VsyncValue<Object?>;
 
 // ignore: invalid_internal_annotation, my preference :)
 @internal
-class ComputedNoScope<Result> extends _ComputeBase<Result>
-    implements ComputeRef, VsyncValue<Result> {
+class ComputedNoScope<Result> extends _ComputeBase<Result> implements VsyncValue<Result> {
   /// If a vsync is specified, it will sync animations referenced via [watch] or [select].
   ComputedNoScope(super.compute, {super.concurrent, Vsync vsync = Vsync.fallback})
     : _vsync = vsync;
@@ -86,7 +84,7 @@ class ComputedNoScope<Result> extends _ComputeBase<Result>
     if (vsync == _vsync) return;
     if (_vsync != Vsync.fallback) _animations?.forEach(_vsync.registry.remove);
     _vsync = vsync;
-    if (vsync != Vsync.fallback) _animations?.forEach(vsync.registry.add);
+    if (vsync != Vsync.fallback) _animations?.forEach(_vsync.registry.add);
   }
 
   Set<_Animation>? _animations;
@@ -96,9 +94,6 @@ class ComputedNoScope<Result> extends _ComputeBase<Result>
 
     if (_vsync != Vsync.fallback) _vsync.registry.add(listenable);
   }
-
-  @override
-  ComputeRef get _ref => this;
 
   bool _firstCompute = true;
   @override
@@ -136,7 +131,7 @@ class ComputedNoScope<Result> extends _ComputeBase<Result>
 }
 
 /// A computed notifier that lives in a [SubScope].
-class ComputedScoped<Result> extends _ComputeBase<Result> implements ComputeRef {
+class ComputedScoped<Result> extends _ComputeBase<Result> {
   /// Initializes superclass fields.
   ComputedScoped(super.compute, {super.concurrent});
 
@@ -153,7 +148,7 @@ class ComputedScoped<Result> extends _ComputeBase<Result> implements ComputeRef 
     });
   }
 
-  /// The [ValueRef] objects that this notifier depends on.
+  /// The [ValueListenable] objects that this notifier depends on.
   SubMap<ValueListenable<Object?>> get dependencyMap => _dependencyMap;
   var _dependencyMap = SubMap<_V>();
   set dependencyMap(SubMap<ValueListenable<Object?>> value) {
@@ -168,9 +163,6 @@ class ComputedScoped<Result> extends _ComputeBase<Result> implements ComputeRef 
 
   @override
   Iterable<Listenable> get _dependencies => _dependencyMap.values;
-
-  @override
-  ComputeRef get _ref => this;
 
   G _read<G extends _V>(G get, {bool autoVsync = true, bool useScope = true}) {
     switch (_dependencyMap[get]) {

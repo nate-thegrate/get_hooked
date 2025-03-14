@@ -116,7 +116,7 @@ class ColorSlice extends HookWidget {
         ),
         Setup.refWatchClass => const RefWatchClass(),
         Setup.customPaint => CustomPaint(painter: CustomPainterClass(), child: child),
-        Setup.refPaint => RefPaint.compose((PaintingRef ref) {
+        Setup.refPaint => RefPaint((PaintRef ref) {
           ref
             ..setWillChangeHint()
             ..canvas.drawRect(Offset.zero & ref.size, Paint()..color = ref.watch(getColor));
@@ -198,10 +198,10 @@ class BenchmarkDropdown extends HookWidget {
 }
 
 class RefPaintClass extends RefPaint {
-  const RefPaintClass({super.key});
+  const RefPaintClass({super.key}) : super.constructor();
 
   @override
-  void paint(PaintingRef ref) {
+  void paint(PaintRef ref) {
     ref
       ..setWillChangeHint()
       ..canvas.drawRect(Offset.zero & ref.size, Paint()..color = ref.watch(getColor));

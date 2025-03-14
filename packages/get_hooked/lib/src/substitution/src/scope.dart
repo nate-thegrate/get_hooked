@@ -100,7 +100,9 @@ class SubScope<Interface extends Object> extends StatefulWidget {
     Map<Interface, Interface> map = const {},
     bool throwIfMissing = true,
   }) {
-    final _OverrideContainer? container = context.dependOnInheritedWidgetOfExactType(aspect: map);
+    final _ClientSubContainer? container = context.dependOnInheritedWidgetOfExactType(
+      aspect: map,
+    );
 
     assert(() {
       if (container == null && throwIfMissing) {
@@ -126,12 +128,12 @@ extension<Interface extends Object> on Iterable<Substitution<Interface>> {
   bool debugCheckDuplicates([BuildContext? context]) {
     final refs = <Object>{};
     assert(debugCheckDuplicates(context));
-    for (final Substitution(:ref) in this) {
+    for (final Substitution(placeholder: ref) in this) {
       if (refs.add(ref)) continue;
       throw FlutterError.fromParts([
         ErrorSummary('Duplicate overrides found for the same Get object.'),
         for (final sub in this)
-          if (sub.ref == ref) sub.toDiagnosticsNode(),
+          if (sub.placeholder == ref) sub.toDiagnosticsNode(),
         ErrorDescription(
           'A Get object representing a ${ref.runtimeType} '
           'was assigned multiple overrides in this collection.',
@@ -147,7 +149,7 @@ extension<Interface extends Object> on Iterable<Substitution<Interface>> {
 
   Substitution<Interface>? maybeLocate(Object? ref) {
     for (final sub in this) {
-      if (sub.ref == ref) return sub;
+      if (sub.placeholder == ref) return sub;
     }
     return null;
   }
@@ -169,7 +171,7 @@ class _SubScopeState<Interface extends Object> extends State<SubScope<Interface>
     with TickerProviderStateMixin, _AnimationProvider {
   late Iterable<Substitution<Interface>> widgetSubs = widget.substitutes;
   late final widgetMap = <Interface, Interface>{
-    for (final substitute in widgetSubs) substitute.ref: substitute.replacement,
+    for (final substitute in widgetSubs) substitute.placeholder: substitute.replacement,
   };
 
   @override
@@ -197,16 +199,17 @@ class _SubScopeState<Interface extends Object> extends State<SubScope<Interface>
     }
 
     for (final newSub in newSubs) {
-      if (widgetMap[newSub.ref] case final oldReplacement?) {
-        final Substitution<Interface> oldSub = widgetSubs.locate(newSub.ref);
-        switch ((oldSub, newSub)) {
-          case (_SubFactory(:final factory), _SubFactory(factory: final newFactory))
-              when factory == newFactory:
-            continue;
+      if (widgetMap[newSub.placeholder] case final oldReplacement?) {
+        final Substitution<Interface> oldSub = widgetSubs.locate(newSub.placeholder);
+        if ((oldSub, newSub) case (
+          _SubFactory(:final factory),
+          _SubFactory(factory: final newFactory),
+        ) when factory == newFactory) {
+          continue;
         }
         final Interface newReplacement = newSub.replacement;
         if (newReplacement != oldReplacement) {
-          widgetMap[newSub.ref] = newReplacement;
+          widgetMap[newSub.placeholder] = newReplacement;
           if (oldSub.autoDispose) oldReplacement.dispose();
         }
       }
@@ -244,7 +247,7 @@ class _SubScopeState<Interface extends Object> extends State<SubScope<Interface>
       if (value is VsyncValue<Object?>) registry.add(value);
     }
 
-    return _OverrideContainer(child: SubModel(map: map, child: widget.child));
+    return _ClientSubContainer(child: SubModel(map: map, child: widget.child));
   }
 }
 
@@ -286,12 +289,14 @@ mixin _AnimationProvider<T extends Object> on State<SubScope<T>>, TickerProvider
   @override
   void activate() {
     super.activate();
-    final _StyleNotifier newNotifier = DefaultAnimationStyle.getNotifier(context);
-    if (newNotifier == _styleNotifier) return;
+    if (_styleNotifier != null) {
+      final _StyleNotifier newNotifier = DefaultAnimationStyle.getNotifier(context);
+      if (newNotifier == _styleNotifier) return;
 
-    _styleNotifier?.removeListener(_updateStyles);
-    _styleNotifier = newNotifier..addListener(_updateStyles);
-    _updateStyles();
+      _styleNotifier?.removeListener(_updateStyles);
+      _styleNotifier = newNotifier..addListener(_updateStyles);
+      _updateStyles();
+    }
   }
 
   @override
@@ -301,8 +306,8 @@ mixin _AnimationProvider<T extends Object> on State<SubScope<T>>, TickerProvider
   }
 }
 
-class _OverrideContainer<Interface extends Object> extends InheritedWidget {
-  const _OverrideContainer({required super.child});
+class _ClientSubContainer<Interface extends Object> extends InheritedWidget {
+  const _ClientSubContainer({required super.child});
 
   @override
   bool updateShouldNotify(covariant InheritedWidget oldWidget) => false;
@@ -312,7 +317,7 @@ class _OverrideContainer<Interface extends Object> extends InheritedWidget {
 }
 
 class _OverrideContainerElement<Interface extends Object> extends InheritedElement {
-  _OverrideContainerElement(_OverrideContainer super.widget);
+  _OverrideContainerElement(_ClientSubContainer super.widget);
 
   @override
   void setDependencies(Element dependent, Object? value) {
@@ -340,16 +345,16 @@ class _OverrideContainerElement<Interface extends Object> extends InheritedEleme
       findAncestorStateOfType<_SubScopeState<Interface>>()!.clientSubstitutes;
 }
 
-/// An [InheritedModel] used by [ref] to store its [Override]s
+/// An [InheritedModel] used by [ref] to store its [Substitution]s
 /// and notify dependent widgets.
 ///
 /// [ref] contains methods which can be used in [Hook] functions
 /// along with ___ render object stuff.
 final class SubModel<Interface extends Object> extends InheritedModel<Interface> {
-  /// Creates an [InheritedModel] that stores [Override]s
+  /// Creates an [InheritedModel] that stores substitution data.
   const SubModel({super.key, required this.map, required super.child});
 
-  /// The override map.
+  /// The substitution map.
   ///
   /// The key is the original object; the value is the new object.
   final SubMap<Interface> map;

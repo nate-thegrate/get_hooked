@@ -4,5 +4,7 @@ export 'src/widgets/getter_widgets.dart';
 export 'src/widgets/hook_widgets.dart';
 export 'src/widgets/immutable_subtree.dart';
 export 'src/widgets/raw_text.dart';
+export 'src/widgets/ref_ignore_pointer.dart';
 export 'src/widgets/ref_paint.dart';
+export 'src/widgets/ref_transform.dart';
 export 'src/widgets/render_get.dart';

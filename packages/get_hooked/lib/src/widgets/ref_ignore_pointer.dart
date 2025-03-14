@@ -4,29 +4,44 @@ import 'package:get_hooked/listenables.dart';
 import 'package:get_hooked/src/element_vsync_mixin.dart';
 
 /// A variant of [IgnorePointer] that evaluates based on a [RefComputer<bool>].
-class RefIgnorePointer extends SingleChildRenderObjectWidget {
-  /// Initializes [key] for subclasses.
-  const RefIgnorePointer({super.key});
+abstract class RefIgnorePointer extends SingleChildRenderObjectWidget {
+  /// Creates an [IgnorePointer] widget using the provided [RefComputer] callback.
+  const factory RefIgnorePointer(
+    RefComputer<bool> shouldIgnore, {
+    Key? key,
+    required Widget child,
+  }) = _RefIgnorePointer;
 
+  /// Initializes [key] for subclasses.
+  const RefIgnorePointer.constructor({super.key, required Widget super.child});
+
+  /// Whether the [child] and its descendants should be exposed to pointer events.
   ///
-  bool shouldIgnore(ComputeRef ref) => true;
+  /// Returning `true` will cause pointer events to be ignored.
+  bool shouldIgnore(Ref ref);
 
   @override
-  RenderIgnorePointer createRenderObject(covariant ComputeContext context) {
-    return RenderIgnorePointer(ignoring: shouldIgnore(context));
-  }
+  RenderIgnorePointer createRenderObject(BuildContext context) => RenderIgnorePointer();
 
   @override
   SingleChildRenderObjectElement createElement() => _IgnorePointerElement(this);
 }
 
-class _IgnorePointerElement extends SingleChildRenderObjectElement with ElementCompute {
-  _IgnorePointerElement(super.widget);
+class _RefIgnorePointer extends RefIgnorePointer {
+  const _RefIgnorePointer(this._shouldIgnore, {super.key, required super.child})
+    : super.constructor();
 
-  late final _renderer = renderObject as RenderIgnorePointer;
+  final RefComputer<bool> _shouldIgnore;
+
+  @override
+  bool shouldIgnore(Ref ref) => _shouldIgnore(ref);
+}
+
+class _IgnorePointerElement extends SingleChildComputeElement<RenderIgnorePointer> {
+  _IgnorePointerElement(super.widget);
 
   @override
   void recompute() {
-    _renderer.ignoring = (widget as RefIgnorePointer).shouldIgnore(this);
+    renderObject.ignoring = (widget as RefIgnorePointer).shouldIgnore(this);
   }
 }

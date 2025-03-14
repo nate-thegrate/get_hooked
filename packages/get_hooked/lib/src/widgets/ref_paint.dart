@@ -12,16 +12,11 @@ extension<T extends ValueListenable<Object?>> on T {
   T of(BuildContext context) => GetScope.of(context, this);
 }
 
-/// A variation of [CustomPaint] that interfaces with [Get] objects.
+/// A variation of [CustomPaint] that uses a [PaintRef]
+/// to interface with [ValueListenable] objects.
 abstract class RefPaint extends SingleChildRenderObjectWidget {
-  /// Initializes fields for subclasses.
-  const RefPaint({super.key, this.position = DecorationPosition.background, super.child});
-
   /// Creates a custom-painted widget using the provided [RefPaintCallback].
-  ///
-  /// The [PaintingRef] interface allows `ref.watch()` calls to be made
-  /// in the same fashion as [ref.watch].
-  const factory RefPaint.compose(
+  const factory RefPaint(
     RefPaintCallback paintCallback, {
     Key? key,
     RefPaintHitTest? hitTest,
@@ -29,6 +24,13 @@ abstract class RefPaint extends SingleChildRenderObjectWidget {
     DecorationPosition position,
     Widget? child,
   }) = _RefPaint;
+
+  /// Initializes fields for subclasses.
+  const RefPaint.constructor({
+    super.key,
+    this.position = DecorationPosition.background,
+    super.child,
+  });
 
   /// Whether the painting is done in front of or behind the [child].
   final DecorationPosition position;
@@ -39,7 +41,7 @@ abstract class RefPaint extends SingleChildRenderObjectWidget {
   /// the [position] is [DecorationPosition.foreground], and it will
   /// absorb all hit tests (that do not hit descendant widgets) if it's
   /// [DecorationPosition.background].
-  bool hitTest(PainterRef ref, Offset location) => position == DecorationPosition.background;
+  bool hitTest(OffsetPaintRef ref, Offset location) => position == DecorationPosition.background;
 
   /// Called whenever the object needs to paint. The given [Canvas] has its
   /// coordinate space configured such that the origin is at the top left of the
@@ -62,7 +64,7 @@ abstract class RefPaint extends SingleChildRenderObjectWidget {
   ///
   /// To paint an image on a [Canvas]…
   /// ([Get] API for [ImageStream]s—coming soon!)
-  void paint(PaintingRef ref);
+  void paint(PaintRef ref);
 
   /// Signature of the function returned by [CustomPainter.semanticsBuilder].
   ///
@@ -73,7 +75,7 @@ abstract class RefPaint extends SingleChildRenderObjectWidget {
   /// The returned list must not be mutated after this function completes. To
   /// change the semantic information, the function must return a new list
   /// instead.
-  List<CustomPainterSemantics> buildSemantics(PaintingRef ref) => const [];
+  List<CustomPainterSemantics> buildSemantics(PaintRef ref) => const [];
 
   @override
   SingleChildRenderObjectElement createElement() => _RefPainterElement(this);
@@ -90,13 +92,13 @@ abstract class RefPaint extends SingleChildRenderObjectWidget {
 }
 
 /// Signature for the callback within a [RefPaint] widget that paints
-/// a UI element, using a [Canvas] retrieved via [PaintingRef.stageCanvas].
-typedef RefPaintCallback = void Function(PaintingRef ref);
+/// a UI element, using a [Canvas] retrieved via [PaintRef.stageCanvas].
+typedef RefPaintCallback = void Function(PaintRef ref);
 
 /// Signature for a callback that determines whether a [RefPaint] widget
 /// will absorb a hit test. If the function or its output is `null`, the
 /// widget defers to the default behavior as defined in [RefPaint.hitTest].
-typedef RefPaintHitTest = bool? Function(PainterRef ref, Offset location);
+typedef RefPaintHitTest = bool? Function(OffsetPaintRef ref, Offset location);
 
 /// Builds semantics information describing the picture drawn by a
 /// [RefPaintCallback]. Each [CustomPainterSemantics] in the returned list is
@@ -105,7 +107,7 @@ typedef RefPaintHitTest = bool? Function(PainterRef ref, Offset location);
 /// The returned list must not be mutated after this function completes. To
 /// change the semantic information, the function must return a new list
 /// instead.
-typedef RefPaintSemanticsBuilder = List<CustomPainterSemantics> Function(PaintingRef ref);
+typedef RefPaintSemanticsBuilder = List<CustomPainterSemantics> Function(PaintRef ref);
 
 class _RefPaint extends RefPaint {
   const _RefPaint(
@@ -115,32 +117,30 @@ class _RefPaint extends RefPaint {
     this.semanticsBuilder = _defaultSemantics,
     super.position,
     super.child,
-  }) : _hitTest = hitTest;
+  }) : _hitTest = hitTest,
+       super.constructor();
 
   final RefPaintCallback paintCallback;
 
   final RefPaintHitTest? _hitTest;
 
   final RefPaintSemanticsBuilder semanticsBuilder;
-  static List<CustomPainterSemantics> _defaultSemantics(PaintingRef ref) => const [];
+  static List<CustomPainterSemantics> _defaultSemantics(PaintRef ref) => const [];
 
   @override
-  bool hitTest(PainterRef ref, Offset location) {
+  bool hitTest(OffsetPaintRef ref, Offset location) {
     return _hitTest?.call(ref, location) ?? super.hitTest(ref, location);
   }
 
   @override
-  void paint(PaintingRef ref) => paintCallback(ref);
+  void paint(PaintRef ref) => paintCallback(ref);
 
   @override
-  List<CustomPainterSemantics> buildSemantics(PaintingRef ref) => semanticsBuilder(ref);
+  List<CustomPainterSemantics> buildSemantics(PaintRef ref) => semanticsBuilder(ref);
 }
 
-/// A reference used in [RefPaint.hitTest] calls.
-///
-/// See also: [PaintingRef], a subtype of `PainterRef` that
-/// [RefPaint.paint] and [RefPaint.buildSemantics] interface with.
-extension type PainterRef._(_RefPainterElement _element) implements Object {
+/// A common interface between [OffsetPaintRef] and [PaintRef].
+extension type BasePaintRef._(_RefPainterElement _element) implements Object {
   /// Use caution when accessing the [BuildContext],
   /// since any update from an [InheritedWidget] will trigger
   /// a repaint unconditionally.
@@ -148,33 +148,27 @@ extension type PainterRef._(_RefPainterElement _element) implements Object {
 
   /// The [Size] of the painter's canvas.
   Size get size => _element._size!;
+}
 
+/// A reference used in [RefPaint.hitTest] calls.
+///
+/// See also: [PaintRef], a subtype of `PainterRef` that
+/// [RefPaint.paint] and [RefPaint.buildSemantics] interface with.
+extension type OffsetPaintRef._(_RefPainterElement _element) implements BasePaintRef {
   /// Returns the relevant [Get] object based on the current [context].
   ///
   /// This will be identical to the input, unless a [Substitution] was made
   /// in the ancestor [SubScope].
-  G read<G extends ValueListenable<Object?>>(
-    G get, {
-    bool createDependency = true,
-    bool throwIfMissing = false,
-  }) {
-    return GetScope.of(
-      context,
-      get,
-      createDependency: createDependency,
-      throwIfMissing: throwIfMissing,
-    );
+  V read<V extends ValueListenable<Object?>>(V listenable) {
+    return GetScope.of(context, listenable, createDependency: false);
   }
 }
 
 /// An interface used by [RefPaint.paint] and [RefPaint.buildSemantics].
-extension type PaintingRef._(_RefPainterElement _element) implements PainterRef {
+extension type PaintRef._(_RefPainterElement _element) implements BasePaintRef {
   PaintingContext? get _context => _element.paintingContext;
 
-  /// Called by a [RefPaint] widget to stage a [Canvas] on which to paint.
-  ///
-  /// This method sets compositor hints regarding whether the layer [isComplex]
-  /// or is likely to change.
+  /// The [Canvas] on which to paint.
   Canvas get canvas {
     assert(_debugCheckPainting('canvas'));
     return _context!.canvas;
@@ -250,15 +244,7 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
     bool useScope = true,
   }) {
     if (useScope) get = get.of(context);
-    return _select(get, () => selector(get.value));
-  }
-
-  /// Returns the [selector]'s value.
-  ///
-  /// Each time the [listenable] emits a notification, the selector is re-evaluated
-  /// and triggers a re-render if the output changed.
-  T _select<T>(Listenable listenable, ValueGetter<T> selector) {
-    T currentValue = selector();
+    Result currentValue = selector(get.value);
     final renderer = _element.renderObject as _RenderRefPaint;
     assert(
       renderer._method != null,
@@ -268,21 +254,21 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
 
     // dart format off
     final bool handled = switch (method) {
-      _PaintMethod.hitTest => throw StateError('hit-testing'),
-      _PaintMethod.paint => _element.handledPaint,
+      _PaintMethod.hitTest        => throw StateError('hit-testing'),
+      _PaintMethod.paint          => _element.handledPaint,
       _PaintMethod.buildSemantics => _element.handledSemantics,
     };
 
     if (handled) return currentValue;
 
     final VoidCallback mark = switch (method) {
-      _PaintMethod.hitTest => throw StateError('hit-testing'),
-      _PaintMethod.paint => renderer.markNeedsPaint,
+      _PaintMethod.hitTest        => throw StateError('hit-testing'),
+      _PaintMethod.paint          => renderer.markNeedsPaint,
       _PaintMethod.buildSemantics => renderer.markNeedsSemanticsUpdate,
     }; // dart format on
 
-    _listen(listenable, () {
-      final T newValue = selector();
+    _listen(get, () {
+      final Result newValue = selector(get.value);
       if (newValue != currentValue) {
         currentValue = newValue;
         mark();
@@ -295,17 +281,6 @@ extension type PaintingRef._(_RefPainterElement _element) implements PainterRef 
   void _listen(Listenable listenable, VoidCallback listener) {
     listenable.addListener(listener);
     _element.disposers.add(() => listenable.removeListener(listener));
-  }
-
-  /// Registers a [GetVsync] object with this [RefPaint]'s context,
-  /// in a fashion similar to [ref.vsync].
-  A vsync<A extends VsyncValue<Object?>>(A getVsync, {bool useScope = true, bool watch = false}) {
-    if (useScope) getVsync = GetScope.of(context, getVsync);
-    _element.registry.add(getVsync);
-    if (watch) {
-      this.watch<Object?>(getVsync);
-    }
-    return getVsync;
   }
 }
 
@@ -332,7 +307,8 @@ class _RefPainterElement extends SingleChildRenderObjectElement with ElementVsyn
 
   PaintingContext? paintingContext;
 
-  bool get hasScope => getInheritedWidgetOfExactType<SubModel<Listenable>>() != null;
+  bool get hasScope =>
+      getInheritedWidgetOfExactType<SubModel<ValueListenable<Object?>>>() != null;
   late bool _hasScope;
   @override
   void mount(Element? parent, Object? newSlot) {
@@ -395,7 +371,7 @@ class _RenderRefPaint extends RenderProxyBox {
     _method = _PaintMethod.hitTest;
     final bool wasHit =
         painter.position == DecorationPosition.foreground &&
-        painter.hitTest(PainterRef._(_element.._size = size), position);
+        painter.hitTest(OffsetPaintRef._(_element.._size = size), position);
     _method = null;
 
     return wasHit || super.hitTestChildren(result, position: position);
@@ -404,7 +380,7 @@ class _RenderRefPaint extends RenderProxyBox {
   @override
   bool hitTestSelf(Offset position) {
     _method = _PaintMethod.hitTest;
-    final bool wasHit = painter.hitTest(PainterRef._(_element.._size = size), position);
+    final bool wasHit = painter.hitTest(OffsetPaintRef._(_element.._size = size), position);
     _method = null;
     return wasHit;
   }
@@ -441,7 +417,7 @@ class _RenderRefPaint extends RenderProxyBox {
     }
     _method = _PaintMethod.paint;
     painter.paint(
-      PaintingRef._(
+      PaintRef._(
         _element
           ..paintingContext = context
           .._size = size,
