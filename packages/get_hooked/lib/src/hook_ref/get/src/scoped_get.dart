@@ -113,10 +113,6 @@ class ScopedGet<T> implements ValueListenable<T> {
   @factory
   static GetAsync<T> stream<T>() => GetAsync._(_ScopeAsync());
 
-  /// Placeholder for a [ProxyNotifier].
-  @factory
-  static GetProxy<T, L> proxy<T, L extends Listenable>() => GetProxy._(_ScopeProxy());
-
   /// Placeholder for a [ComputedNotifier].
   @factory
   static GetComputed<Result> compute<Result>() => GetComputed._(_ScopeComputed());
@@ -130,10 +126,8 @@ class _ScopeSet<E> extends ScopedGet<Set<E>> implements SetNotifier<E> {}
 
 class _ScopeMap<K, V> extends ScopedGet<Map<K, V>> implements MapNotifier<K, V> {}
 
-class _ScopeVsync extends ScopedGet<double> implements AnimationControllerStyled {}
+class _ScopeVsync extends ScopedGet<double> implements VsyncDouble {}
 
 class _ScopeAsync<T> extends ScopedGet<T?> implements AsyncNotifier<T> {}
-
-class _ScopeProxy<T, L extends Listenable> extends ScopedGet<T> implements ProxyNotifier<T, L> {}
 
 class _ScopeComputed<Result> extends ScopedGet<Result> implements ComputedNoScope<Result> {}

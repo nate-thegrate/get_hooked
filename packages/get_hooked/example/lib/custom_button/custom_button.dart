@@ -27,7 +27,7 @@ abstract final class GetButton {
     const suffix = 'ing';
     final int suffixLength = ((1 - ref.watch(elevation)) * suffix.length).round();
     final bool hovering = ref.watch(hovered) > 0.25;
-    final String punctuation = switch (elevation.status) {
+    final String punctuation = switch (ref.watch(elevation.status)) {
       AnimationStatus.dismissed => '!',
       AnimationStatus.forward || AnimationStatus.completed when hovering => '?',
       _ => '',

@@ -15,9 +15,9 @@ abstract interface class Ref {
   /// Returns the [ValueListenable.value], and triggers a re-computation when notifications
   /// are sent.
   ///
-  /// A [RefComputer] ideally should only watch an object once.
-  /// Any additional `watch()` calls must use the same arguments for `autoVsync` and
-  /// `useScope` as the first call (or, you know, just read the variable from earlier).
+  /// A [RefComputer] should only watch an object once. Additional `watch()` calls
+  /// must use the same arguments for `autoVsync` and `useScope`
+  /// as the first call (but it's probably best just to reuse the variable from earlier).
   T watch<T>(ValueListenable<T> get, {bool autoVsync = true, bool useScope = true});
 
   /// Returns the [selector]'s result and triggers a re-compute when that result changes.

@@ -162,7 +162,6 @@ extension on Object {
     DisposeGuard() => null,
     final ChangeNotifier changeNotifier => changeNotifier.dispose(),
     final AnimationController controller => controller.dispose(),
-    final ValueAnimation<Object?> animation => animation.dispose(),
     _ => null,
   };
 }

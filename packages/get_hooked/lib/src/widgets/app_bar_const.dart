@@ -1,14 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class _PreferredAppBarSize extends Size {
-  _PreferredAppBarSize(this.toolbarHeight, this.bottomHeight)
-    : super.fromHeight((toolbarHeight ?? kToolbarHeight) + (bottomHeight ?? 0));
-
-  final double? toolbarHeight;
-  final double? bottomHeight;
-}
-
 /// A Material Design app bar.
 ///
 /// Functions just like a normal [AppBar] but with a `const` constructor.
@@ -52,22 +44,7 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
     this.actionsPadding,
   }) : assert(elevation == null || elevation >= 0.0);
 
-  /// {@template flutter.material.appbar.leading}
-  /// A widget to display before the toolbar's [title].
-  ///
-  /// Typically the [leading] widget is an [Icon] or an [IconButton].
-  ///
-  /// Becomes the leading component of the [NavigationToolbar] built
-  /// by this widget. The [leading] widget's width and height are constrained to
-  /// be no bigger than [leadingWidth] and [toolbarHeight] respectively.
-  ///
-  /// If this is null and [automaticallyImplyLeading] is set to true, the
-  /// [AppBar] will imply an appropriate widget. For example, if the [AppBar] is
-  /// in a [Scaffold] that also has a [Drawer], the [Scaffold] will fill this
-  /// widget with an [IconButton] that opens the drawer (using [Icons.menu]). If
-  /// there's no [Drawer] and the parent [Navigator] can go back, the [AppBar]
-  /// will use a [BackButton] that calls [Navigator.maybePop].
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.leading}
   ///
   /// {@tool snippet}
   ///
@@ -101,23 +78,10 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
   ///  * [Scaffold.drawer], in which the [Drawer] is usually placed.
   final Widget? leading;
 
-  /// {@template flutter.material.appbar.automaticallyImplyLeading}
-  /// Controls whether we should try to imply the leading widget if null.
-  ///
-  /// If true and [AppBar.leading] is null, automatically try to deduce what the leading
-  /// widget should be. If false and [AppBar.leading] is null, leading space is given to [AppBar.title].
-  /// If leading widget is not null, this parameter has no effect.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.automaticallyImplyLeading}
   final bool automaticallyImplyLeading;
 
-  /// {@template flutter.material.appbar.title}
-  /// The primary widget displayed in the app bar.
-  ///
-  /// Becomes the middle component of the [NavigationToolbar] built by this widget.
-  ///
-  /// Typically a [Text] widget that contains a description of the current
-  /// contents of the app.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.title}
   ///
   /// The [title]'s width is constrained to fit within the remaining space
   /// between the toolbar's [leading] and [actions] widgets. Its height is
@@ -132,9 +96,9 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
   /// the height of the [title] widget can be constrained. For example:
   ///
   /// ```dart
-  /// MaterialApp(
+  /// const MaterialApp(
   ///   home: Scaffold(
-  ///     appBar: AppBar(
+  ///     appBar: AppBarConst(
   ///       title: SizedBox(
   ///         height: _myToolbarHeight,
   ///         child: Image.asset(_logoAsset),
@@ -146,20 +110,7 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
   /// ```
   final Widget? title;
 
-  /// {@template flutter.material.appbar.actions}
-  /// A list of Widgets to display in a row after the [title] widget.
-  ///
-  /// Typically these widgets are [IconButton]s representing common operations.
-  /// For less common operations, consider using a [PopupMenuButton] as the
-  /// last action.
-  ///
-  /// The [actions] become the trailing component of the [NavigationToolbar] built
-  /// by this widget. The height of each action is constrained to be no bigger
-  /// than the [toolbarHeight].
-  ///
-  /// To avoid having the last action covered by the debug banner, you may want
-  /// to set the [MaterialApp.debugShowCheckedModeBanner] to false.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.actions}
   ///
   /// {@tool snippet}
   ///
@@ -188,46 +139,17 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
   /// {@end-tool}
   final List<Widget>? actions;
 
-  /// {@template flutter.material.appbar.flexibleSpace}
-  /// This widget is stacked behind the toolbar and the tab bar. Its height will
-  /// be the same as the app bar's overall height.
-  ///
-  /// A flexible space isn't actually flexible unless the [AppBar]'s container
-  /// changes the [AppBar]'s size. A [SliverAppBar] in a [CustomScrollView]
-  /// changes the [AppBar]'s height when scrolled.
-  ///
-  /// Typically a [FlexibleSpaceBar]. See [FlexibleSpaceBar] for details.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.flexibleSpace}
   final Widget? flexibleSpace;
 
-  /// {@template flutter.material.appbar.bottom}
-  /// This widget appears across the bottom of the app bar.
-  ///
-  /// Typically a [TabBar]. Only widgets that implement [PreferredSizeWidget] can
-  /// be used at the bottom of an app bar.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.bottom}
   ///
   /// See also:
   ///
   ///  * [PreferredSize], which can be used to give an arbitrary widget a preferred size.
   final PreferredSizeWidget? bottom;
 
-  /// {@template flutter.material.appbar.elevation}
-  /// The z-coordinate at which to place this app bar relative to its parent.
-  ///
-  /// This property controls the size of the shadow below the app bar if
-  /// [shadowColor] is not null.
-  ///
-  /// If [surfaceTintColor] is not null then it will apply a surface tint overlay
-  /// to the background color (see [Material.surfaceTintColor] for more
-  /// detail).
-  ///
-  /// The value must be non-negative.
-  ///
-  /// If this property is null, then [AppBarTheme.elevation] of
-  /// [ThemeData.appBarTheme] is used. If that is also null, the
-  /// default value is 4.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.elevation}
   ///
   /// See also:
   ///
@@ -240,17 +162,7 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
   ///    shadow.
   final double? elevation;
 
-  /// {@template flutter.material.appbar.scrolledUnderElevation}
-  /// The elevation that will be used if this app bar has something
-  /// scrolled underneath it.
-  ///
-  /// If non-null then it [AppBarTheme.scrolledUnderElevation] of
-  /// [ThemeData.appBarTheme] will be used. If that is also null then [elevation]
-  /// will be used.
-  ///
-  /// The value must be non-negative.
-  ///
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.scrolledUnderElevation}
   ///
   /// See also:
   ///  * [elevation], which will be used if there is no content scrolled under
@@ -269,13 +181,7 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
   /// else for more complicated layouts.
   final ScrollNotificationPredicate notificationPredicate;
 
-  /// {@template flutter.material.appbar.shadowColor}
-  /// The color of the shadow below the app bar.
-  ///
-  /// If this property is null, then [AppBarTheme.shadowColor] of
-  /// [ThemeData.appBarTheme] is used. If that is also null, the default value
-  /// is fully opaque black.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.shadowColor}
   ///
   /// See also:
   ///
@@ -283,28 +189,13 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
   ///  * [shape], which defines the shape of the app bar and its shadow.
   final Color? shadowColor;
 
-  /// {@template flutter.material.appbar.surfaceTintColor}
-  /// The color of the surface tint overlay applied to the app bar's
-  /// background color to indicate elevation.
-  ///
-  /// If null no overlay will be applied.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.surfaceTintColor}
   ///
   /// See also:
   ///   * [Material.surfaceTintColor], which described this feature in more detail.
   final Color? surfaceTintColor;
 
-  /// {@template flutter.material.appbar.shape}
-  /// The shape of the app bar's [Material] as well as its shadow.
-  ///
-  /// If this property is null, then [AppBarTheme.shape] of
-  /// [ThemeData.appBarTheme] is used. Both properties default to null.
-  /// If both properties are null then the shape of the app bar's [Material]
-  /// is just a simple rectangle.
-  ///
-  /// A shadow is only displayed if the [elevation] is greater than
-  /// zero.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.shape}
   ///
   /// {@tool dartpad}
   /// This sample demonstrates how to implement a custom app bar shape for the
@@ -318,22 +209,7 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
   ///  * [shadowColor], which is the color of the shadow below the app bar.
   final ShapeBorder? shape;
 
-  /// {@template flutter.material.appbar.backgroundColor}
-  /// The fill color to use for an app bar's [Material].
-  ///
-  /// If null, then the [AppBarTheme.backgroundColor] is used. If that value is also
-  /// null:
-  /// In Material v2 (i.e., when [ThemeData.useMaterial3] is false),
-  /// then [AppBar] uses the overall theme's [ColorScheme.primary] if the
-  /// overall theme's brightness is [Brightness.light], and [ColorScheme.surface]
-  /// if the overall theme's brightness is [Brightness.dark].
-  /// In Material v3 (i.e., when [ThemeData.useMaterial3] is true),
-  /// then [AppBar] uses the overall theme's [ColorScheme.surface]
-  ///
-  /// If this color is a [WidgetStateColor] it will be resolved against
-  /// [WidgetState.scrolledUnder] when the content of the app's
-  /// primary scrollable overlaps the app bar.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.backgroundColor}
   ///
   /// See also:
   ///
@@ -347,22 +223,7 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
   ///    is light or dark.
   final Color? backgroundColor;
 
-  /// {@template flutter.material.appbar.foregroundColor}
-  /// The default color for [Text] and [Icon]s within the app bar.
-  ///
-  /// If null, then [AppBarTheme.foregroundColor] is used. If that
-  /// value is also null:
-  /// In Material v2 (i.e., when [ThemeData.useMaterial3] is false),
-  /// then [AppBar] uses the overall theme's [ColorScheme.onPrimary] if the
-  /// overall theme's brightness is [Brightness.light], and [ColorScheme.onSurface]
-  /// if the overall theme's brightness is [Brightness.dark].
-  /// In Material v3 (i.e., when [ThemeData.useMaterial3] is true),
-  /// then [AppBar] uses the overall theme's [ColorScheme.onSurface].
-  ///
-  /// This color is used to configure [DefaultTextStyle] that contains
-  /// the toolbar's children, and the default [IconTheme] widgets that
-  /// are created if [iconTheme] and [actionsIconTheme] are null.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.foregroundColor}
   ///
   /// See also:
   ///
@@ -375,13 +236,7 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
   ///    is light or dark.
   final Color? foregroundColor;
 
-  /// {@template flutter.material.appbar.iconTheme}
-  /// The color, opacity, and size to use for toolbar icons.
-  ///
-  /// If this property is null, then a copy of [ThemeData.iconTheme]
-  /// is used, with the [IconThemeData.color] set to the
-  /// app bar's [foregroundColor].
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.iconTheme}
   ///
   /// See also:
   ///
@@ -389,114 +244,38 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
   ///    the [actions] list.
   final IconThemeData? iconTheme;
 
-  /// {@template flutter.material.appbar.actionsIconTheme}
-  /// The color, opacity, and size to use for the icons that appear in the app
-  /// bar's [actions].
-  ///
-  /// This property should only be used when the [actions] should be
-  /// themed differently than the icon that appears in the app bar's [leading]
-  /// widget.
-  ///
-  /// If this property is null, then [AppBarTheme.actionsIconTheme] of
-  /// [ThemeData.appBarTheme] is used. If that is also null, then the value of
-  /// [iconTheme] is used.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.actionsIconTheme}
   ///
   /// See also:
   ///
   ///  * [iconTheme], which defines the appearance of all of the toolbar icons.
   final IconThemeData? actionsIconTheme;
 
-  /// {@template flutter.material.appbar.primary}
-  /// Whether this app bar is being displayed at the top of the screen.
-  ///
-  /// If true, the app bar's toolbar elements and [bottom] widget will be
-  /// padded on top by the height of the system status bar. The layout
-  /// of the [flexibleSpace] is not affected by the [primary] property.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.primary}
   final bool primary;
 
-  /// {@template flutter.material.appbar.centerTitle}
-  /// Whether the title should be centered.
-  ///
-  /// If this property is null, then [AppBarTheme.centerTitle] of
-  /// [ThemeData.appBarTheme] is used. If that is also null, then value is
-  /// adapted to the current [TargetPlatform].
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.centerTitle}
   final bool? centerTitle;
 
-  /// {@template flutter.material.appbar.excludeHeaderSemantics}
-  /// Whether the title should be wrapped with header [Semantics].
-  ///
-  /// Defaults to false.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.excludeHeaderSemantics}
   final bool excludeHeaderSemantics;
 
-  /// {@template flutter.material.appbar.titleSpacing}
-  /// The spacing around [title] content on the horizontal axis. This spacing is
-  /// applied even if there is no [leading] content or [actions]. If you want
-  /// [title] to take all the space available, set this value to 0.0.
-  ///
-  /// If this property is null, then [AppBarTheme.titleSpacing] of
-  /// [ThemeData.appBarTheme] is used. If that is also null, then the
-  /// default value is [NavigationToolbar.kMiddleSpacing].
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.titleSpacing}
   final double? titleSpacing;
 
-  /// {@template flutter.material.appbar.toolbarOpacity}
-  /// How opaque the toolbar part of the app bar is.
-  ///
-  /// A value of 1.0 is fully opaque, and a value of 0.0 is fully transparent.
-  ///
-  /// Typically, this value is not changed from its default value (1.0). It is
-  /// used by [SliverAppBar] to animate the opacity of the toolbar when the app
-  /// bar is scrolled.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.toolbarOpacity}
   final double toolbarOpacity;
 
-  /// {@template flutter.material.appbar.bottomOpacity}
-  /// How opaque the bottom part of the app bar is.
-  ///
-  /// A value of 1.0 is fully opaque, and a value of 0.0 is fully transparent.
-  ///
-  /// Typically, this value is not changed from its default value (1.0). It is
-  /// used by [SliverAppBar] to animate the opacity of the toolbar when the app
-  /// bar is scrolled.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.bottomOpacity}
   final double bottomOpacity;
 
-  /// {@template flutter.material.appbar.preferredSize}
-  /// A size whose height is the sum of [toolbarHeight] and the [bottom] widget's
-  /// preferred height.
-  ///
-  /// [Scaffold] uses this size to set its app bar's height.
-  /// {@endtemplate}
-  @override
-  Size get preferredSize => _PreferredAppBarSize(toolbarHeight, bottom?.preferredSize.height);
-
-  /// {@template flutter.material.appbar.toolbarHeight}
-  /// Defines the height of the toolbar component of an [AppBar].
-  ///
-  /// By default, the value of [toolbarHeight] is [kToolbarHeight].
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.toolbarHeight}
   final double? toolbarHeight;
 
-  /// {@template flutter.material.appbar.leadingWidth}
-  /// Defines the width of [AppBar.leading] widget.
-  ///
-  /// By default, the value of [AppBar.leadingWidth] is 56.0.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.leadingWidth}
   final double? leadingWidth;
 
-  /// {@template flutter.material.appbar.toolbarTextStyle}
-  /// The default text style for the AppBar's [leading], and
-  /// [actions] widgets, but not its [title].
-  ///
-  /// If this property is null, then [AppBarTheme.toolbarTextStyle] of
-  /// [ThemeData.appBarTheme] is used. If that is also null, the default
-  /// value is a copy of the overall theme's [TextTheme.bodyMedium]
-  /// [TextStyle], with color set to the app bar's [foregroundColor].
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.toolbarTextStyle}
   ///
   /// See also:
   ///
@@ -505,14 +284,7 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
   ///    widgets in a subtree.
   final TextStyle? toolbarTextStyle;
 
-  /// {@template flutter.material.appbar.titleTextStyle}
-  /// The default text style for the AppBar's [title] widget.
-  ///
-  /// If this property is null, then [AppBarTheme.titleTextStyle] of
-  /// [ThemeData.appBarTheme] is used. If that is also null, the default
-  /// value is a copy of the overall theme's [TextTheme.titleLarge]
-  /// [TextStyle], with color set to the app bar's [foregroundColor].
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.titleTextStyle}
   ///
   /// See also:
   ///
@@ -523,20 +295,7 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
   ///    widgets in a subtree.
   final TextStyle? titleTextStyle;
 
-  /// {@template flutter.material.appbar.systemOverlayStyle}
-  /// Specifies the style to use for the system overlays (e.g. the status bar on
-  /// Android or iOS, the system navigation bar on Android).
-  ///
-  /// If this property is null, then [AppBarTheme.systemOverlayStyle] of
-  /// [ThemeData.appBarTheme] is used. If that is also null, an appropriate
-  /// [SystemUiOverlayStyle] is calculated based on the [backgroundColor].
-  ///
-  /// The AppBar's descendants are built within a
-  /// `AnnotatedRegion<SystemUiOverlayStyle>` widget, which causes
-  /// [SystemChrome.setSystemUIOverlayStyle] to be called
-  /// automatically. Apps should not enclose an AppBar with their
-  /// own [AnnotatedRegion].
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.systemOverlayStyle}
   //
   /// See also:
   ///
@@ -545,65 +304,53 @@ class AppBarConst extends StatelessWidget implements PreferredSizeWidget {
   ///    system overlays style.
   final SystemUiOverlayStyle? systemOverlayStyle;
 
-  /// {@template flutter.material.appbar.forceMaterialTransparency}
-  /// Forces the AppBar's Material widget type to be [MaterialType.transparency]
-  /// (instead of Material's default type).
-  ///
-  /// This will remove the visual display of [backgroundColor] and [elevation],
-  /// and affect other characteristics of the AppBar's Material widget.
-  ///
-  /// Provided for cases where the app bar is to be transparent, and gestures
-  /// must pass through the app bar to widgets beneath the app bar (i.e. with
-  /// [Scaffold.extendBodyBehindAppBar] set to true).
-  ///
-  /// Defaults to false.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.forceMaterialTransparency}
   final bool forceMaterialTransparency;
 
   /// {@macro flutter.material.Material.clipBehavior}
   final Clip? clipBehavior;
 
-  /// {@template flutter.material.appbar.actionsPadding}
-  /// The padding between the [actions] and the end of the AppBar.
-  ///
-  /// Defaults to zero.
-  /// {@endtemplate}
+  /// {@macro flutter.material.appbar.actionsPadding}
   final EdgeInsetsGeometry? actionsPadding;
 
+  AppBar get _appBar => AppBar(
+    key: key,
+    actions: actions,
+    actionsIconTheme: actionsIconTheme,
+    actionsPadding: actionsPadding,
+    automaticallyImplyLeading: automaticallyImplyLeading,
+    backgroundColor: backgroundColor,
+    bottom: bottom,
+    bottomOpacity: bottomOpacity,
+    centerTitle: centerTitle,
+    clipBehavior: clipBehavior,
+    elevation: elevation,
+    excludeHeaderSemantics: excludeHeaderSemantics,
+    flexibleSpace: flexibleSpace,
+    forceMaterialTransparency: forceMaterialTransparency,
+    foregroundColor: foregroundColor,
+    iconTheme: iconTheme,
+    leading: leading,
+    leadingWidth: leadingWidth,
+    notificationPredicate: notificationPredicate,
+    primary: primary,
+    scrolledUnderElevation: scrolledUnderElevation,
+    shadowColor: shadowColor,
+    shape: shape,
+    surfaceTintColor: surfaceTintColor,
+    systemOverlayStyle: systemOverlayStyle,
+    title: title,
+    titleSpacing: titleSpacing,
+    titleTextStyle: titleTextStyle,
+    toolbarHeight: toolbarHeight,
+    toolbarOpacity: toolbarOpacity,
+    toolbarTextStyle: toolbarTextStyle,
+  );
+
+  /// {@macro flutter.material.appbar.preferredSize}
   @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      key: key,
-      actions: actions,
-      actionsIconTheme: actionsIconTheme,
-      actionsPadding: actionsPadding,
-      automaticallyImplyLeading: automaticallyImplyLeading,
-      backgroundColor: backgroundColor,
-      bottom: bottom,
-      bottomOpacity: bottomOpacity,
-      centerTitle: centerTitle,
-      clipBehavior: clipBehavior,
-      elevation: elevation,
-      excludeHeaderSemantics: excludeHeaderSemantics,
-      flexibleSpace: flexibleSpace,
-      forceMaterialTransparency: forceMaterialTransparency,
-      foregroundColor: foregroundColor,
-      iconTheme: iconTheme,
-      leading: leading,
-      leadingWidth: leadingWidth,
-      notificationPredicate: notificationPredicate,
-      primary: primary,
-      scrolledUnderElevation: scrolledUnderElevation,
-      shadowColor: shadowColor,
-      shape: shape,
-      surfaceTintColor: surfaceTintColor,
-      systemOverlayStyle: systemOverlayStyle,
-      title: title,
-      titleSpacing: titleSpacing,
-      titleTextStyle: titleTextStyle,
-      toolbarHeight: toolbarHeight,
-      toolbarOpacity: toolbarOpacity,
-      toolbarTextStyle: toolbarTextStyle,
-    );
-  }
+  Size get preferredSize => _appBar.preferredSize;
+
+  @override
+  Widget build(BuildContext context) => _appBar;
 }

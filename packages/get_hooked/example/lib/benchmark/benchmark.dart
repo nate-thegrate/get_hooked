@@ -108,7 +108,7 @@ class ColorSlice extends HookWidget {
             return ColoredBox(color: color, child: child);
           },
         ),
-        Setup.refWatchBuilder => HookBuilder(
+        Setup.refWatchBuilder => HookWidget(
           builder: (context) {
             final Color color = ref.watch(getColor);
             return ColoredBox(color: color, child: child);

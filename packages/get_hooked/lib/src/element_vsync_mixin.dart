@@ -20,7 +20,7 @@ mixin ElementVsync on Element implements VsyncContext {
 
   @override
   Ticker createTicker(TickerCallback onTick) {
-    final ticker = Ticker(onTick);
+    final ticker = _ElementVsyncTicker(onTick, this);
     (_tickers ??= {}).add(ticker);
 
     return ticker
@@ -76,9 +76,6 @@ mixin ElementVsync on Element implements VsyncContext {
 
   @override
   void unmount() {
-    for (final Ticker ticker in _tickers ?? const {}) {
-      ticker.dispose();
-    }
     _tickerMode?.removeListener(_updateTickers);
     _styleNotifier?.removeListener(_updateStyles);
     super.unmount();
@@ -86,22 +83,28 @@ mixin ElementVsync on Element implements VsyncContext {
 }
 
 /// Allows any [Element] declaration to act as a [ComputeContext].
-mixin ElementCompute on Element implements ComputeContext {
+//
+// Duplicated logic, since we don't have mixin composition!
+mixin ElementCompute on Element implements ComputeContext, ElementVsync {
   final _disposers = <VoidCallback>{};
   bool _needsDependencies = true;
 
   /// Subtypes implement this method to trigger an update.
   void recompute();
 
+  @override
   Set<Ticker>? _tickers;
+  @override
   _TickerMode? _tickerMode;
 
+  @override
   _AnimationSet? _animations;
+  @override
   _StyleNotifier? _styleNotifier;
 
   @override
   Ticker createTicker(TickerCallback onTick) {
-    final ticker = Ticker(onTick);
+    final ticker = _ElementVsyncTicker(onTick, this);
     (_tickers ??= {}).add(ticker);
 
     return ticker
@@ -122,12 +125,14 @@ mixin ElementCompute on Element implements ComputeContext {
     _animations?.remove(animation);
   }
 
+  @override
   void _updateTickers() {
     for (final Ticker ticker in _tickers ?? const {}) {
       ticker.muted = _tickerMode!.value;
     }
   }
 
+  @override
   void _updateStyles() {
     for (final StyledAnimation<Object?> animation in _animations?.whereType() ?? const {}) {
       animation.updateStyle(_styleNotifier!.value);
@@ -247,6 +252,19 @@ mixin ElementCompute on Element implements ComputeContext {
     _styleNotifier?.removeListener(_updateStyles);
     _animations?.forEach(registry.remove);
     super.unmount();
+  }
+}
+
+class _ElementVsyncTicker extends Ticker {
+  _ElementVsyncTicker(super.onTick, this._creator)
+    : super(debugLabel: 'created by ${describeIdentity(_creator.widget)}');
+
+  final ElementVsync _creator;
+
+  @override
+  void dispose() {
+    _creator._tickers?.remove(this);
+    super.dispose();
   }
 }
 

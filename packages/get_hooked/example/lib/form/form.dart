@@ -8,38 +8,29 @@ import '../main.dart';
 /// - more concise
 /// - only the [TextField] rebuilds
 
-class FormExampleApp extends StatelessWidget {
-  const FormExampleApp({super.key});
+class FormExampleApp extends MaterialApp {
+  const FormExampleApp({super.key}) : super(debugShowCheckedModeBanner: false, home: _home);
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        appBar: AppBar(title: const Text('Form Sample')),
-        drawer: const ScreenSelect(),
-        body: const FormExample(),
-      ),
-    );
-  }
+  static const _home = Scaffold(
+    appBar: AppBarConst(title: Text('Form Sample')),
+    drawer: ScreenSelect(),
+    body: FormExample(),
+  );
 }
-
-final getEmail = Get.it('');
-final getValidation = Get.it(true);
 
 class FormExample extends Column {
   const FormExample({super.key})
     : super(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const <Widget>[HookBuilder(builder: textField), button],
+        children: const <Widget>[HookWidget(builder: textField), button],
       );
 
+  static final email = Get.it('');
+  static final validation = Get.it<String?>(null);
+
   static Widget textField(BuildContext context) => TextField(
-    decoration: InputDecoration(
-      hintText: 'Enter your email',
-      errorText: ref.watch(getValidation) ? null : 'Please enter some text',
-    ),
-    onChanged: getEmail.emit,
+    decoration: InputDecoration(hintText: 'Enter your email', errorText: ref.watch(validation)),
+    onChanged: email.emit,
   );
 
   static const button = Padding(
@@ -48,10 +39,10 @@ class FormExample extends Column {
   );
 
   static void validate() {
-    // Validate will act however you want it to!
+    // Any relevant validation logic can be added here.
     // Generally it will set non-null error text for invalid fields.
-    final bool valid = getEmail.value.isNotEmpty;
-    getValidation.emit(valid);
+    final bool valid = email.value.isNotEmpty;
+    validation.emit(valid ? null : 'Please enter some text.');
 
     if (valid) {
       // Process data.

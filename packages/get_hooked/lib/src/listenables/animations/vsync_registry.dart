@@ -1,6 +1,5 @@
 import 'package:flutter/animation.dart';
 
-import 'styled_animation.dart';
 import 'vsync.dart';
 
 /// Gives access to the [VsyncRegistry] within an [Vsync] declaration.

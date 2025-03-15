@@ -208,7 +208,7 @@ extension type PaintRef._(_RefPainterElement _element) implements BasePaintRef {
     assert(() {
       if (_context != null) return true;
       throw FlutterError.fromParts([
-        ErrorSummary('PaintingRef.$fieldName accessed during buildSemantics.'),
+        ErrorSummary('PaintRef.$fieldName accessed during buildSemantics.'),
         ErrorHint('Consider removing this method call from the buildSemantics() method body.'),
       ]);
     }());
@@ -307,8 +307,7 @@ class _RefPainterElement extends SingleChildRenderObjectElement with ElementVsyn
 
   PaintingContext? paintingContext;
 
-  bool get hasScope =>
-      getInheritedWidgetOfExactType<SubModel<ValueListenable<Object?>>>() != null;
+  bool get hasScope => getInheritedWidgetOfExactType<SubModel<ValueListenable<Object?>>>() != null;
   late bool _hasScope;
   @override
   void mount(Element? parent, Object? newSlot) {
@@ -548,19 +547,14 @@ class _RenderRefPaint extends RenderProxyBox {
         final CustomPainterSemantics child = newChildSemantics[i];
         if (child.key != null) {
           if (keys.containsKey(child.key)) {
-            information.add(
-              ErrorDescription('- duplicate key ${child.key} found at position $i'),
-            );
+            information.add(ErrorDescription('- duplicate key ${child.key} found at position $i'));
           }
           keys[child.key!] = i;
         }
       }
 
       if (information.isNotEmpty) {
-        information.insert(
-          0,
-          ErrorSummary('Failed to update the list of CustomPainterSemantics:'),
-        );
+        information.insert(0, ErrorSummary('Failed to update the list of CustomPainterSemantics:'));
         throw FlutterError.fromParts(information);
       }
 
