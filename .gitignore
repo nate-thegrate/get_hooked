@@ -46,3 +46,6 @@ app.*.map.json
 
 **/flutter_export_environment.sh
 **/*Generated.xcconfig
+
+# ignoring the storage package for now
+/packages/get_hooked_storage

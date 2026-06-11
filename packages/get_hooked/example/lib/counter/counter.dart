@@ -3,35 +3,39 @@ import 'package:get_hooked/get_hooked.dart';
 
 import '../main.dart';
 
-final getCount = Get.it(0);
+final count = Get.it(0);
 
-Widget _counterText(BuildContext context) {
-  return TextGetter(getCount, style: MaterialTextStyle.headlineMedium);
-}
+class Counter extends StatelessWidget {
+  const Counter({super.key});
 
-class Counter extends MaterialApp {
-  const Counter({super.key})
-    : super(
-        debugShowCheckedModeBanner: false,
-        home: const Scaffold(
-          appBar: AppBarConst(title: Text('"Get Hooked" Demo')),
-          drawer: ScreenSelect(),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('You have pushed the button this many times:'),
-                Builder(builder: _counterText),
-              ],
-            ),
-          ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: _incrementCounter,
-            tooltip: 'Increment',
-            child: Icon(Icons.add),
+  static void _incrementCounter() => count.value += 1;
+
+  static Widget _counterText(BuildContext context) {
+    return Text(ref.watch(count).toString(), style: TextTheme.of(context).headlineMedium);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        appBar: AppBarConst(title: Text('"Get Hooked" Demo')),
+        drawer: ScreenSelect(),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('You have pushed the button this many times:'),
+              HookBuilder(_counterText),
+            ],
           ),
         ),
-      );
-
-  static void _incrementCounter() => getCount.value += 1;
+        floatingActionButton: FloatingActionButton(
+          onPressed: _incrementCounter,
+          tooltip: 'Increment',
+          child: Icon(Icons.add),
+        ),
+      ),
+    );
+  }
 }

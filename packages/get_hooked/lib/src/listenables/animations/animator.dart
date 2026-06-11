@@ -1,5 +1,6 @@
 /// @docImport 'dart:ui';
 ///
+/// @docImport 'package:flutter/material.dart';
 /// @docImport 'package:get_hooked/get_hooked.dart';
 library;
 
@@ -7,7 +8,6 @@ import 'package:flutter/animation.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/semantics.dart';
-import 'package:meta/meta.dart';
 
 import 'default_animation_style.dart';
 import 'vsync.dart';
@@ -29,32 +29,54 @@ extension EnableAnimations on AnimationBehavior {
 /// is a [ValueListenable] to facilitate use in e.g. [Ref.watch] calls.
 abstract class Animator<T> extends ValueNotifier<T> implements StyledAnimation<T> {
   /// Initializes fields for subclasses.
-  Animator({
-    required T initialValue,
-    Vsync vsync = Vsync.fallback,
+  Animator(
+    super.initialValue, {
     AnimationStatus initialStatus = AnimationStatus.dismissed,
+    Vsync vsync = Vsync.fallback,
     this.behavior = AnimationBehavior.normal,
     Duration? duration,
     Curve? curve,
     Duration? reverseDuration,
     Curve? reverseCurve,
     this.debugLabel,
-  }) : _vsync = vsync,
-       statusNotifier = ValueNotifier(initialStatus),
+  }) : _initialValue = initialValue,
+       _initialStatus = initialStatus,
+       _vsync = vsync,
        _duration = duration,
        _curve = curve,
        _reverseDuration = reverseDuration,
        _reverseCurve = reverseCurve,
-       super(initialValue) {
+       statusNotifier = ValueNotifier(initialStatus) {
     _ticker = vsync.createTicker(_tick);
     vsync.registerAnimation(this);
   }
+
+  final T _initialValue;
+  final AnimationStatus _initialStatus;
 
   /// The [Animator]'s current value.
   @override
   T get value => super.value;
 
   late Ticker _ticker;
+
+  /// Whether this animator is currently running.
+  ///
+  /// This is separate from whether it is actively ticking. An animation
+  /// controller's ticker might get muted, in which case the animation
+  /// controller's callbacks will no longer fire even though time is continuing
+  /// to pass. See [Ticker.muted] and [TickerMode].
+  ///
+  /// If the animation was stopped (e.g. with [stop] or by setting a new [value]),
+  /// [isActive] will return `false` but the [status] will not change,
+  /// so the value of [AnimationStatus.isAnimating] might still be `true`.
+  bool get isActive => _ticker.isActive;
+
+  /// A [Future] that completes when the currently running animation is finished.
+  ///
+  /// This field is `null` if the animator isn't running.
+  TickerFuture? get tickerFuture => _tickerFuture;
+  TickerFuture? _tickerFuture;
 
   /// Starts the clock for the [Ticker]. If the ticker is not muted, then this
   /// also starts calling the ticker's callback once per animation frame.
@@ -67,7 +89,12 @@ abstract class Animator<T> extends ValueNotifier<T> implements StyledAnimation<T
   /// By convention, this method is used by the object that receives the ticks
   /// (as opposed to the [TickerProvider] which created the ticker).
   @protected
-  TickerFuture start() => _ticker.start();
+  TickerFuture start() {
+    return _tickerFuture =
+        _ticker.start()..whenCompleteOrCancel(() {
+          _tickerFuture = null;
+        });
+  }
 
   /// Stops calling the [Ticker]'s callback.
   ///
@@ -76,9 +103,7 @@ abstract class Animator<T> extends ValueNotifier<T> implements StyledAnimation<T
   /// [TickerFuture.orCancel], if any, resolves with a [TickerCanceled] error.
   /// Setting the `canceled` argument set to false causes the future returned
   /// by [start] to resolve.
-  void stop({bool canceled = true}) {
-    _ticker.stop(canceled: canceled);
-  }
+  void stop({bool canceled = true}) => _ticker.stop(canceled: canceled);
 
   /// The amount of time that has passed between the time the animation started
   /// and the most recent tick of the animation.
@@ -136,7 +161,7 @@ abstract class Animator<T> extends ValueNotifier<T> implements StyledAnimation<T
       _reverseDuration ??
       _duration ??
       style.reverseDuration ??
-      _style.duration ??
+      style.duration ??
       DefaultAnimationStyle.fallbackDuration;
   Duration? _reverseDuration;
   set reverseDuration(Duration? newValue) {
@@ -187,6 +212,14 @@ abstract class Animator<T> extends ValueNotifier<T> implements StyledAnimation<T
   /// or the provided `from` parameter.
   TickerFuture animateTo(T target, {T? from, Duration? duration, Curve? curve});
 
+  /// Reverts the animator to its initial state.
+  void reset() {
+    assert(debugCheckDisposal('reset'));
+    _ticker.stop(canceled: true);
+    super.value = _initialValue;
+    statusNotifier.value = _initialStatus;
+  }
+
   /// A [ValueListenable] object that sends notifications when there's a change
   /// to this animator's [AnimationStatus].
   ValueListenable<AnimationStatus> get status => statusNotifier;
@@ -218,10 +251,9 @@ abstract class Animator<T> extends ValueNotifier<T> implements StyledAnimation<T
   /// In debug mode, verifies that this object has not yet been disposed of.
   @protected
   bool debugCheckDisposal(String methodName) {
-    assert(() {
-      if (!_debugDisposed) return true;
+    if (kDebugMode && _debugDisposed) {
       throw FlutterError('$runtimeType.$methodName() called after dispose().');
-    }());
+    }
     return true;
   }
 

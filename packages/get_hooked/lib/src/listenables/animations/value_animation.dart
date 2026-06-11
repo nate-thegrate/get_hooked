@@ -39,8 +39,8 @@ class ValueAnimation<T> extends Animator<T> {
   /// Creates a [ValueListenable] that smoothly animates between values.
   ///
   /// {@macro flutter.animation.ValueAnimation.value_setter}
-  ValueAnimation({
-    required super.initialValue,
+  ValueAnimation(
+    super.initialValue, {
     super.vsync,
     super.duration,
     super.curve,

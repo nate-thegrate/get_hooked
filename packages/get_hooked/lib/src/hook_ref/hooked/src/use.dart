@@ -28,15 +28,14 @@ Result use<Result, Data>(
   final _HookEntry? currentEntry = currentElement._currentEntry;
 
   Hook<Result, Data> init() {
-    assert(Hook._debugInitializing = true);
-    final Hook<Result, Data> hook =
-        getHook()
-          .._key = key
-          .._data = data
-          .._element = currentElement
-          .._debugLabel = debugLabel
-          ..initHook();
-    assert(!(Hook._debugInitializing = false));
+    if (kDebugMode) Hook._debugInitializing = true;
+    final Hook<Result, Data> hook = getHook()
+      .._key = key
+      .._data = data
+      .._element = currentElement
+      .._debugLabel = debugLabel
+      ..initHook();
+    if (kDebugMode) Hook._debugInitializing = false;
 
     return hook;
   }
@@ -72,10 +71,8 @@ Result use<Result, Data>(
   }
 
   final Result result = entry.value.build() as Result;
-  assert(() {
-    entry.value._debugPreviousResult = result;
-    return true;
-  }());
+  if (kDebugMode) entry.value._debugPreviousResult = result;
+
   currentElement._currentEntry = entry.next;
   return result;
 }
@@ -109,9 +106,11 @@ abstract class HookData<Result> {
 /// Prevents name overlap!
 const _use = use;
 
-/// Obtains the [BuildContext] of the building [HookWidget].
+/// Obtains the currently building [HookElement].
 BuildContext useContext() {
   final BuildContext? result = HookElement._current;
-  assert(result != null, '`useContext` can only be called during a HookWidget build() method.');
+  if (kDebugMode && result == null) {
+    throw FlutterError("`useContext()` was called outside of a HookWidget's build() method.");
+  }
   return result!;
 }

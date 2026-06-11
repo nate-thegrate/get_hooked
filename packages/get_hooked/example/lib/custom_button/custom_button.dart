@@ -1,42 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:get_hooked/get_hooked.dart';
 
 import '../main.dart';
 
-class CustomButtonApp extends MaterialApp {
-  const CustomButtonApp({super.key})
-    : super(
-        debugShowCheckedModeBanner: false,
-        home: const Scaffold(
-          appBar: AppBarConst(title: Text('Custom Button: zero rebuilds')),
-          drawer: ScreenSelect(),
-          body: Center(child: GetButton.widget),
-        ),
-      );
-}
+final _hovered = Get.vsyncValue(0.0, curve: Curves.ease);
+final _elevation = Get.vsync(
+  initialValue: 1.0,
+  reverseDuration: Durations.short1,
+  duration: Durations.short2,
+);
 
-abstract final class GetButton {
-  static final hovered = Get.vsyncValue(0.0, curve: Curves.ease);
-  static final elevation = Get.vsync(
-    initialValue: 1.0,
-    reverseDuration: Durations.short1,
-    duration: Durations.short2,
-  );
-  static final text = Get.compute((ref) {
-    const suffix = 'ing';
-    final int suffixLength = ((1 - ref.watch(elevation)) * suffix.length).round();
-    final bool hovering = ref.watch(hovered) > 0.25;
-    final String punctuation = switch (ref.watch(elevation.status)) {
-      AnimationStatus.dismissed => '!',
-      AnimationStatus.forward || AnimationStatus.completed when hovering => '?',
-      _ => '',
-    };
-    return 'click${suffix.substring(0, suffixLength)} here$punctuation';
-  });
-  static final decoration = Get.compute((ref) {
-    final double hoverProgress = ref.watch(hovered);
-    final double elevation = ref.watch(GetButton.elevation);
+class CustomButtonApp extends StatelessWidget {
+  const CustomButtonApp({super.key});
+
+  static ShapeDecoration _decorate(Ref ref) {
+    final double hoverProgress = ref.watch(_hovered);
+    final double elevation = ref.watch(_elevation);
 
     final Color? vibrant = Color.lerp(
       const Color(0xff0070ff),
@@ -55,88 +34,60 @@ abstract final class GetButton {
         ),
       ],
     );
-  });
+  }
 
-  static void hover([_]) => hovered.animateTo(1.0, duration: Durations.long1);
-  static void endHover([_]) => hovered.animateTo(0.0, duration: Durations.short2);
+  static BoxSize _size(Ref ref) {
+    return BoxSize(width: (ref.watch(_hovered) + 2) * 50, height: 50);
+  }
 
-  static void tapDown([_]) => elevation.reverse();
-  static void tapUp([_]) => elevation.forward();
+  static void hover([_]) => _hovered.animateTo(1.0, duration: Durations.long1);
+  static void endHover([_]) => _hovered.animateTo(0.0, duration: Durations.short2);
 
-  static const widget = MouseRegion(
-    cursor: SystemMouseCursors.click,
-    onEnter: hover,
-    onExit: endHover,
-    child: TapRegion(
-      onTapInside: tapDown,
-      onTapUpInside: tapUp,
-      child: _DecoratedBox(child: _SizedBox(child: Center(child: _Text()))),
-    ),
-  );
-}
+  static void tapDown([_]) => _elevation.reverse();
+  static void tapUp([_]) => _elevation.forward();
 
-class _Text extends StatelessWidget {
-  const _Text();
+  static Widget _label(BuildContext context) {
+    final String text = ref.compute((ref) {
+      const suffix = 'ing';
+      final int suffixLength = ((1 - ref.watch(_elevation)) * suffix.length).round();
+      final bool hovering = ref.watch(_hovered) > 0.25;
+      final String punctuation = switch (ref.watch(_elevation.status)) {
+        .dismissed => '!',
+        .forward || .completed when hovering => '?',
+        _ => '',
+      };
+      return 'click${suffix.substring(0, suffixLength)} here$punctuation';
+    });
 
-  @override
-  Widget build(BuildContext context) {
-    return TextGetter(
-      GetButton.text,
+    return Text(
+      text,
       style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
     );
   }
-}
-
-class _DecoratedBox extends RenderGetBase {
-  const _DecoratedBox({super.child});
 
   @override
-  ValueListenable<Decoration> get get => GetButton.decoration;
-
-  @override
-  RenderClippedDecoration render(BuildContext context) {
-    return RenderClippedDecoration(decoration: get.value, clipBehavior: Clip.antiAlias);
-  }
-
-  @override
-  void listen(RenderClippedDecoration renderObject) {
-    renderObject.decoration = get.value;
-  }
-}
-
-class _SizedBox extends RenderGetBase {
-  const _SizedBox({super.child});
-
-  @override
-  ValueListenable<double> get get => GetButton.hovered;
-
-  BoxConstraints get constriants {
-    return BoxConstraints.tight(Size((get.value + 2) * 50, 50));
-  }
-
-  @override
-  void listen(RenderConstrainedBox renderObject) {
-    renderObject.additionalConstraints = constriants;
-  }
-
-  @override
-  RenderConstrainedBox render(BuildContext context) {
-    return RenderConstrainedBox(additionalConstraints: constriants);
-  }
-}
-
-Widget _counterText(BuildContext context) {
-  throw Error();
-}
-
-class BeautifulButton extends MaterialApp {
-  const BeautifulButton({super.key})
-    : super(
-        debugShowCheckedModeBanner: false,
-        home: const Scaffold(
-          appBar: AppBarConst(title: Text('"Get Hooked" Demo')),
-          drawer: ScreenSelect(),
-          body: Center(child: Builder(builder: _counterText)),
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        appBar: AppBarConst(title: Text('Custom button animation')),
+        drawer: ScreenSelect(),
+        body: Center(
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            onEnter: hover,
+            onExit: endHover,
+            child: TapRegion(
+              onTapInside: tapDown,
+              onTapUpInside: tapUp,
+              child: RefDecoration(
+                _decorate,
+                child: RefSizedBox(_size, child: Center(child: HookBuilder(_label))),
+              ),
+            ),
+          ),
         ),
-      );
+      ),
+    );
+  }
 }

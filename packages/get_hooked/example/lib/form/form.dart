@@ -7,23 +7,8 @@ import '../main.dart';
 ///
 /// - more concise
 /// - only the [TextField] rebuilds
-
-class FormExampleApp extends MaterialApp {
-  const FormExampleApp({super.key}) : super(debugShowCheckedModeBanner: false, home: _home);
-
-  static const _home = Scaffold(
-    appBar: AppBarConst(title: Text('Form Sample')),
-    drawer: ScreenSelect(),
-    body: FormExample(),
-  );
-}
-
-class FormExample extends Column {
-  const FormExample({super.key})
-    : super(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const <Widget>[HookWidget(builder: textField), button],
-      );
+class FormExampleApp extends StatelessWidget {
+  const FormExampleApp({super.key});
 
   static final email = Get.it('');
   static final validation = Get.it<String?>(null);
@@ -47,5 +32,20 @@ class FormExample extends Column {
     if (valid) {
       // Process data.
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        appBar: AppBarConst(title: Text('Form Sample')),
+        drawer: ScreenSelect(),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[HookBuilder(textField), button],
+        ),
+      ),
+    );
   }
 }

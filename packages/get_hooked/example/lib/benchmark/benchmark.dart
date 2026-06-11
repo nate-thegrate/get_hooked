@@ -11,7 +11,6 @@ enum Setup {
   refWatchClass,
   customPaint,
   refPaint,
-  refPaintClass,
   renderGet,
   renderGetClass,
   renderScopedGet,
@@ -108,12 +107,10 @@ class ColorSlice extends HookWidget {
             return ColoredBox(color: color, child: child);
           },
         ),
-        Setup.refWatchBuilder => HookWidget(
-          builder: (context) {
-            final Color color = ref.watch(getColor);
-            return ColoredBox(color: color, child: child);
-          },
-        ),
+        Setup.refWatchBuilder => HookBuilder((context) {
+          final Color color = ref.watch(getColor);
+          return ColoredBox(color: color, child: child);
+        }),
         Setup.refWatchClass => const RefWatchClass(),
         Setup.customPaint => CustomPaint(painter: CustomPainterClass(), child: child),
         Setup.refPaint => RefPaint((PaintRef ref) {
@@ -121,7 +118,6 @@ class ColorSlice extends HookWidget {
             ..setWillChangeHint()
             ..canvas.drawRect(Offset.zero & ref.size, Paint()..color = ref.watch(getColor));
         }),
-        Setup.refPaintClass => const RefPaintClass(),
         Setup.renderGet => RenderGet(
           get: getColor,
           render: (context) => RenderColoredBox(color: getColor.value),
@@ -194,17 +190,6 @@ class BenchmarkDropdown extends HookWidget {
       ),
       onChanged: getSetup.emit,
     );
-  }
-}
-
-class RefPaintClass extends RefPaint {
-  const RefPaintClass({super.key}) : super.constructor();
-
-  @override
-  void paint(PaintRef ref) {
-    ref
-      ..setWillChangeHint()
-      ..canvas.drawRect(Offset.zero & ref.size, Paint()..color = ref.watch(getColor));
   }
 }
 

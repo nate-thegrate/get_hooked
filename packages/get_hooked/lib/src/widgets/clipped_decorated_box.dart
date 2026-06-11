@@ -1,9 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-/// A variation of [DecoratedBox] that allows specifying a [clipBehavior]
-/// and re-renders without any need to rebuild a widget subtree.
-abstract class ClippedDecoration extends SingleChildRenderObjectWidget {
+/// A variation of [DecoratedBox] that allows specifying a [clipBehavior].
+class ClippedDecoration extends SingleChildRenderObjectWidget {
   /// Initializes fields for subclasses.
   const ClippedDecoration({
     super.key,
@@ -67,34 +67,57 @@ class RenderClippedDecoration extends RenderProxyBox {
   }) : _decoration = decoration,
        _position = position,
        _clipBehavior = clipBehavior,
-       _configuration = configuration;
+       _configuration = configuration {
+    _imagePainter = switch (decoration) {
+      BoxDecoration(:final image?) ||
+      ShapeDecoration(:final image?) => image.createPainter(markNeedsPaint),
+      _ => null,
+    };
+  }
 
   /// What decoration to paint.
   ///
   /// Must be a [BoxDecoration] or [ShapeDecoration].
   Decoration get decoration => _decoration;
-  late Decoration _decoration;
+  Decoration _decoration;
   set decoration(Decoration value) {
     if (value == _decoration) {
       return;
     }
-    _decoration = value;
-    markNeedsPaint();
+    if (value case BoxDecoration(:final image) || ShapeDecoration(:final image)) {
+      if (_decoration
+          case BoxDecoration(image: final oldImage) || ShapeDecoration(image: final oldImage)
+          when image != oldImage) {
+        _imagePainter?.dispose();
+        _imagePainter = image?.createPainter(markNeedsPaint);
+      }
+      _decoration = value;
+      markNeedsPaint();
+    } else {
+      assert(
+        throw FlutterError.fromParts([
+          ErrorSummary('Invalid decoration: ${value.runtimeType}'),
+          ErrorHint('Consider using a BoxDecoration or ShapeDecoration instead.'),
+        ]),
+      );
+    }
   }
 
   Paint? _backgroundFill;
   Rect? _backgroundFillRect;
-  (Color?, Gradient?, BlendMode?) _currentData = const (null, null, null);
+  (Color?, Gradient?, BlendMode?) _fillData = const (null, null, null);
 
   /// Generates a [Paint] object to use in this render object's [paint] method.
-  Paint backgroundFill(Rect rect) {
+  Paint? backgroundFill(Rect rect) {
     final paint = Paint();
-    final (Color? color, Gradient? gradient, BlendMode? blendMode) = _currentData;
+    final (Color? color, Gradient? gradient, BlendMode? blendMode) = _fillData;
 
     if (gradient != null) {
       paint.shader = gradient.createShader(rect);
     } else if (color != null) {
       paint.color = color;
+    } else {
+      return null;
     }
     if (blendMode != null) {
       paint.blendMode = blendMode;
@@ -140,14 +163,11 @@ class RenderClippedDecoration extends RenderProxyBox {
     markNeedsPaint();
   }
 
+  DecorationImagePainter? _imagePainter;
+
   @override
   void detach() {
     super.detach();
-    // Since we're disposing of our painter, we won't receive change
-    // notifications. We mark ourselves as needing paint so that we will
-    // resubscribe to change notifications. If we didn't do this, then, for
-    // example, animated GIFs would stop animating when a DecoratedBox gets
-    // moved around the tree due to GlobalKey reparenting.
     markNeedsPaint();
   }
 
@@ -159,209 +179,192 @@ class RenderClippedDecoration extends RenderProxyBox {
   @override
   void paint(PaintingContext context, Offset offset) {
     assert(() {
-      if (decoration case BoxDecoration(:final image) || ShapeDecoration(:final image)) {
-        if (image == null) return true;
-        throw UnsupportedError('Painting images is not yet supported.');
+      if (decoration case BoxDecoration() || ShapeDecoration()) {
+        return true;
       }
       throw FlutterError.fromParts([
-        ErrorSummary('Invalid HookDecoration: ${decoration.runtimeType}'),
+        ErrorSummary('Invalid decoration: ${decoration.runtimeType}'),
         ErrorHint('Consider using a BoxDecoration or ShapeDecoration instead.'),
       ]);
     }());
 
     final ImageConfiguration filledConfiguration = configuration.copyWith(size: size);
-    Rect rect = offset & size;
 
-    final (Color?, Gradient?, BlendMode?) currentData = switch (decoration) {
-      ShapeDecoration(:final Color? color, :final Gradient? gradient) => (color, gradient, null),
+    final (Color?, Gradient?, BlendMode?) fillData = switch (decoration) {
+      ShapeDecoration(:final Color? color, :final Gradient? gradient)
+          when (color ?? gradient) != null =>
+        (color, gradient, null),
       BoxDecoration(
         :final Color? color,
         :final Gradient? gradient,
         :final BlendMode? backgroundBlendMode,
-      ) =>
+      )
+          when (color ?? gradient) != null =>
         (color, gradient, backgroundBlendMode),
-      _ => (null, null, null),
+      _ => const (null, null, null),
     };
 
-    void paintShadows() {
-      switch (decoration) {
-        case ShapeDecoration(:final ShapeBorder shape, :final List<BoxShadow> shadows)
-            when shadows.isNotEmpty:
-          for (final BoxShadow boxShadow in shadows) {
-            final Paint paint = boxShadow.toPaint();
-            final Rect bounds = rect.shift(boxShadow.offset).inflate(boxShadow.spreadRadius);
+    Rect rect = Offset.zero & size;
 
-            assert(() {
-              if (debugDisableShadows && boxShadow.blurStyle == BlurStyle.outer) {
-                context.canvas
-                  ..save()
-                  ..clipRect(bounds);
-              }
-              return true;
-            }());
-
-            final Canvas canvas = context.canvas;
-
-            bool debugHandleDisabledShadowStart(BoxShadow boxShadow, Path path) {
-              if (debugDisableShadows && boxShadow.blurStyle == BlurStyle.outer) {
-                canvas
-                  ..save()
-                  ..clipPath(
-                    Path()
-                      ..fillType = PathFillType.evenOdd
-                      ..addRect(Rect.largest)
-                      ..addPath(path, Offset.zero),
-                  );
-              }
-              return true;
-            }
-
-            bool debugHandleDisabledShadowEnd(BoxShadow boxShadow) {
-              if (debugDisableShadows && boxShadow.blurStyle == BlurStyle.outer) {
-                canvas.restore();
-              }
-              return true;
-            }
-
-            if (shape.preferPaintInterior) {
-              for (final BoxShadow shadow in shadows) {
-                final Rect bounds = rect.shift(shadow.offset).inflate(shadow.spreadRadius);
-                assert(
-                  debugHandleDisabledShadowStart(
-                    shadow,
-                    shape.getOuterPath(bounds, textDirection: configuration.textDirection),
-                  ),
-                );
-                shape.paintInterior(
-                  canvas,
-                  bounds,
-                  paint,
-                  textDirection: configuration.textDirection,
-                );
-                assert(debugHandleDisabledShadowEnd(shadow));
-              }
-            } else {
-              for (final BoxShadow shadow in shadows) {
-                final Path path = shape.getOuterPath(
-                  rect.shift(shadow.offset).inflate(shadow.spreadRadius),
-                  textDirection: configuration.textDirection,
-                );
-                assert(debugHandleDisabledShadowStart(shadow, path));
-                canvas.drawPath(path, paint);
-                assert(debugHandleDisabledShadowEnd(shadow));
-              }
-            }
-
-            assert(() {
-              if (debugDisableShadows && boxShadow.blurStyle == BlurStyle.outer) {
-                context.canvas.restore();
-              }
-              return true;
-            }());
-          }
-        case BoxDecoration(
-              :final BoxShape shape,
-              :final BorderRadiusGeometry? borderRadius,
-              boxShadow: final List<BoxShadow> shadows?,
-            )
-            when shadows.isNotEmpty:
-          for (final BoxShadow boxShadow in shadows) {
-            final Paint paint = boxShadow.toPaint();
-            final Rect bounds = rect.shift(boxShadow.offset).inflate(boxShadow.spreadRadius);
-            assert(() {
-              if (debugDisableShadows && boxShadow.blurStyle == BlurStyle.outer) {
-                context.canvas
-                  ..save()
-                  ..clipRect(bounds);
-              }
-              return true;
-            }());
-
-            switch (shape) {
-              case BoxShape.circle:
-                assert(borderRadius == null);
-                final Offset center = rect.center;
-                final double radius = rect.shortestSide / 2.0;
-                context.canvas.drawCircle(center, radius, paint);
-              case BoxShape.rectangle:
-                if (borderRadius case null || BorderRadius.zero) {
-                  context.canvas.drawRect(rect, paint);
-                } else {
-                  context.canvas.drawRRect(
-                    borderRadius.resolve(configuration.textDirection).toRRect(rect),
-                    paint,
-                  );
-                }
-            }
-            assert(() {
-              if (debugDisableShadows && boxShadow.blurStyle == BlurStyle.outer) {
-                context.canvas.restore();
-              }
-              return true;
-            }());
-          }
-      }
-    }
-
-    if (rect != _backgroundFillRect || currentData != _currentData) {
+    if (fillData == const (null, null, null)) {
+      _backgroundFill = null;
+    } else if (rect != _backgroundFillRect || fillData != _fillData) {
       _backgroundFillRect = rect;
-      _currentData = currentData;
+      _fillData = fillData;
       _backgroundFill = backgroundFill(rect);
     }
-    final Paint paint = _backgroundFill ??= backgroundFill(rect);
 
-    if (clipBehavior == Clip.antiAliasWithSaveLayer) {
+    if (clipBehavior == .antiAliasWithSaveLayer) {
       // Deflating here prevents bleeding-edge artifacts on the sides of the child.
-      rect = (Offset.zero & size).deflate(0.5);
+      rect = rect.deflate(0.5);
     }
-    final Path clipPath = decoration.getClipPath(
-      rect,
-      filledConfiguration.textDirection ?? TextDirection.ltr,
-    );
+
+    final Paint? paint = _backgroundFill;
+    final Path clipPath = decoration.getClipPath(rect, filledConfiguration.textDirection ?? .ltr);
+
+    // Paint shadows before clipping, so that shadows can extend beyond the clip boundary.
+    switch (decoration) {
+      case ShapeDecoration(:final ShapeBorder shape, :final List<BoxShadow> shadows)
+          when shadows.isNotEmpty:
+        for (final BoxShadow boxShadow in shadows) {
+          final Paint paint = boxShadow.toPaint();
+          final Rect bounds = (offset & size)
+              .shift(boxShadow.offset)
+              .inflate(boxShadow.spreadRadius);
+
+          if (kDebugMode && debugDisableShadows && boxShadow.blurStyle == .outer) {
+            context.canvas
+              ..save()
+              ..clipRect(bounds);
+          }
+
+          bool debugHandleDisabledShadowStart(BoxShadow boxShadow, Path path) {
+            if (kDebugMode && debugDisableShadows && boxShadow.blurStyle == .outer) {
+              context.canvas
+                ..save()
+                ..clipPath(
+                  Path()
+                    ..fillType = PathFillType.evenOdd
+                    ..addRect(Rect.largest)
+                    ..addPath(path, Offset.zero),
+                );
+            }
+            return true;
+          }
+
+          bool debugHandleDisabledShadowEnd(BoxShadow boxShadow) {
+            if (kDebugMode && debugDisableShadows && boxShadow.blurStyle == .outer) {
+              context.canvas.restore();
+            }
+            return true;
+          }
+
+          if (shape.preferPaintInterior) {
+            for (final BoxShadow shadow in shadows) {
+              final Rect bounds = (offset & size)
+                  .shift(shadow.offset)
+                  .inflate(shadow.spreadRadius);
+              assert(
+                debugHandleDisabledShadowStart(
+                  shadow,
+                  shape.getOuterPath(bounds, textDirection: configuration.textDirection),
+                ),
+              );
+              shape.paintInterior(
+                context.canvas,
+                bounds,
+                paint,
+                textDirection: configuration.textDirection,
+              );
+              assert(debugHandleDisabledShadowEnd(shadow));
+            }
+          } else {
+            for (final BoxShadow shadow in shadows) {
+              final Path path = shape.getOuterPath(
+                (offset & size).shift(shadow.offset).inflate(shadow.spreadRadius),
+                textDirection: configuration.textDirection,
+              );
+              assert(debugHandleDisabledShadowStart(shadow, path));
+              context.canvas.drawPath(path, paint);
+              assert(debugHandleDisabledShadowEnd(shadow));
+            }
+          }
+
+          if (kDebugMode && debugDisableShadows && boxShadow.blurStyle == .outer) {
+            context.canvas.restore();
+          }
+        }
+      case BoxDecoration(
+            :final BoxShape shape,
+            :final BorderRadiusGeometry? borderRadius,
+            boxShadow: final List<BoxShadow> shadows?,
+          )
+          when shadows.isNotEmpty:
+        for (final BoxShadow boxShadow in shadows) {
+          final Paint paint = boxShadow.toPaint();
+          final Rect bounds = (offset & size)
+              .shift(boxShadow.offset)
+              .inflate(boxShadow.spreadRadius);
+          if (kDebugMode && debugDisableShadows && boxShadow.blurStyle == .outer) {
+            context.canvas
+              ..save()
+              ..clipRect(bounds);
+          }
+
+          switch (shape) {
+            case BoxShape.circle:
+              assert(borderRadius == null);
+              final Offset center = bounds.center;
+              final double radius = bounds.shortestSide / 2.0;
+              context.canvas.drawCircle(center, radius, paint);
+            case BoxShape.rectangle:
+              if (borderRadius case null || BorderRadius.zero) {
+                context.canvas.drawRect(bounds, paint);
+              } else {
+                context.canvas.drawRRect(
+                  borderRadius.resolve(configuration.textDirection).toRRect(bounds),
+                  paint,
+                );
+              }
+          }
+          if (kDebugMode && debugDisableShadows && boxShadow.blurStyle == .outer) {
+            context.canvas.restore();
+          }
+        }
+    }
 
     switch (clipBehavior) {
-      case Clip.antiAliasWithSaveLayer:
+      case .hardEdge || .antiAlias || .antiAliasWithSaveLayer:
         layer = context.pushClipPath(
           needsCompositing,
           offset,
           rect,
           clipPath,
           (PaintingContext context, Offset offset) {
-            if (position == DecorationPosition.background) {
-              context.canvas.drawPaint(paint);
+            if (position == .background) {
+              if (paint != null) context.canvas.drawPaint(paint);
+              _imagePainter?.paint(context.canvas, offset & size, null, configuration);
             }
             super.paint(context, offset);
-            if (position == DecorationPosition.foreground) {
-              context.canvas.drawPaint(paint);
+            if (position == .foreground) {
+              if (paint != null) context.canvas.drawPaint(paint);
+              _imagePainter?.paint(context.canvas, offset & size, null, configuration);
             }
           },
           oldLayer: layer as ClipPathLayer?,
           clipBehavior: clipBehavior,
         );
-      case Clip.antiAlias:
-      case Clip.hardEdge:
-        context.canvas
-          ..save()
-          ..clipPath(clipPath, doAntiAlias: clipBehavior == Clip.antiAlias);
-        if (position == DecorationPosition.background) {
-          paintShadows();
-          context.canvas.drawPaint(paint);
+
+      case .none:
+        final Path path = clipPath.shift(offset);
+        if (position == .background) {
+          if (paint != null) context.canvas.drawPath(path, paint);
+          _imagePainter?.paint(context.canvas, offset & size, path, configuration);
         }
         super.paint(context, offset);
-        if (position == DecorationPosition.foreground) {
-          paintShadows();
-          context.canvas.drawPaint(paint);
-        }
-        context.canvas.restore();
-      case Clip.none:
-        if (position == DecorationPosition.background) {
-          paintShadows();
-          context.canvas.drawPath(clipPath, paint);
-        }
-        super.paint(context, offset);
-        if (position == DecorationPosition.foreground) {
-          paintShadows();
-          context.canvas.drawPath(clipPath, paint);
+        if (position == .foreground) {
+          if (paint != null) context.canvas.drawPath(path, paint);
+          _imagePainter?.paint(context.canvas, offset & size, path, configuration);
         }
     }
   }

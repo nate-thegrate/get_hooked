@@ -6,21 +6,19 @@ import 'dart:ui';
 import 'package:collection/collection.dart';
 import 'package:collection_notifiers/collection_notifiers.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
+import 'package:get_hooked/src/computed_notifier.dart';
 import 'package:get_hooked/src/hook_ref/hook_ref.dart';
-import 'package:get_hooked/src/substitution/substitution.dart';
 import 'package:meta/meta.dart';
 
-part 'src/computed.dart';
 part 'src/dispose_guard.dart';
-part 'src/scoped_get.dart';
+part 'src/scoped.dart';
+part 'src/query.dart';
 
 typedef _V = ValueListenable<Object?>;
 
-/// Allows the hook functions defined in [ref] to access
-/// a [Get] object's [ValueListenable].
+/// Gives access to methods such as [ValueListenable.addListener].
 //
 // ignore: library_private_types_in_public_api, I'm a rule-breaker
 extension GetHooked<V extends _V> on Get<Object?, V> {
@@ -64,7 +62,7 @@ extension type Get<T, V extends ValueListenable<T>>._(V _hooked) implements Valu
   /// Encapsulates a [MapNotifier], and can be used as a [Map] directly.
   static GetMap<K, V> map<K, V>([Map<K, V> map = const {}]) => GetMap._(_MapNotifier(map));
 
-  /// Encapsulates an [AnimationController].
+  /// Encapsulates a [VsyncDouble].
   static GetVsyncDouble vsync({
     double? initialValue,
     Duration? duration,
@@ -95,14 +93,16 @@ extension type Get<T, V extends ValueListenable<T>>._(V _hooked) implements Valu
     Curve? curve,
     AnimationBehavior behavior = AnimationBehavior.normal,
     LerpCallback<T>? lerp,
+    String? debugLabel,
   }) {
     return GetVsyncValue._(
       _ValueAnimation(
-        initialValue: initialValue,
+        initialValue,
         duration: duration,
         curve: curve,
         behavior: behavior,
         lerp: lerp,
+        debugLabel: debugLabel,
       ),
     );
   }
@@ -134,6 +134,9 @@ extension type Get<T, V extends ValueListenable<T>>._(V _hooked) implements Valu
   ///
   /// The [view] and [viewFinder] parameters are used to disambiguate
   /// multi-window applications. See [MediaQueryNotifier] for more information.
+  ///
+  /// See also:
+  ///  * [GetQuery.size] and [GetQuery.brightness],
   static GetQuery<T> mediaQuery<T>(
     T Function(MediaQueryData data) query, {
     FlutterView? view,
@@ -142,15 +145,64 @@ extension type Get<T, V extends ValueListenable<T>>._(V _hooked) implements Valu
     return GetQuery._(_MediaQueryNotifier(query, view: view, viewFinder: viewFinder));
   }
 
+  /// Encapsulates an [OverlayPortalController] that notifies when `show()` and `hide()`
+  /// are called.
+  static GetOverlay overlay({String? debugLabel}) {
+    return GetOverlay._(OverlayNotifier(debugLabel: debugLabel));
+  }
+
   /// Encapsulates a [Listenable] which notifies based on a [RefComputer] callback.
   static GetComputed<Result> compute<Result>(RefComputer<Result> callback) {
-    return GetComputed._(ComputedNoScope(callback));
+    return GetComputed._(ComputedNotifier(callback));
+  }
+
+  /// Encapsulates a [Listenable] which notifies by selecting from another listenable.
+  ///
+  /// {@tool snippet}
+  /// This constructor is very similar to [Get.compute] but only watches a single other value,
+  /// allowing the internal logic to be a bit more simple & efficient.
+  ///
+  /// The following have identical behavior:
+  ///
+  /// ```dart
+  /// Get.compute((ref) => ref.watch(something).toString());
+  ///
+  /// Get.select(something, (value) => value.toString());
+  /// ```
+  /// {@end-tool}
+  static GetSelection<Result, Input> select<Result, Input>(
+    ValueListenable<Input> input,
+    Result Function(Input value) selector,
+  ) {
+    return GetSelection._(
+      input is VsyncValue<Input>
+          ? _VsyncProxyNotifier(input, selector)
+          : ProxyNotifier(input, selector),
+    );
+  }
+}
+
+class _VsyncProxyNotifier<Result, Input> extends ProxyNotifier<Result, Input>
+    implements VsyncValue<Result> {
+  _VsyncProxyNotifier(VsyncValue<Input> super.input, super.getValue);
+
+  late final VsyncValue<Input> _vsync = input as VsyncValue<Input>;
+
+  @override
+  Vsync get vsync => _vsync.vsync;
+
+  @override
+  void resync(Vsync vsync) => _vsync.resync(vsync);
+
+  @override
+  ProxyNotifier<Result, Input> proxyWith(covariant VsyncValue<Input> newInput) {
+    return _VsyncProxyNotifier(newInput, getValue);
   }
 }
 
 /// Encapsulates a [ValueNotifier].
 extension type GetValue<T>._(ValueNotifier<T> _hooked) implements Get<T, ValueNotifier<T>> {
-  // ignore: annotate_redeclares, false positive
+  // ignore: avoid_setters_without_getters, annotate_redeclares, false positive
   set value(T newValue) {
     _hooked.value = newValue;
   }
@@ -204,13 +256,11 @@ extension type GetVsyncDouble._(VsyncDouble _hooked)
   /// Don't add a listener directly!
   /// {@macro get_hooked.dont}
   @protected
-  @redeclare
   void get addListener {}
 
   /// Don't remove a listener directly!
   /// {@macro get_hooked.dont}
   @protected
-  @redeclare
   void get removeListener {}
 
   @redeclare
@@ -223,13 +273,11 @@ extension type GetVsyncValue<T>._(ValueAnimation<T> _hooked)
   /// Don't add a listener directly!
   /// {@macro get_hooked.dont}
   @protected
-  @redeclare
   void get addListener {}
 
   /// Don't remove a listener directly!
   /// {@macro get_hooked.dont}
   @protected
-  @redeclare
   void get removeListener {}
 
   @redeclare
@@ -237,15 +285,17 @@ extension type GetVsyncValue<T>._(ValueAnimation<T> _hooked)
 }
 
 /// Encapsulates an [AsyncNotifier].
-extension type GetAsync<T>._(AsyncNotifier<T> _hooked) implements Get<T?, AsyncNotifier<T>> {}
+extension type GetAsync<T>._(AsyncNotifier<T> _hooked)
+    implements Get<AsyncValue<T>, AsyncNotifier<T>> {}
 
-/// Encapsulates a [MediaQueryNotifier].
-extension type GetQuery<T>._(MediaQueryNotifier<T> _hooked)
-    implements Get<T, MediaQueryNotifier<T>> {
-  /// {@macro get_hooked.MediaQueryNotifier.assignView}
-  void assignView(FlutterView view) => _hooked.assignView(view);
-}
+/// Encapsulates an [OverlayPortalController].
+extension type GetOverlay._(OverlayNotifier _hooked)
+    implements OverlayPortalController, Get<bool, OverlayNotifier> {}
 
 /// Encapsulates a [Listenable] which notifies based on a [RefComputer] callback.
-extension type GetComputed<Result>._(ComputedNoScope<Result> _hooked)
+extension type GetComputed<Result>._(ComputedNotifier<Result> _hooked)
+    implements Get<Result, ValueListenable<Result>> {}
+
+/// Encapsulates a [Listenable] which notifies based on a [RefComputer] callback.
+extension type GetSelection<Result, Input>._(ProxyNotifier<Result, Input> _hooked)
     implements Get<Result, ValueListenable<Result>> {}

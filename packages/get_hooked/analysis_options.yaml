@@ -8,6 +8,8 @@ formatter:
   page_width: 98
 
 analyzer:
+  errors:
+    experimental_member_use: ignore
   language:
     # strict-casts: true
     strict-inference: true

@@ -6,35 +6,47 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
 import 'package:get_hooked/src/bug_report.dart';
+import 'package:get_hooked/src/computed_notifier.dart';
+import 'package:get_hooked/src/vsync_mixin.dart';
 
 part 'src/scope.dart';
 
-/// Causes the static [Ref] methods to reference a different [Get] object.
-///
-/// ## Performance Consideration
-///
-/// [GlobalKey] re-parenting has a notable performance impact, and the same is true when a
-/// substitution is made. Prefer making substitutions all at once, such as when the relevant
-/// widget(s) are first created, to mitigate unnecessary updates.
-///
-/// See also: [HookRef.sub], to create a substitution via a [Hook] function.
-abstract final class Substitution<V extends Object> with Diagnosticable {
-  const factory Substitution(V placeholder, V replacement, {bool autoDispose}) = _SubValue<V>;
-  const factory Substitution.factory(V placeholder, ValueGetter<V> factory, {bool autoDispose}) =
-      _SubFactory<V>;
+typedef _V = ValueListenable<Object?>;
 
-  const Substitution._(this.placeholder, {this.autoDispose = true});
+/// An immutable description of how one [ValueListenable] object can be used in place of another.
+///
+/// Most commonly used to create a [GetScope].
+///
+/// See also: [HookRef.sub], which creates a substitution via a [Hook] function.
+abstract final class Substitution<T> with Diagnosticable {
+  factory Substitution(
+    ValueListenable<T> placeholder,
+    ValueListenable<T> replacement, {
+    bool autoDispose,
+  }) = _SubReplacement<T>;
+
+  factory Substitution.factory(
+    ValueListenable<T> placeholder,
+    ValueGetter<ValueListenable<T>> factory, {
+    bool autoDispose,
+  }) = _SubFactory<T>;
+
+  /// Create a [Substitution] using a `value` of the matching type.\
+  /// This redirects methods like [Ref.watch] to the provided value.
+  factory Substitution.value(ValueListenable<T> placeholder, T value) = _SubValue;
+
+  Substitution._(this.placeholder, {this.autoDispose = true});
 
   /// The original [ValueListenable] object (i.e. the listenable encapsulated in
   /// a [Get] object).
-  final V placeholder;
+  final ValueListenable<T> placeholder;
 
   /// A [ValueListenable] of the same type as the [placeholder] which will be referenced
   /// in its place by methods like [HookRef.watch] called from descendant widgets.
-  V get replacement;
+  ValueListenable<T> get replacement;
 
   /// Whether to automatically call [ChangeNotifier.dispose] when the substitution
-  /// is no longer part of an active [SubScope].
+  /// is no longer part of an active [GetScope].
   ///
   /// Defaults to `true`, but this value is ignored if the notifier is identified
   /// as a [DisposeGuard] instance.
@@ -44,60 +56,50 @@ abstract final class Substitution<V extends Object> with Diagnosticable {
   ///
   /// The result could be:
   ///
-  /// - A [SubScope], if the substitution was made there
+  /// - A [GetScope], if the substitution was made there
   /// - A [HookWidget] that called [HookRef.sub]
-  /// - Any other widget that used [SubScope.add]
+  /// - Any other widget that used [GetScope.add]
   /// - `null`, if no substitution was made
   ///
   /// The result is always `null` in profile & release mode.
-  static Widget? debugSubWidget<V extends Object, T>(BuildContext context, T placeholder) {
-    Widget? result;
-    assert(() {
-      final T? scopedGet = SubScope.maybeOf(context, placeholder);
-      if (scopedGet == null) return true;
-      final SubScope scope = context.findAncestorStateOfType<_SubScopeState>()!.widget;
-      for (final Substitution<Object> sub in scope.substitutes) {
-        if (sub.placeholder == placeholder) {
-          result = scope;
-          return true;
-        }
+  static Widget? debugSubWidget<T>(BuildContext context, ValueListenable<T> placeholder) {
+    if (!kDebugMode) return null;
+
+    final ValueListenable<T>? scopedGet = GetScope.maybeOf(context, placeholder);
+    if (scopedGet == null) return null;
+
+    final _GetScopeState state = context.findAncestorStateOfType()!;
+    final GetScope scope = state.widget;
+    for (final Substitution<Object?> sub in scope.substitutes) {
+      if (sub.placeholder == placeholder) return scope;
+    }
+
+    for (final MapEntry(key: context, value: map) in state.clientSubstitutes.entries) {
+      for (final _V key in map.keys) {
+        if (key == placeholder) return context.widget;
       }
-      final container =
-          context.getElementForInheritedWidgetOfExactType<_ClientSubContainer<V>>()!
-              as _OverrideContainerElement<V>;
+    }
 
-      for (final MapEntry(key: context, value: map) in container.clientSubstitutes.entries) {
-        for (final V key in map.keys) {
-          if (key == placeholder) {
-            result = context.widget;
-            return true;
-          }
-        }
-      }
-
-      throw StateError(
-        'The object $placeholder was substituted with $scopedGet, '
-        'but the substitution was not found.\n'
-        '$bugReport',
-      );
-    }());
-
-    return result;
+    throw StateError(
+      'The object $placeholder was substituted with $scopedGet, '
+      'but the substitution was not found.\n'
+      '$bugReport',
+    );
   }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<V>('placeholder', placeholder));
+    properties.add(DiagnosticsProperty<ValueListenable<T>>('placeholder', placeholder));
     properties.add(FlagProperty('autoDispose', value: autoDispose));
   }
 }
 
-final class _SubValue<V extends Object> extends Substitution<V> {
-  const _SubValue(super.placeholder, this.replacement, {super.autoDispose}) : super._();
+final class _SubReplacement<T> extends Substitution<T> {
+  _SubReplacement(super.placeholder, this.replacement, {super.autoDispose}) : super._();
 
   @override
-  final V replacement;
+  final ValueListenable<T> replacement;
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -106,19 +108,52 @@ final class _SubValue<V extends Object> extends Substitution<V> {
   }
 }
 
-final class _SubFactory<V extends Object> extends Substitution<V> {
-  const _SubFactory(super.placeholder, this.factory, {super.autoDispose}) : super._();
+final class _SubFactory<T> extends Substitution<T> {
+  _SubFactory(super.placeholder, this.factory, {super.autoDispose}) : super._();
 
-  final ValueGetter<V> factory;
+  final ValueGetter<ValueListenable<T>> factory;
 
   @override
-  V get replacement => factory();
+  ValueListenable<T> get replacement => factory();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty.lazy('factory', factory));
   }
+}
+
+final class _SubValue<T> with Diagnosticable implements Substitution<T> {
+  _SubValue(this.placeholder, this.value);
+
+  @override
+  final ValueListenable<T> placeholder;
+
+  final T value;
+
+  @override
+  late final ValueListenable<T> replacement = _DummyListenable<T>(value);
+
+  @override
+  bool get autoDispose => false;
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty('replacement', replacement));
+  }
+}
+
+class _DummyListenable<T> implements ValueListenable<T> {
+  _DummyListenable(this.value);
+
+  @override
+  final T value;
+
+  @override
+  void addListener(VoidCallback listener) {}
+  @override
+  void removeListener(VoidCallback listener) {}
 }
 
 /// A [Map] where each value is assumed to implement the same interface as the corresponding key.

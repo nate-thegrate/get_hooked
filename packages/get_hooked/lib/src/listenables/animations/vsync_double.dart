@@ -4,16 +4,18 @@ library;
 import 'dart:ui';
 
 import 'package:flutter/physics.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/src/bug_report.dart';
+import 'package:get_hooked/src/listenables/animations/vsync.dart';
 
 import 'animator.dart';
 
 /// A variant of [AnimationController] that implements the [VsyncValue] and [StyledAnimation]
 /// interfaces. (An [Animation] object can be obtained via [toAnimation].)
 ///
-/// (See [Animator] for more information.)
+/// See [Animator] for more information.
 class VsyncDouble extends Animator<double> {
   /// Initializes fields.
   VsyncDouble({
@@ -28,9 +30,9 @@ class VsyncDouble extends Animator<double> {
     super.behavior,
     super.debugLabel,
   }) : super(
-         initialValue: value ?? lowerBound,
+         value ?? lowerBound,
          initialStatus:
-             value == lowerBound
+             value == null || value == lowerBound
                  ? AnimationStatus.dismissed
                  : value == upperBound
                  ? AnimationStatus.completed
@@ -257,9 +259,10 @@ class VsyncDouble extends Animator<double> {
     assert(debugCheckDisposal('forward'));
     stop();
 
+    _forward = true;
     return _runSimulation(
       _InterpolationSimulation(
-        value,
+        from ?? value,
         upperBound,
         duration * ((upperBound - value) / (upperBound - lowerBound)),
         Curves.linear,
@@ -286,11 +289,12 @@ class VsyncDouble extends Animator<double> {
     assert(debugCheckDisposal('reverse'));
     stop();
 
+    _forward = false;
     return _runSimulation(
       _InterpolationSimulation(
-        value,
+        from ?? value,
         lowerBound,
-        duration * ((value - lowerBound) / (upperBound - lowerBound)),
+        reverseDuration * ((value - lowerBound) / (upperBound - lowerBound)),
         Curves.linear,
         behavior.enableAnimations ? 1.0 : 0.05,
       ),
@@ -374,30 +378,10 @@ class VsyncDouble extends Animator<double> {
     _forward = forward;
   }
 
-  /// Sets the controller's value to [lowerBound], stopping the animation (if
-  /// in progress), and resetting to its beginning point, or dismissed state.
-  ///
-  /// The most recently returned [TickerFuture], if any, is marked as having been
-  /// canceled, meaning the future never completes and its [TickerFuture.orCancel]
-  /// derivative future completes with a [TickerCanceled] error.
-  ///
-  /// See also:
-  ///
-  ///  * [value], which can be explicitly set to a specific value as desired.
-  ///  * [forward], which starts the animation in the forward direction.
-  ///  * [stop], which aborts the animation without changing its value or status
-  ///    and without dispatching any notifications other than completing or
-  ///    canceling the [TickerFuture].
-  void reset() {
-    assert(debugCheckDisposal('reset'));
-    value = lowerBound;
-  }
-
   /// The rate of change of [value] per second.
   ///
   /// If [isAnimating] is false, then [value] is not changing and the rate of
   /// change is zero.
-
   double get velocity {
     if ((_simulation, lastElapsedDuration) case (final simulation?, final duration?)) {
       return simulation.dx(duration.inMicroseconds / Duration.microsecondsPerSecond);
@@ -420,6 +404,7 @@ class VsyncDouble extends Animator<double> {
     _tickerFuture = null;
   }
 
+  @protected
   @override
   void tick(Duration elapsed) {
     if (_simulation case final simulation?) {
@@ -431,11 +416,19 @@ class VsyncDouble extends Animator<double> {
     }
     stop(canceled: false);
   }
+
+  /// Shorthand for `status.value.isDismissed`.
+  /// (See [AnimationStatus.isDismissed] for more details.)
+  bool get isDismissed => status.value.isDismissed;
+
+  /// Shorthand for `status.value.isCompleted`.
+  /// (See [AnimationStatus.isCompleted] for more details.)
+  bool get isCompleted => status.value.isCompleted;
 }
 
 class _InterpolationSimulation extends Simulation {
   _InterpolationSimulation(this._begin, this._end, Duration duration, this._curve, double scale)
-    : assert(duration.inMicroseconds > 0),
+    : assert(duration.inMicroseconds >= 0),
       _durationInSeconds = (duration.inMicroseconds * scale) / Duration.microsecondsPerSecond;
 
   final double _durationInSeconds;

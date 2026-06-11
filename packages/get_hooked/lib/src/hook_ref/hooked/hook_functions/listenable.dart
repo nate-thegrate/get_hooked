@@ -12,12 +12,12 @@ L useListenable<L extends Listenable?>(L listenable, {bool watching = true}) {
   return listenable;
 }
 
-class _ListenableHook extends Hook<void, Listenable?> {
+class _ListenableHook extends Hook<void, Listenable> {
   @override
-  void initHook() => data?.addListener(setState);
+  void initHook() => data.addListener(setState);
 
   @override
-  void dispose() => data?.removeListener(setState);
+  void dispose() => data.removeListener(setState);
 
   @override
   void build() {}
@@ -31,10 +31,14 @@ class _ListenableHook extends Hook<void, Listenable?> {
 /// See also:
 ///   * [ValueListenable], the created object
 ///   * [useListenable]
-T useValueListenable<T>(ValueListenable<T> valueListenable, {bool watching = true}) {
-  final Listenable? key = watching ? valueListenable : null;
-  use(_ListenableHook.new, data: key, key: key, debugLabel: 'useValueListenable<$T>');
-  return valueListenable.value;
+T useValueListenable<T>(ValueListenable<T> listenable) {
+  use(
+    _ListenableHook.new,
+    data: listenable,
+    key: listenable,
+    debugLabel: 'useValueListenable<$T>',
+  );
+  return listenable.value;
 }
 
 /// [Animation]s are just [ValueListenable]s with an [AnimationStatus]!

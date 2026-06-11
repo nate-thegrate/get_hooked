@@ -10,9 +10,8 @@
 
 <br>
 
-**get_hooked** handles state management by using `ValueListenable` objects
-as global variables. This practice goes against
-[Flutter's style guide](https://github.com/flutter/flutter/blob/master/docs/contributing/Style-guide-for-Flutter-repo.md#avoid-secret-or-global-state)
+**get_hooked** handles state management with globally-scoped `ValueListenable` objects.
+This practice goes against [Flutter's style guide](https://github.com/flutter/flutter/blob/master/docs/contributing/Style-guide-for-Flutter-repo.md#avoid-secret-or-global-state)
 and in some situations can lead to memory leaks.
 
 Futhermore, prior to the 1.0.0 release, this package will not have
@@ -22,12 +21,12 @@ deprecation periods for breaking changes.
 
 Here are a few alternatives to consider:
 
+- [**signals**](https://pub.dev/packages/signals): a feature-rich package
+  that reduces boilerplate without any code generation.
 - [**riverpod**](https://riverpod.dev): if you don't mind using build_runner,
   this is a fantastic option.
-- [**watch_it**](https://pub.dev/packages/watch_it): this package works great if
-  you're already using [get_it](https://pub.dev/packages/get_it).
-- [**signals**](https://pub.dev/packages/signals): a powerful, feature-rich
-  package that reduces boilerplate without any code generation.
+- [**watch_it**](https://pub.dev/packages/watch_it): this package works great in
+  combination with [get_it](https://pub.dev/packages/get_it).
 
 <br>
 
@@ -55,14 +54,24 @@ No boilerplate, no `build_runner`, huge performance.
 | supports scoping                      | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | optimized for performance             | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | optimized for testability             | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| conditional subscriptions             | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| boilerplate reduction                 | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
 | avoids type overlap                   | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ |
-| no `context` needed                   | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| no boilerplate/code generation needed | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| build_runner not needed               | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| conditional subscriptions             | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `context` not needed                  | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
 | supports lazy-loading                 | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | supports animations                   | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | supports non-Flutter applications     | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Has a stable release                  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+
+> [!NOTE]
+> There are a few caveats to the above list:
+> - `build_runner` is recommended, but not required, for riverpod
+> - signals requires a `context` (and suffers from type overlap issues) only when
+>   using `SignalProvider` (as shown [below](#signals)). Both get_hooked and riverpod
+>   follow a convention of "globally-scoped `final` objects", and when applying
+>   this paradigm to signals, the boilerplate reduction gets even better.\
+>   (Then the only drawback becomes a lack of support for scoping.)
 
 <br>
 
@@ -572,13 +581,13 @@ should only be called inside a `HookWidget`'s build method.
 // BAD
 Builder(builder: (context) {
   final focusNode = useFocusNode();
-  final data = ref.watch(getMyData);
+  final data = ref.watch(myData);
 })
 
 // GOOD
 HookBuilder(builder: (context) {
   final focusNode = useFocusNode();
-  final data = ref.watch(getMyData);
+  final data = ref.watch(myData);
 })
 ```
 
@@ -591,6 +600,20 @@ Neither of these should change throughout the widget's lifetime.
 For a more detailed explanation, see also:
 - https://pub.dev/packages/flutter_hooks#rules
 - https://react.dev/reference/rules/rules-of-hooks
+
+> [!NOTE]
+> The above `HookBuilder` example uses `ref`, a global constant whose methods
+> are Hook functions that can watch Listenable objects.\
+> Since Hooks iterate through a linked list under the hood, making calls
+> unconditionally in the same order is mandatory.
+>
+> Other APIs, such as `RefPaint`, implement `ref.watch()` calls without any
+> Hook functions; instead, a set of dependencies is established the first
+> time the callback runs, and that set is used throughout the widget's lifetime
+> (unless something changes in the ancestor `GetScope`).\
+> These callbacks technically don't need a consistent ordering, but they do need
+> to make the `ref.watch()` calls unconditionally, to prevent scenarios where a
+> depencency is ignored.
 
 <br>
 
@@ -639,6 +662,35 @@ As a rule of thumb:
 
 <br>
 
+## The more `const`, the better
+
+The Flutter framework understands that, when a widget instance is identical
+to the previous version, the underlying `Element` doesn't need to rebuild
+unless `markNeedsBuild()` was called for another reason. Using `const` constructors
+is a super easy way to take advantage of this functionality.
+
+But there's another reason why `const` is great: it helps your changes to show up
+after a hot reload.
+
+Dart considers something as "constant" if it has the `const` keyword, or if it's
+a globally-scoped function or `static` method.
+
+```dart
+// The app needs a "hot restart" after a part of this callback is changed
+final myValue = Get.compute((ref) {
+  return ref.watch(a) + ref.watch(b);
+});
+
+
+// Changes show up after a hot reload!
+final myValue = Get.compute(_myValue);
+double _myValue(Ref ref) {
+  return ref.watch(a) + ref.watch(b);
+}
+```
+
+<br>
+
 ## Only scope when necessary
 
 One of the best things about **get_hooked** is the ability to interact
@@ -650,7 +702,7 @@ arguably a bit too verbose.
 
 ```dart
 // With scope:
-context.get(animation).forward();
+context.read(animation).forward();
 
 // No scope:
 animation.forward();

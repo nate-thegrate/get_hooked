@@ -2,34 +2,34 @@
 library;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
 import 'package:get_hooked/src/scoped_selection.dart';
 import 'package:get_hooked/src/substitution/substitution.dart';
+import 'package:get_hooked/src/vsync_mixin.dart';
 
 import 'get/get.dart';
 import 'hooked/hooked.dart';
 
-export 'get/get.dart' hide ComputedNoScope;
+export 'get/get.dart';
 export 'hooked/hooked.dart';
 
-/// A [Ref] that works inside a [HookWidget.build].
+/// A [Ref] that works inside [HookWidget.build] methods.
 ///
-/// A globally-scoped function can call [use] or [HookRef.watch],
+/// A globally-scoped function can call [use] or any of this [ref]'s methods,
 /// as long as that function is only called while a hook widget is building.
 const HookRef ref = HookRef._();
 
-/// The interface implemented by the global [ref] constant.
+/// The class declaration for the global [ref] constant.
 ///
 /// Includes the [Ref] methods along with [compute] and [sub].
-interface class HookRef implements Ref {
+final class HookRef implements Ref {
   const HookRef._();
 
   /// This hook function watches a [Get] object
   /// and triggers a rebuild when it sends a notification.
   ///
-  /// {@template get_hooked.Ref.watch}
+  /// {@template get_hooked.HookRef.watch}
   /// Must be called inside a [HookWidget.build] method.
   ///
   /// Notifications are not sent when [watching] is `false`
@@ -53,15 +53,10 @@ interface class HookRef implements Ref {
   /// * [GetScope.of], for retrieving a [Substitution]'s new value outside of
   ///   a [HookWidget.build] method.
   @override
-  T watch<T>(
-    ValueListenable<T> listenable, {
-    bool watching = true,
-    bool autoVsync = true,
-    bool useScope = true,
-  }) {
-    if (useScope) listenable = GetScope.of(useContext(), listenable);
-    if (autoVsync) _autoVsync(listenable);
-    return useValueListenable(listenable, watching: watching);
+  T watch<T>(ValueListenable<T> listenable, {bool autoVsync = true, bool useScope = true}) {
+    final ValueListenable<T> scoped = useScope ? useContext().read(listenable) : listenable;
+    if (autoVsync && scoped == listenable) _autoVsync(listenable);
+    return useValueListenable(scoped);
   }
 
   /// Selects a value from a complex [Get] object and triggers a rebuild when
@@ -69,7 +64,7 @@ interface class HookRef implements Ref {
   ///
   /// Multiple values can be selected by returning a [Record] type.
   ///
-  /// {@macro get_hooked.Ref.watch}
+  /// {@macro get_hooked.HookRef.watch}
   @override
   Result select<Result, T>(
     ValueListenable<T> listenable,
@@ -78,7 +73,7 @@ interface class HookRef implements Ref {
     bool autoVsync = true,
     bool useScope = true,
   }) {
-    if (useScope) listenable = GetScope.of(useContext(), listenable);
+    if (useScope) listenable = useContext().read(listenable);
 
     return HookData.use(
       _GetSelect<Result, T>(listenable, selector, watching: watching),
@@ -100,8 +95,16 @@ interface class HookRef implements Ref {
   /// Performs a substitution in the nearest ancestor [GetScope].
   ///
   /// The `replacer` object should be another [ValueListenable] object
-  /// that implements the same interface as `listenable`,
-  /// or a function that returns such an object (a.k.a. a [ValueGetter<ValueListenable>]).
+  /// that implements the same interface as `listenable`, or a function that returns such an object.
+  ///
+  /// If `sub()` is called again with a different `key`, the substitution will be performed
+  /// again, potentially overwriting the first one.
+  ///
+  /// ## Performance Consideration
+  ///
+  /// [GlobalKey] re-parenting has a notable performance impact, and the same is true when a
+  /// substitution is made. Prefer making substitutions all at once, such as when the relevant
+  /// widget(s) are first created, to mitigate unnecessary updates.
   V sub<V extends ValueListenable<Object?>>(V listenable, Object replacer, {Object? key}) {
     return use(
       _SubHook.new,
@@ -164,77 +167,16 @@ class _SelectHook<Result, T> extends Hook<Result, _GetSelect<Result, T>> {
   Result build() => previous = result;
 }
 
-typedef _TickerMode = ValueListenable<bool>;
-typedef _StyleNotifier = ValueListenable<AnimationStyle>;
 typedef _Animation = VsyncValue<Object?>;
 
-class _VsyncHook extends Hook<void, _Animation> implements Vsync {
-  Ticker? _ticker;
-  StyledAnimation<Object?>? _animation;
-  _StyleNotifier? _styleNotifier;
-  _TickerMode? _tickerMode;
-
+class _VsyncHook extends Hook<void, _Animation> with HookVsync<void, _Animation> {
   @override
   void initHook() {
     registry.add(data);
   }
 
-  void _updateStyle() {
-    _animation?.updateStyle(_styleNotifier!.value);
-  }
-
-  void _updateTickerMode() {
-    _ticker?.muted = _tickerMode!.value;
-  }
-
-  @override
-  Ticker createTicker(TickerCallback onTick) {
-    final Ticker ticker = _ticker = Ticker(onTick);
-
-    (_tickerMode ??= TickerMode.getNotifier(context)).addListener(_updateTickerMode);
-    _updateTickerMode();
-
-    return ticker;
-  }
-
-  @override
-  void registerAnimation(StyledAnimation<Object?> animation) {
-    assert(identical(animation, data), 'An animation tried to register a different animation.');
-    _animation = animation;
-
-    (_styleNotifier ??= DefaultAnimationStyle.getNotifier(context)).addListener(_updateStyle);
-    _updateStyle();
-  }
-
-  @override
-  void unregisterAnimation(StyledAnimation<Object?> animation) {
-    _styleNotifier?.removeListener(_updateStyle);
-  }
-
-  @override
-  void activate() {
-    if (_styleNotifier != null) {
-      final _StyleNotifier newNotifier = DefaultAnimationStyle.getNotifier(context);
-      if (newNotifier != _styleNotifier) {
-        _styleNotifier?.removeListener(_updateStyle);
-        _styleNotifier = newNotifier..addListener(_updateStyle);
-        _updateStyle();
-      }
-    }
-    if (_tickerMode != null) {
-      final _TickerMode newNotifier = TickerMode.getNotifier(context);
-      if (newNotifier != _tickerMode) {
-        _tickerMode?.removeListener(_updateTickerMode);
-        _tickerMode = newNotifier..addListener(_updateTickerMode);
-        _updateTickerMode();
-      }
-    }
-  }
-
   @override
   void dispose() {
-    _styleNotifier?.removeListener(_updateStyle);
-    _tickerMode?.removeListener(_updateTickerMode);
     registry.remove(data);
     super.dispose();
   }
@@ -243,87 +185,12 @@ class _VsyncHook extends Hook<void, _Animation> implements Vsync {
   void build() {}
 }
 
-mixin _ComputeRefVsync<Result> on Hook<Result, RefComputer<Result>> implements Vsync {
-  Set<Ticker>? _tickers;
-  _TickerMode? _tickerMode;
-
-  Set<StyledAnimation<Object?>>? _animations;
-  _StyleNotifier? _styleNotifier;
-
-  @override
-  Ticker createTicker(TickerCallback onTick) {
-    final ticker = Ticker(onTick);
-    (_tickers ??= {}).add(ticker);
-
-    return ticker
-      ..muted =
-          (_tickerMode ??= TickerMode.getNotifier(context)..addListener(_updateTickers)).value;
-  }
-
-  @override
-  void registerAnimation(StyledAnimation<Object?> animation) {
-    (_animations ??= {}).add(animation);
-    animation.updateStyle(
-      (_styleNotifier ??= DefaultAnimationStyle.getNotifier(context)..addListener(_updateStyles))
-          .value,
-    );
-  }
-
-  @override
-  void unregisterAnimation(StyledAnimation<Object?> animation) {
-    _animations?.remove(animation);
-  }
-
-  void _updateTickers() {
-    for (final Ticker ticker in _tickers ?? const {}) {
-      ticker.muted = _tickerMode!.value;
-    }
-  }
-
-  void _updateStyles() {
-    for (final StyledAnimation<Object?> animation in _animations ?? const {}) {
-      animation.updateStyle(_styleNotifier!.value);
-    }
-  }
-
-  @override
-  void activate() {
-    super.activate();
-
-    if (_tickerMode != null) {
-      final _TickerMode newNotifier = TickerMode.getNotifier(context);
-      if (newNotifier != _tickerMode) {
-        _tickerMode?.removeListener(_updateTickers);
-        _tickerMode = newNotifier..addListener(_updateTickers);
-      }
-    }
-
-    if (_styleNotifier != null) {
-      final _StyleNotifier newNotifier = DefaultAnimationStyle.getNotifier(context);
-      if (newNotifier != _styleNotifier) {
-        _styleNotifier?.removeListener(_updateStyles);
-        _styleNotifier = newNotifier..addListener(_updateStyles);
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    for (final Ticker ticker in _tickers ?? const {}) {
-      ticker.dispose();
-    }
-    _tickerMode?.removeListener(_updateTickers);
-    _styleNotifier?.removeListener(_updateStyles);
-    super.dispose();
-  }
-}
-
-class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
-    with _ComputeRefVsync
+class _RefComputerHook<Result> extends Hook<Result, RefComputer<dynamic>>
+    with HookVsync<Result, RefComputer<dynamic>>
     implements Ref {
   bool _needsDependencies = true;
-  final _rootDependencies = <Listenable>{};
-  var _scopedDependencies = <Listenable>{};
+  final _rootDependencies = <ValueListenable<Object?>>{};
+  var _scopedDependencies = <ValueListenable<Object?>>{};
   Listenable get _listenable => Listenable.merge(_scopedDependencies);
 
   final _selections = <ScopedSelection<Object?, Object?>>{};
@@ -353,21 +220,21 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
     _listenable.addListener(markMayNeedRebuild);
   }
 
-  G _read<G extends ValueListenable<Object?>>(
-    G get, {
+  V _read<V extends ValueListenable<Object?>>(
+    V listenable, {
     bool autoVsync = true,
     bool useScope = true,
   }) {
-    final G scoped = useScope ? SubScope.of(context, get) : get;
-    if (get case final _Animation animation when _needsDependencies && autoVsync) {
+    final V scoped = useScope ? context.read(listenable) : listenable;
+    if (listenable case final _Animation animation when _needsDependencies && autoVsync) {
       if (scoped is! _Animation) {
         assert(
           throw FlutterError.fromParts([
-            ErrorSummary('An invalid substitution was made for a $G.'),
+            ErrorSummary('An invalid substitution was made for a $V.'),
             ErrorDescription(
-              'A ${get.runtimeType} was substituted with a ${scoped.runtimeType}.',
+              'A ${listenable.runtimeType} was substituted with a ${scoped.runtimeType}.',
             ),
-            if (Substitution.debugSubWidget(context, get) case final widget?) ...[
+            if (Substitution.debugSubWidget(context, listenable) case final widget?) ...[
               ErrorDescription('The invalid substitution was made by the following widget:'),
               widget.toDiagnosticsNode(style: DiagnosticsTreeStyle.error),
             ],
@@ -412,8 +279,8 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
 
   @override
   void didChangeDependencies() {
-    final newDependencies = <Listenable>{
-      for (final get in _rootDependencies) SubScope.of(context, get),
+    final newDependencies = <ValueListenable<Object?>>{
+      for (final get in _rootDependencies) GetScope.of(context, get),
     };
     if (!setEquals(newDependencies, _scopedDependencies)) {
       _listenable.removeListener(markMayNeedRebuild);
@@ -423,7 +290,7 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
 
     final animations = <_Animation>{
       for (final _Animation animation in _rootAnimations)
-        if (SubScope.maybeOf(context, animation) == null) animation,
+        if (GetScope.maybeOf(context, animation) == null) animation,
     };
     if (!setEquals(animations, _managedAnimations)) {
       _managedAnimations.difference(animations).forEach(registry.remove);
@@ -441,7 +308,7 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<Result>>
     _listenable.removeListener(markMayNeedRebuild);
     _managedAnimations.forEach(registry.remove);
     for (final ScopedSelection<Object?, Object?> selection in _selections) {
-      selection.dispose();
+      selection.deactivate();
     }
   }
 
@@ -461,8 +328,7 @@ class _SubHook<G extends ValueListenable<Object?>> extends Hook<G, (G, Object?)>
   void initHook() {
     var (G replaced, Object? replacer) = data;
     if (replacer is ValueGetter<Object?>) replacer = replacer();
-    assert(() {
-      if (replacer is G) return true;
+    if (kDebugMode && replacer is! G) {
       throw ArgumentError(
         'Invalid replacer passed to useSubstitute.\n'
         'The useSubstitute function expects the replacer '
@@ -470,9 +336,9 @@ class _SubHook<G extends ValueListenable<Object?>> extends Hook<G, (G, Object?)>
         'Instead, a ${data.runtimeType} was received.\n'
         'Consider double-checking the arguments passed to useSubstitute.',
       );
-    }());
+    }
     newGet = replacer is G ? replacer : replaced;
-    SubScope.add<ValueListenable<Object?>>(context, map: {replaced: newGet});
+    GetScope.add(context, map: {replaced: newGet});
   }
 
   @override

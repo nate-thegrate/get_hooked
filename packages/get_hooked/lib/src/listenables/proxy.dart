@@ -1,66 +1,32 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/scheduler.dart';
 
-/// {@template get_hooked.SchedulerBuilding}
-/// Provides an estimate regarding whether a build is imminent.
-///
-/// This allows classes such as [ProxyNotifier] to decide whether to
-/// fire immediately or use [Future.microtask] to mitigate duplicate notifications.
-/// {@endtemplate}
-extension SchedulerBuilding on SchedulerBinding {
-  /// {@macro get_hooked.SchedulerBuilding}
-  bool get building => switch (schedulerPhase) {
-    // Sadly, a microtask scheduled within a transient callback
-    // is not reliably executed during midFrameMicrotasks.
-    SchedulerPhase.transientCallbacks ||
-    SchedulerPhase.midFrameMicrotasks ||
-    SchedulerPhase.persistentCallbacks => true,
-    SchedulerPhase.postFrameCallbacks || SchedulerPhase.idle => false,
-  };
-}
-
-/// Can be extended to support an arbitrary number of listenables via [Listenable.merge].
-abstract class ProxyNotifierBase<T> with ChangeNotifier implements ValueListenable<T> {
-  /// Initializes fields for subclasses.
-  ProxyNotifierBase(this.listenable, {required T value, this.concurrent = false})
-    : _value = value;
-
-  /// Whether this notifier should immediately update its value
-  /// upon receiving a notification.
-  ///
-  /// Set as `true` when a single [Listenable] is proxied.
-  /// Otherwise the behavior depends on the [SchedulerPhase],
-  /// ensuring that dependents are notified on time while avoiding
-  /// duplicate notifications when possible.
-  bool? concurrent;
+/// Selects a value from an existing [ValueListenable] and notifies when that value changes.
+class ProxyNotifier<Result, Input> with ChangeNotifier implements ValueListenable<Result> {
+  /// Transforms any [Listenable] into a [ValueListenable].
+  ProxyNotifier(this.input, this.getValue);
 
   /// The input [Listenable] object.
-  final Listenable listenable;
+  final ValueListenable<Input> input;
 
-  T _value;
+  /// Retrieves a [value] using the provided [input].
+  final Result Function(Input value) getValue;
 
-  bool _updateInProgress = false;
-  void _scheduleUpdate() {
-    if (_updateInProgress) return;
-    if (this.concurrent ?? SchedulerBinding.instance.building) {
-      return _performUpdate();
-    }
-    _updateInProgress = true;
-    Future.microtask(_performUpdate);
-  }
+  @override
+  Result get value => hasListeners ? _value : _value = getValue(input.value);
+  late Result _value = getValue(input.value);
 
-  void _performUpdate() {
-    final T oldValue = _value;
-    final T newValue = _value = value;
+  void _listener() {
+    final Result newValue = getValue(input.value);
+    if (newValue == _value) return;
 
-    if (newValue != oldValue) notifyListeners();
-    _updateInProgress = false;
+    _value = newValue;
+    notifyListeners();
   }
 
   @override
   void addListener(VoidCallback listener) {
     if (!hasListeners) {
-      listenable.addListener(_scheduleUpdate);
+      input.addListener(_listener);
     }
     super.addListener(listener);
   }
@@ -69,20 +35,19 @@ abstract class ProxyNotifierBase<T> with ChangeNotifier implements ValueListenab
   void removeListener(VoidCallback listener) {
     super.removeListener(listener);
     if (!hasListeners) {
-      listenable.removeListener(_scheduleUpdate);
+      input.removeListener(_listener);
     }
   }
-}
 
-/// Transforms any [Listenable] into a [ValueListenable].
-class ProxyNotifier<T, L extends Listenable> extends ProxyNotifierBase<T> {
-  /// Transforms any [Listenable] into a [ValueListenable].
-  ProxyNotifier(L super.listenable, this.getValue)
-    : super(value: getValue(listenable), concurrent: true);
-
-  /// Retrieves a [value] using the provided [listenable].
-  final T Function(L) getValue;
+  /// Returns a copy of this notifier that uses a different [input] object
+  /// of the same type.
+  ProxyNotifier<Result, Input> proxyWith(ValueListenable<Input> newInput) {
+    return ProxyNotifier(newInput, getValue);
+  }
 
   @override
-  T get value => getValue(listenable as L);
+  void dispose() {
+    input.removeListener(_listener);
+    super.dispose();
+  }
 }

@@ -1,3 +1,6 @@
+/// @docImport 'package:get_hooked/get_hooked.dart';
+library;
+
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';

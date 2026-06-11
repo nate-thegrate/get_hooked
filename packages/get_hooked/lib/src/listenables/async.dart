@@ -125,7 +125,7 @@ class AsyncError<T> implements AsyncValue<T> {
 typedef StreamCallback<T> = Stream<T> Function();
 
 /// A [ValueNotifier] that can process [Future] and [Stream] objects.
-class AsyncNotifier<T> with ChangeNotifier implements ValueListenable<T?> {
+class AsyncNotifier<T> with ChangeNotifier implements ValueListenable<AsyncValue<T>> {
   /// Creates a [ValueNotifier] that can process [Future] and [Stream] objects.
   AsyncNotifier({
     this.futureCallback,
@@ -133,7 +133,7 @@ class AsyncNotifier<T> with ChangeNotifier implements ValueListenable<T?> {
     this.initialData,
     this.cancelOnError = false,
     this.notifyOnCancel = false,
-  }) : _asyncValue = AsyncValue._initial(initialData);
+  }) : _value = AsyncValue._initial(initialData);
 
   /// Can be invoked to update this controller based on a [Future].
   AsyncValueGetter<T>? futureCallback;
@@ -143,6 +143,13 @@ class AsyncNotifier<T> with ChangeNotifier implements ValueListenable<T?> {
 
   // ignore: public_member_api_docs, good luck lol
   T? initialData;
+
+  /// The current [AsyncValue.value] of this operation.\
+  /// (`.data` is a shorthand for `.value.value`)
+  ///
+  /// This value is of the type `T` if the current [value] is an
+  /// [AsyncData] object and is `null` otherwise.
+  T? get data => value.value;
 
   /// Whether a [StreamSubscription] should end if it encounters an error.
   bool cancelOnError;
@@ -172,17 +179,25 @@ class AsyncNotifier<T> with ChangeNotifier implements ValueListenable<T?> {
   void setStream([Stream<T>? stream]) {
     clear();
     stream ??= streamCallback?.call();
-    if (stream == null) return;
+    if (stream == null) {
+      assert(
+        throw StateError(
+          '$runtimeType setStream() called without a stream argument, '
+          'and with no stream callback set.',
+        ),
+      );
+      return;
+    }
 
     _subscription = stream.listen(
-      (T data) => asyncValue = AsyncData(data, done: false),
+      (T data) => value = AsyncData(data, done: false),
       onError: (Object error, StackTrace stackTrace) {
-        asyncValue = AsyncError(error, stackTrace, done: cancelOnError);
+        value = AsyncError(error, stackTrace, done: cancelOnError);
       },
       cancelOnError: cancelOnError,
       onDone: () {
-        if (asyncValue case AsyncData(:final value?, done: false)) {
-          asyncValue = AsyncData(value);
+        if (value case AsyncData(value: final data?, done: false)) {
+          value = AsyncData(data);
         }
       },
     );
@@ -193,38 +208,40 @@ class AsyncNotifier<T> with ChangeNotifier implements ValueListenable<T?> {
   void setFuture([Future<T>? future]) {
     clear();
     _future = future ??= futureCallback?.call();
-    if (future == null) return;
+    if (future == null) {
+      assert(
+        throw StateError(
+          '$runtimeType setFuture() called without a future argument, '
+          'and with no future callback set.',
+        ),
+      );
+      return;
+    }
 
     future.then<void>(
       (T data) {
         if (identical(_future, future)) {
-          asyncValue = AsyncData<T>(data);
+          value = AsyncData<T>(data);
         }
       },
       onError: (Object error, StackTrace stackTrace) {
         if (identical(_future, future)) {
-          asyncValue = AsyncError(error, stackTrace);
+          value = AsyncError(error, stackTrace);
         }
       },
     );
   }
 
   /// An [AsyncValue] representing this controller's current state.
-  AsyncValue<T> get asyncValue => _asyncValue;
-  AsyncValue<T> _asyncValue;
-  set asyncValue(AsyncValue<T> newValue) {
-    if (newValue == _asyncValue) return;
-    _asyncValue = newValue;
+  @override
+  AsyncValue<T> get value => _value;
+  AsyncValue<T> _value;
+  set value(AsyncValue<T> newValue) {
+    if (newValue == _value) return;
+    _value = newValue;
     notifyListeners();
   }
 
-  /// The current [AsyncValue.value] of this operation.
-  ///
-  /// This value is of the type `T` if the current [asyncValue] is an
-  /// [AsyncData] object and is `null` otherwise.
-  @override
-  T? get value => _asyncValue.value;
-
   /// {@macro get_hooked.AsyncValue.done}
-  bool get done => _asyncValue.done;
+  bool get done => _value.done;
 }

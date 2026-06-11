@@ -101,12 +101,9 @@ base mixin HookElement on ComponentElement {
 
   @override
   T? dependOnInheritedWidgetOfExactType<T extends InheritedWidget>({Object? aspect}) {
-    assert(() {
-      if (!Hook._debugInitializing) return true;
-      throw FlutterError.fromParts([
-        ErrorSummary('Attempted to access an InheritedWidget from within initHook().'),
-      ]);
-    }());
+    if (Hook._debugInitializing) {
+      throw FlutterError('Attempted to access an InheritedWidget from within initHook().');
+    }
     return super.dependOnInheritedWidgetOfExactType<T>(aspect: aspect);
   }
 

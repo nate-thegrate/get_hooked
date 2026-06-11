@@ -148,12 +148,15 @@ abstract class Hook<Result, Data> with Diagnosticable {
   void didUpdate(Data oldHook) {}
 
   /// Equivalent of [State.deactivate] for [Hook].
+  @protected
   void deactivate() {}
 
   /// Equivalent of [State.deactivate] for [Hook].
+  @protected
   void activate() {}
 
   /// Equivalent of [State.didChangeDependencies] for [Hook].
+  @protected
   void didChangeDependencies() {}
 
   /// {@macro flutter.widgets.reassemble}
@@ -165,6 +168,7 @@ abstract class Hook<Result, Data> with Diagnosticable {
   /// See also:
   ///
   ///  * [State.reassemble]
+  @protected
   void reassemble() {}
 
   /// Called before a [build] triggered by [markMayNeedRebuild].
@@ -180,12 +184,14 @@ abstract class Hook<Result, Data> with Diagnosticable {
   /// - [setState] was called
   /// - a previous hook's [shouldRebuild] returned `true`
   /// - the associated [HookWidget] changed.
+  @protected
   bool shouldRebuild() => true;
 
   /// Mark the associated [HookWidget] as **potentially** needing to rebuild.
   ///
   /// As opposed to [setState], the rebuild is optional and can be cancelled right
   /// before `build` is called, by having [shouldRebuild] return false.
+  @protected
   void markMayNeedRebuild() {
     if (_element._rebuildRequired ?? false) return;
     _element
@@ -195,7 +201,7 @@ abstract class Hook<Result, Data> with Diagnosticable {
     assert(_element.dirty);
   }
 
-  /// Equivalent of [State.setState] for [Hook].
+  /// Equivalent of [State.setState] for a [Hook].
   @protected
   void setState([VoidCallback? fn]) {
     fn?.call();

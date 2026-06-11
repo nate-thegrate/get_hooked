@@ -1,47 +1,98 @@
+/// @docImport 'package:get_hooked/widgets.dart';
+library;
+
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
-import 'package:get_hooked/src/element_vsync_mixin.dart';
+import 'package:get_hooked/src/substitution/substitution.dart';
 
-/// A variant of [IgnorePointer] that evaluates based on a [RefComputer<bool>].
-abstract class RefIgnorePointer extends SingleChildRenderObjectWidget {
+/// A variant of [IgnorePointer] or [AbsorbPointer] that evaluates based on a [RefComputer<bool>].
+///
+/// `RefPointer`'s performance impact is much smaller than other widgets, since hit testing
+/// happens between frames and nothing needs to be built, laid out, or rendered.
+/// Thus, `RefPointer` won't actively subscribe to any listenable notifications.
+/// It also does not automatically register animations with a [Vsync].
+class RefPointer extends SingleChildRenderObjectWidget {
   /// Creates an [IgnorePointer] widget using the provided [RefComputer] callback.
-  const factory RefIgnorePointer(
-    RefComputer<bool> shouldIgnore, {
-    Key? key,
-    required Widget child,
-  }) = _RefIgnorePointer;
-
-  /// Initializes [key] for subclasses.
-  const RefIgnorePointer.constructor({super.key, required Widget super.child});
+  const RefPointer(
+    this.interactable, {
+    this.absorb = false,
+    super.key,
+    required Widget super.child,
+  });
 
   /// Whether the [child] and its descendants should be exposed to pointer events.
   ///
-  /// Returning `true` will cause pointer events to be ignored.
-  bool shouldIgnore(Ref ref);
+  /// Returning `false` will cause pointer events to be ignored.
+  final RefComputer<bool> interactable;
+
+  /// Whether to absorb hit tests when [interactable] evaulates as `false`.
+  ///
+  /// Typically this distinction only comes into play when a [Stack] or [RefLayout]
+  /// situates a [RefPointer] on top of another widget.
+  ///
+  /// When this value is `true`, the behavior matches [AbsorbPointer],
+  /// and when `false` it matches [IgnorePointer].
+  final bool absorb;
 
   @override
-  RenderIgnorePointer createRenderObject(BuildContext context) => RenderIgnorePointer();
+  RenderObject createRenderObject(BuildContext context) {
+    context as _RefPointerElement;
+    return _RenderRefPointer(interactable: context._interactable, absorbing: context._absorbing);
+  }
 
   @override
-  SingleChildRenderObjectElement createElement() => _IgnorePointerElement(this);
+  SingleChildRenderObjectElement createElement() => _RefPointerElement(this);
 }
 
-class _RefIgnorePointer extends RefIgnorePointer {
-  const _RefIgnorePointer(this._shouldIgnore, {super.key, required super.child})
-    : super.constructor();
+class _RefPointerElement extends SingleChildRenderObjectElement implements Ref {
+  _RefPointerElement(super.widget);
 
-  final RefComputer<bool> _shouldIgnore;
+  bool _interactable() => (widget as RefPointer).interactable(this);
+
+  bool _absorbing() => (widget as RefPointer).absorb;
 
   @override
-  bool shouldIgnore(Ref ref) => _shouldIgnore(ref);
+  T watch<T>(ValueListenable<T> get, {bool autoVsync = true, bool useScope = true}) {
+    final ValueListenable<T> scoped = useScope ? read(get) : get;
+    return scoped.value;
+  }
+
+  @override
+  Result select<Result, T>(
+    ValueListenable<T> get,
+    Result Function(T value) selector, {
+    bool autoVsync = true,
+    bool useScope = true,
+  }) {
+    final ValueListenable<T> scoped = useScope ? read(get) : get;
+    return selector(scoped.value);
+  }
 }
 
-class _IgnorePointerElement extends SingleChildComputeElement<RenderIgnorePointer> {
-  _IgnorePointerElement(super.widget);
+class _RenderRefPointer extends RenderProxyBox {
+  _RenderRefPointer({required this.interactable, required this.absorbing});
+
+  final ValueGetter<bool> interactable;
+  final ValueGetter<bool> absorbing;
 
   @override
-  void recompute() {
-    renderObject.ignoring = (widget as RefIgnorePointer).shouldIgnore(this);
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    return interactable()
+        ? super.hitTest(result, position: position)
+        : absorbing() && size.contains(position);
+  }
+
+  @override
+  void describeSemanticsConfiguration(SemanticsConfiguration config) {
+    super.describeSemanticsConfiguration(config);
+    config.isBlockingUserActions = !interactable();
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<bool>('absorbing', absorbing()));
+    properties.add(DiagnosticsProperty<bool>('interactable', interactable()));
   }
 }

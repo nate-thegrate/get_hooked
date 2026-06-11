@@ -2,9 +2,11 @@
 
 // ignore_for_file: use_to_and_as_if_applicable, we're overriding methods lol
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
-import 'package:get_hooked/src/element_vsync_mixin.dart';
+import 'package:get_hooked/src/substitution/substitution.dart';
+import 'package:get_hooked/src/vsync_mixin.dart';
 
 import '../hook_ref/hook_ref.dart';
 
@@ -55,7 +57,7 @@ abstract class RenderScopedGetBase<T> extends SingleChildRenderObjectWidget {
   RenderObject createRenderObject(BuildContext context) {
     final RenderObject renderObject = render(
       context as _RenderScopedGetElement<T>,
-      (context.scopedGet = GetScope.of(context, get)).value,
+      (context.scopedGet = context.read(get)).value,
     );
     context.listener = () => listen(renderObject, context.scopedGet.value);
     return renderObject;
@@ -78,7 +80,7 @@ abstract final class RenderGet<Render extends RenderObject> implements SingleChi
 
   /// A simple widget that subscribes to a [Get] object and updates a [RenderObject] accordingly.
   ///
-  /// This constructor ensures that the appropriate object from an ancestor [SubScope] is used,
+  /// This constructor ensures that the appropriate object from an ancestor [GetScope] is used,
   /// if applicable.
   @factory
   static RenderGet<Render> scoped<Render extends RenderObject, T>({
@@ -189,21 +191,20 @@ class _RenderScopedGetElement<T> extends SingleChildRenderObjectElement with Ele
 
   @override
   void reassemble() {
-    assert(() {
+    if (kDebugMode) {
       scopedGet
         ..removeListener(listener)
         ..addListener(
           listener = () => (widget as RenderScopedGetBase<T>).listen(renderObject, scopedGet.value),
         );
-      return true;
-    }());
+    }
     super.reassemble();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final ValueListenable<T> newGet = GetScope.of(this, get);
+    final ValueListenable<T> newGet = read(get);
     if (newGet == scopedGet) return;
 
     scopedGet.removeListener(listener);

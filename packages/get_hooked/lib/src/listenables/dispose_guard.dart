@@ -1,4 +1,9 @@
+/// @docImport 'package:flutter/scheduler.dart';
+library;
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:get_hooked/src/hook_ref/hooked/hooked.dart';
 
 /// Mixin for [Get] objects with a [dispose] method.
 ///
@@ -40,5 +45,45 @@ mixin DisposeGuard on Listenable {
         ErrorHint('Consider removing the dispose() invocation.'),
       ]),
     );
+  }
+}
+
+/// Ensures that the notifier only sends updates between frames.
+///
+/// Throws an error whenever [notifyListeners] is called during
+/// [SchedulerPhase.persistentCallbacks].\
+/// (In most cases, an error would have been thrown anyway
+/// due to [Element.markNeedsBuild] being called during a build.)
+mixin StrictNotifier on ChangeNotifier {
+  @protected
+  @override
+  void notifyListeners() {
+    if (kDebugMode && WidgetsBinding.instance.schedulerPhase == .persistentCallbacks) {
+      BuildContext? context;
+      try {
+        context = useContext();
+      } on FlutterError // ignore: avoid_catching_errors, this is potentially useful info
+      {
+        // Don't include a widget description if no context was found.
+      }
+
+      throw FlutterError.fromParts([
+        ErrorSummary(
+          'A $runtimeType tried sending a notification while the widget tree was being built and rendered.',
+        ),
+        ErrorDescription(
+          "Notifiers shouldn't perform updates during a frame, "
+          'since in the best case one change results in multiple rebuilds, '
+          'and in the worst case it can trigger an infinite loop.',
+        ),
+        ?context?.describeWidget('The error occurred during the build of the following widget:'),
+        ErrorHint(
+          'This error could be bypassed by wrapping the update in a post-frame callback, '
+          "but the recommended solution is to rework this notifier's logic "
+          'so that updates are sent before a rebuild starts.',
+        ),
+      ]);
+    }
+    super.notifyListeners();
   }
 }

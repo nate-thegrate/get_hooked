@@ -1,51 +1,56 @@
 import 'dart:collection';
+import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
-import 'package:get_hooked/src/element_vsync_mixin.dart';
 import 'package:get_hooked/src/substitution/substitution.dart';
+import 'package:get_hooked/src/vsync_mixin.dart';
 
 import '../hook_ref/hook_ref.dart';
+import 'ref_clip.dart';
+import 'ref_paint_semantics.dart' as semantics;
 
-extension<T extends ValueListenable<Object?>> on T {
-  T of(BuildContext context) => GetScope.of(context, this);
+extension on BuildContext {
+  /// Similar to [GetScopeRead] but creates a dependency.
+  V _read<V extends ValueListenable<Object?>>(V placeholder) {
+    return GetScope.of(this, placeholder, createDependency: true);
+  }
 }
 
 /// A variation of [CustomPaint] that uses a [PaintRef]
 /// to interface with [ValueListenable] objects.
-abstract class RefPaint extends SingleChildRenderObjectWidget {
+class RefPaint extends SingleChildRenderObjectWidget {
   /// Creates a custom-painted widget using the provided [RefPaintCallback].
-  const factory RefPaint(
-    RefPaintCallback paintCallback, {
-    Key? key,
-    RefPaintHitTest? hitTest,
-    RefPaintSemanticsBuilder semanticsBuilder,
-    DecorationPosition position,
-    Widget? child,
-  }) = _RefPaint;
-
-  /// Initializes fields for subclasses.
-  const RefPaint.constructor({
+  const RefPaint(
+    this.paint, {
     super.key,
-    this.position = DecorationPosition.background,
+    this.foreground = false,
+    this.expanded,
+    this.semanticsBuilder,
     super.child,
   });
 
-  /// Whether the painting is done in front of or behind the [child].
-  final DecorationPosition position;
-
-  /// Whether this widget should absorb hit tests.
+  /// If true, this widget paints itself after the [child] in order to show up in front.
   ///
-  /// By default, it will not absorb any hit tests it receives if
-  /// the [position] is [DecorationPosition.foreground], and it will
-  /// absorb all hit tests (that do not hit descendant widgets) if it's
-  /// [DecorationPosition.background].
-  bool hitTest(OffsetPaintRef ref, Offset location) => position == DecorationPosition.background;
+  /// If false (the default), this widget is shown behind the [child].
+  final bool foreground;
+
+  /// If `true`, the widget and its [child] will expand to fill the maximum space available.
+  ///
+  /// If `false`, this painter will match the [child]'s size.
+  ///
+  /// If `null` (the default), the painter fills the available space
+  /// but does not apply additional constraints to the [child].
+  ///
+  /// If the child is `null`, the painter fills the available space
+  /// and changing this value has no effect.
+  final bool? expanded;
 
   /// Called whenever the object needs to paint. The given [Canvas] has its
   /// coordinate space configured such that the origin is at the top left of the
-  /// box. The area of the box is the size of the [size] argument.
+  /// box. The area of the box is represented by the `size` argument.
   ///
   /// Paint operations should remain inside the given area. Graphical
   /// operations outside the bounds may be silently ignored, clipped, or not
@@ -61,29 +66,26 @@ abstract class RefPaint extends SingleChildRenderObjectWidget {
   /// hilarious but confusing results.
   ///
   /// To paint text on a [Canvas], use a [TextPainter].
+  /// (Alternatively, include a [Text] widget as part of this painter's [child].)
   ///
-  /// To paint an image on a [Canvas]…
-  /// ([Get] API for [ImageStream]s—coming soon!)
-  void paint(PaintRef ref);
+  /// To paint an image on a [Canvas], use [PaintRef.loadImage].
+  final RefPaintCallback paint;
 
   /// Signature of the function returned by [CustomPainter.semanticsBuilder].
   ///
-  /// Builds semantics information describing the picture drawn by a
-  /// [CustomPainter]. Each [CustomPainterSemantics] in the returned list is
+  /// Builds semantics information describing the picture drawn by this widget.
+  /// Each [CustomPainterSemantics] in the returned list is
   /// converted into a [SemanticsNode] by copying its properties.
   ///
-  /// The returned list must not be mutated after this function completes. To
-  /// change the semantic information, the function must return a new list
-  /// instead.
-  List<CustomPainterSemantics> buildSemantics(PaintRef ref) => const [];
+  /// Rather than creating & modifying a single object, this callback should
+  /// return a new list literal each time.
+  final RefPaintSemanticsBuilder? semanticsBuilder;
 
   @override
   SingleChildRenderObjectElement createElement() => _RefPainterElement(this);
 
   @override
-  RenderBox createRenderObject(BuildContext context) {
-    return _RenderRefPaint(this, context as _RefPainterElement);
-  }
+  RenderBox createRenderObject(BuildContext context) => _RenderRefPaint(this, context);
 
   @override
   void updateRenderObject(BuildContext context, RenderBox renderObject) {
@@ -95,11 +97,6 @@ abstract class RefPaint extends SingleChildRenderObjectWidget {
 /// a UI element, using a [Canvas] retrieved via [PaintRef.stageCanvas].
 typedef RefPaintCallback = void Function(PaintRef ref);
 
-/// Signature for a callback that determines whether a [RefPaint] widget
-/// will absorb a hit test. If the function or its output is `null`, the
-/// widget defers to the default behavior as defined in [RefPaint.hitTest].
-typedef RefPaintHitTest = bool? Function(OffsetPaintRef ref, Offset location);
-
 /// Builds semantics information describing the picture drawn by a
 /// [RefPaintCallback]. Each [CustomPainterSemantics] in the returned list is
 /// converted into a [SemanticsNode] by copying its properties.
@@ -109,69 +106,41 @@ typedef RefPaintHitTest = bool? Function(OffsetPaintRef ref, Offset location);
 /// instead.
 typedef RefPaintSemanticsBuilder = List<CustomPainterSemantics> Function(PaintRef ref);
 
-class _RefPaint extends RefPaint {
-  const _RefPaint(
-    this.paintCallback, {
-    super.key,
-    RefPaintHitTest? hitTest,
-    this.semanticsBuilder = _defaultSemantics,
-    super.position,
-    super.child,
-  }) : _hitTest = hitTest,
-       super.constructor();
+/// An interface used by [RefPaint.paint] and [RefPaint.semanticsBuilder].
+class PaintRef implements ClipRef {
+  PaintRef._paint(_RenderRefPaint renderer, this._element, this._paintingContext)
+    : _debugPainting = true,
+      size = renderer.size,
+      _handled = _element.handledPaint,
+      _markForUpdate = renderer.markNeedsPaint,
+      _updateHitArea = renderer.updateHitArea;
 
-  final RefPaintCallback paintCallback;
+  PaintRef._semantics(_RenderRefPaint renderer, this._element)
+    : _debugPainting = false,
+      size = renderer.size,
+      _paintingContext = null,
+      _handled = _element.handledSemantics,
+      _markForUpdate = renderer.markNeedsSemanticsUpdate,
+      _updateHitArea = renderer.updateHitArea;
 
-  final RefPaintHitTest? _hitTest;
+  final _RefPainterElement _element;
+  final PaintingContext? _paintingContext;
+  final bool _handled;
+  final bool _debugPainting;
+  final VoidCallback _markForUpdate;
+  final ValueChanged<Path> _updateHitArea;
 
-  final RefPaintSemanticsBuilder semanticsBuilder;
-  static List<CustomPainterSemantics> _defaultSemantics(PaintRef ref) => const [];
-
+  /// The [Size] of the canvas.
   @override
-  bool hitTest(OffsetPaintRef ref, Offset location) {
-    return _hitTest?.call(ref, location) ?? super.hitTest(ref, location);
-  }
+  final Size size;
 
-  @override
-  void paint(PaintRef ref) => paintCallback(ref);
-
-  @override
-  List<CustomPainterSemantics> buildSemantics(PaintRef ref) => semanticsBuilder(ref);
-}
-
-/// A common interface between [OffsetPaintRef] and [PaintRef].
-extension type BasePaintRef._(_RefPainterElement _element) implements Object {
-  /// Use caution when accessing the [BuildContext],
-  /// since any update from an [InheritedWidget] will trigger
-  /// a repaint unconditionally.
+  /// The painter's [BuildContext].
   BuildContext get context => _element;
-
-  /// The [Size] of the painter's canvas.
-  Size get size => _element._size!;
-}
-
-/// A reference used in [RefPaint.hitTest] calls.
-///
-/// See also: [PaintRef], a subtype of `PainterRef` that
-/// [RefPaint.paint] and [RefPaint.buildSemantics] interface with.
-extension type OffsetPaintRef._(_RefPainterElement _element) implements BasePaintRef {
-  /// Returns the relevant [Get] object based on the current [context].
-  ///
-  /// This will be identical to the input, unless a [Substitution] was made
-  /// in the ancestor [SubScope].
-  V read<V extends ValueListenable<Object?>>(V listenable) {
-    return GetScope.of(context, listenable, createDependency: false);
-  }
-}
-
-/// An interface used by [RefPaint.paint] and [RefPaint.buildSemantics].
-extension type PaintRef._(_RefPainterElement _element) implements BasePaintRef {
-  PaintingContext? get _context => _element.paintingContext;
 
   /// The [Canvas] on which to paint.
   Canvas get canvas {
-    assert(_debugCheckPainting('canvas'));
-    return _context!.canvas;
+    if (kDebugMode) _debugCheckPainting('canvas');
+    return _paintingContext!.canvas;
   }
 
   /// Hints that the painting in the current layer is complex and would benefit
@@ -185,8 +154,8 @@ extension type PaintRef._(_RefPainterElement _element) implements BasePaintRef {
   /// current canvas will be hinted; the hint is not propagated to new canvases
   /// created after a new layer is added to the painting context.
   void setIsComplexHint() {
-    assert(_debugCheckPainting('setIsComplexHint()'));
-    _context?.setIsComplexHint();
+    if (kDebugMode) _debugCheckPainting('setIsComplexHint()');
+    _paintingContext?.setIsComplexHint();
   }
 
   /// Hints that the painting in the current layer is likely to change next frame.
@@ -200,82 +169,101 @@ extension type PaintRef._(_RefPainterElement _element) implements BasePaintRef {
   /// current canvas will be hinted; the hint is not propagated to new canvases
   /// created after a new layer is added to the painting context.
   void setWillChangeHint() {
-    assert(_debugCheckPainting('setWillChangeHint()'));
-    _context?.setWillChangeHint();
+    if (kDebugMode) _debugCheckPainting('setWillChangeHint()');
+    _paintingContext?.setWillChangeHint();
   }
 
-  bool _debugCheckPainting(String fieldName) {
-    assert(() {
-      if (_context != null) return true;
+  void _debugCheckPainting(String fieldName) {
+    if (kDebugMode && !_debugPainting) {
       throw FlutterError.fromParts([
         ErrorSummary('PaintRef.$fieldName accessed during buildSemantics.'),
         ErrorHint('Consider removing this method call from the buildSemantics() method body.'),
       ]);
-    }());
-    return true;
+    }
   }
 
   /// Returns the [Get] object's value, and triggers a re-render when it changes.
-  T watch<T>(ValueListenable<T> get) {
-    final renderer = _element.renderObject as _RenderRefPaint;
-    switch (renderer._method!) {
-      case _PaintMethod.hitTest:
-        assert(
-          throw FlutterError.fromParts([
-            ErrorSummary('ref.watch() called during a RefPainter hit test.'),
-            ErrorHint('Consider using ref.read() instead.'),
-          ]),
-        );
-      case _PaintMethod.paint when _element.handledPaint:
-      case _PaintMethod.buildSemantics when _element.handledSemantics:
-        break;
-      case _PaintMethod.paint:
-        _listen(get, renderer.markNeedsPaint);
-      case _PaintMethod.buildSemantics:
-        _listen(get, renderer.markNeedsSemanticsUpdate);
+  @override
+  T watch<T>(ValueListenable<T> listenable, {bool autoVsync = true, bool useScope = true}) {
+    final ValueListenable<T> scoped = useScope ? context._read(listenable) : listenable;
+
+    if (!_handled) {
+      if (autoVsync && listenable is VsyncValue<T> && listenable == scoped) {
+        final VsyncValue<T> vsyncValue = listenable;
+        if (_element.registry.add(vsyncValue)) {
+          _element.disposers.add(() => _element.registry.remove(vsyncValue));
+        }
+      }
+      _listen(scoped, _markForUpdate);
     }
-    return get.value;
+
+    return scoped.value;
   }
 
   /// Returns the [selector]'s output, and triggers a re-render when it changes.
+  @override
   Result select<Result, T>(
-    ValueListenable<T> get,
+    ValueListenable<T> listenable,
     Result Function(T value) selector, {
+    bool autoVsync = true,
     bool useScope = true,
   }) {
-    if (useScope) get = get.of(context);
-    Result currentValue = selector(get.value);
-    final renderer = _element.renderObject as _RenderRefPaint;
-    assert(
-      renderer._method != null,
-      '_method should be set immediately before calling any HookPainter method.',
-    );
-    final _PaintMethod method = renderer._method!;
+    final ValueListenable<T> scoped = useScope ? context._read(listenable) : listenable;
 
-    // dart format off
-    final bool handled = switch (method) {
-      _PaintMethod.hitTest        => throw StateError('hit-testing'),
-      _PaintMethod.paint          => _element.handledPaint,
-      _PaintMethod.buildSemantics => _element.handledSemantics,
-    };
+    Result currentValue = selector(scoped.value);
 
-    if (handled) return currentValue;
+    if (_handled) return currentValue;
 
-    final VoidCallback mark = switch (method) {
-      _PaintMethod.hitTest        => throw StateError('hit-testing'),
-      _PaintMethod.paint          => renderer.markNeedsPaint,
-      _PaintMethod.buildSemantics => renderer.markNeedsSemanticsUpdate,
-    }; // dart format on
+    if (autoVsync && listenable is VsyncValue<T> && listenable == scoped) {
+      final VsyncValue<T> vsyncValue = listenable;
+      if (_element.registry.add(vsyncValue)) {
+        _element.disposers.add(() => _element.registry.remove(vsyncValue));
+      }
+    }
 
-    _listen(get, () {
-      final Result newValue = selector(get.value);
+    _listen(listenable, () {
+      final Result newValue = selector(scoped.value);
       if (newValue != currentValue) {
         currentValue = newValue;
-        mark();
+        _markForUpdate();
       }
     });
 
     return currentValue;
+  }
+
+  /// Load and paint an image using the specified [ImageProvider].\
+  /// The `size` parameter corresponds to [ImageConfiguration.size].
+  ///
+  /// Returns `null` while the image is loading.
+  ///
+  /// ```dart
+  /// final image = ref.loadImage(AssetImage('assets/my_image.png'));
+  ///
+  /// if (image != null) {
+  ///   ref.canvas.drawImage(image, Offset.zero, Paint());
+  /// }
+  /// ```
+  ///
+  /// See also:
+  ///  - [Image], a dedicated widget that gives more fine-grained control
+  ///    over how the image is loaded and displayed.
+  ///  - [ImageStream], Flutter's built-in image loading API.
+  ui.Image? loadImage(ImageProvider provider, {Size? size}) {
+    if (_element._imageProviders[provider] case _ImageProviderState(:final image)) {
+      return image;
+    }
+    return _ImageProviderState(this, provider, size).image;
+  }
+
+  /// Configure the area where this widget should respond to hit tests.
+  /// Typically, [Path.combine] is used with [PathOperation.union] to represent
+  /// the total area being painted.
+  ///
+  /// If this method is not called, anywhere inside the canvas is considered to be a hit.
+  void hitTestArea({Path? path, Rect? rect}) {
+    if (rect != null) path = Path()..addRect(rect);
+    if (path != null) _updateHitArea(path);
   }
 
   void _listen(Listenable listenable, VoidCallback listener) {
@@ -287,6 +275,8 @@ extension type PaintRef._(_RefPainterElement _element) implements BasePaintRef {
 class _RefPainterElement extends SingleChildRenderObjectElement with ElementVsync {
   _RefPainterElement(RefPaint super.widget);
 
+  @override
+  Size? get size => _size ?? super.size;
   Size? _size;
 
   bool handledPaint = false;
@@ -305,22 +295,36 @@ class _RefPainterElement extends SingleChildRenderObjectElement with ElementVsyn
 
   final disposers = <VoidCallback>{};
 
-  PaintingContext? paintingContext;
+  final _imageProviders = _ImageProviders();
+  void _prepImages() {
+    if (_imageProviders.isEmpty) return;
 
-  bool get hasScope => getInheritedWidgetOfExactType<SubModel<ValueListenable<Object?>>>() != null;
-  late bool _hasScope;
+    for (final _ImageProviderState state in _imageProviders.values) {
+      state.stale = true;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (final _ImageProviderState state
+          in _imageProviders.values.where((state) => state.stale).toSet()) {
+        state.dispose();
+      }
+    });
+  }
+
+  bool get hasScope => scopeTag != null;
+  Object? scopeTag;
   @override
   void mount(Element? parent, Object? newSlot) {
     super.mount(parent, newSlot);
-    _hasScope = hasScope;
+    scopeTag = getInheritedWidgetOfExactType<SubstitutionModel>()?.equalityTag;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final bool hasScopeNow = hasScope;
-    if (_hasScope || hasScopeNow) resetListeners();
-    _hasScope = hasScopeNow;
+    final Object? oldTag = scopeTag;
+    scopeTag = getInheritedWidgetOfExactType<SubstitutionModel>()?.equalityTag;
+    if (scopeTag != oldTag) resetListeners();
     renderObject
       ..markNeedsPaint()
       ..markNeedsSemanticsUpdate();
@@ -339,56 +343,154 @@ class _RefPainterElement extends SingleChildRenderObjectElement with ElementVsyn
       dispose();
     }
     disposers.clear();
+
+    if (_imageProviders case final providers) {
+      for (final _ImageProviderState provider in providers.values.toSet()) {
+        provider.dispose();
+      }
+    }
     super.unmount();
   }
 }
 
-enum _PaintMethod { hitTest, paint, buildSemantics }
+typedef _ImageProviders = HashMap<ImageProvider, _ImageProviderState>;
+
+class _ImageProviderState {
+  _ImageProviderState(PaintRef ref, ImageProvider imageProvider, this.size)
+    : provider = ScrollAwareImageProvider(
+        context: _Context(ref.context),
+        imageProvider: imageProvider,
+      ) {
+    final _RefPainterElement element = ref._element;
+    final HashMap<ImageProvider<Object>, _ImageProviderState> providers = element._imageProviders;
+
+    providers[imageProvider] = this;
+
+    final listener = ImageStreamListener((info, synchronousCall) {
+      final ui.Image newImage = info.image;
+      if (!identical(_image, newImage)) {
+        _image?.dispose();
+        _image = info.image;
+      }
+
+      if (!synchronousCall) element.renderObject.markNeedsPaint();
+    });
+
+    final ImageStream imageStream = provider.resolve(
+      createLocalImageConfiguration(provider.context.context!, size: size),
+    );
+
+    imageStream.addListener(listener);
+
+    _stopListening = () {
+      imageStream.removeListener(listener);
+      providers.remove(imageProvider);
+    };
+  }
+
+  final ScrollAwareImageProvider provider;
+  final Size? size;
+
+  late final VoidCallback _stopListening;
+
+  ui.Image? _image;
+  ui.Image? get image {
+    stale = false;
+    return _image;
+  }
+
+  bool stale = false;
+
+  void dispose() {
+    _stopListening();
+    provider.context.dispose();
+    image?.dispose();
+  }
+}
+
+class _Context implements DisposableBuildContext {
+  _Context(BuildContext this.context);
+
+  @override
+  BuildContext? context;
+
+  @override
+  void dispose() {
+    context = null;
+  }
+}
 
 class _RenderRefPaint extends RenderProxyBox {
-  _RenderRefPaint(RefPaint hookPaint, this._element)
-    : _painter = hookPaint,
-      foreground = hookPaint.position == DecorationPosition.foreground;
+  _RenderRefPaint(RefPaint hookPaint, BuildContext context)
+    : _element = context as _RefPainterElement,
+      _painter = hookPaint,
+      _foreground = hookPaint.foreground,
+      _expanded = hookPaint.expanded;
 
-  final _RefPainterElement _element;
+  _RefPainterElement get element => _element!;
+  _RefPainterElement? _element;
 
   RefPaint get painter => _painter;
   RefPaint _painter;
   set painter(RefPaint newValue) {
     if (newValue == _painter) return;
     _painter = newValue;
-    foreground = newValue.position == DecorationPosition.foreground;
+    foreground = newValue.foreground;
+    expanded = newValue.expanded;
+  }
+
+  bool get foreground => _foreground;
+  bool _foreground;
+  set foreground(bool newValue) {
+    if (newValue == _foreground) return;
+
+    _foreground = newValue;
     markNeedsPaint();
   }
 
-  _PaintMethod? _method;
+  bool? get expanded => _expanded;
+  bool? _expanded;
+  set expanded(bool? newValue) {
+    if (newValue == _expanded) return;
+    final bool sizedByParent = this.sizedByParent;
+    _expanded = newValue;
+    (this.sizedByParent == sizedByParent)
+        ? markNeedsLayout()
+        : markNeedsLayoutForSizedByParentChange();
+  }
 
-  bool foreground;
-
-  @override
-  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
-    _method = _PaintMethod.hitTest;
-    final bool wasHit =
-        painter.position == DecorationPosition.foreground &&
-        painter.hitTest(OffsetPaintRef._(_element.._size = size), position);
-    _method = null;
-
-    return wasHit || super.hitTestChildren(result, position: position);
+  Path? _hitArea;
+  // ignore: use_setters_to_change_properties, used as tear-off
+  void updateHitArea(Path newPath) {
+    _hitArea = newPath;
   }
 
   @override
-  bool hitTestSelf(Offset position) {
-    _method = _PaintMethod.hitTest;
-    final bool wasHit = painter.hitTest(OffsetPaintRef._(_element.._size = size), position);
-    _method = null;
-    return wasHit;
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    bool hitTestSelf() {
+      final bool wasHit = _hitArea?.contains(position) ?? true;
+
+      if (wasHit) result.add(BoxHitTestEntry(this, position));
+      return wasHit;
+    }
+
+    if (painter.foreground) {
+      return hitTestSelf() || hitTestChildren(result, position: position);
+    } else {
+      return hitTestChildren(result, position: position) || hitTestSelf();
+    }
   }
 
   @override
-  bool get sizedByParent => true;
+  bool get sizedByParent => child == null || (_expanded ?? true);
 
   @override
-  Size computeDryLayout(BoxConstraints constraints) => constraints.biggest;
+  Size computeDryLayout(BoxConstraints constraints) {
+    if (_expanded == false) {
+      if (child case final child?) return child.computeDryLayout(constraints);
+    }
+    return constraints.biggest;
+  }
 
   @override
   Size computeSizeForNoChild(BoxConstraints constraints) => constraints.biggest;
@@ -397,8 +499,32 @@ class _RenderRefPaint extends RenderProxyBox {
   void performResize() => size = constraints.biggest;
 
   @override
+  void adoptChild(RenderObject child) {
+    final bool sizedByParent = this.sizedByParent;
+    super.adoptChild(child);
+    if (this.sizedByParent != sizedByParent) markNeedsLayoutForSizedByParentChange();
+  }
+
+  @override
+  void dropChild(RenderObject child) {
+    final bool sizedByParent = this.sizedByParent;
+    super.dropChild(child);
+    if (this.sizedByParent != sizedByParent) markNeedsLayoutForSizedByParentChange();
+  }
+
+  @override
   void performLayout() {
-    child?.layout(constraints);
+    if (child case final child?) {
+      switch (_expanded) {
+        case true:
+          child.layout(BoxConstraints.tight(constraints.biggest));
+        case null:
+          child.layout(constraints);
+        case false:
+          child.layout(constraints, parentUsesSize: true);
+          size = child.size;
+      }
+    }
   }
 
   @override
@@ -407,59 +533,47 @@ class _RenderRefPaint extends RenderProxyBox {
     if (foreground) super.paint(context, offset);
     final Canvas canvas = context.canvas;
     canvas.save();
-    assert(() {
-      debugPreviousCanvasSaveCount = canvas.getSaveCount();
-      return true;
-    }());
+    if (kDebugMode) debugPreviousCanvasSaveCount = canvas.getSaveCount();
     if (offset != Offset.zero) {
       canvas.translate(offset.dx, offset.dy);
     }
-    _method = _PaintMethod.paint;
-    painter.paint(
-      PaintRef._(
-        _element
-          ..paintingContext = context
-          .._size = size,
-      ),
-    );
-    _method = null;
-    assert(() {
-      final int debugNewCanvasSaveCount = canvas.getSaveCount();
-      if (debugNewCanvasSaveCount > debugPreviousCanvasSaveCount) {
-        throw FlutterError.fromParts(<DiagnosticsNode>[
-          ErrorSummary(
-            'The $painter hook painter called canvas.save() or canvas.saveLayer() at least '
-            '${debugNewCanvasSaveCount - debugPreviousCanvasSaveCount} more '
-            'time${debugNewCanvasSaveCount - debugPreviousCanvasSaveCount == 1 ? '' : 's'} '
-            'than it called canvas.restore().',
-          ),
-          ErrorDescription(
-            'This leaves the canvas in an inconsistent state and will probably result in a broken display.',
-          ),
-          ErrorHint(
-            'You must pair each call to save()/saveLayer() with a later matching call to restore().',
-          ),
-        ]);
+    painter.paint(PaintRef._paint(this, element.._prepImages(), context));
+    if (kDebugMode) {
+      final int difference = canvas.getSaveCount() - debugPreviousCanvasSaveCount;
+      switch (difference) {
+        case > 0:
+          throw FlutterError.fromParts([
+            ErrorSummary(
+              'The $painter hook painter called canvas.save() or canvas.saveLayer() at least '
+              '$difference more time${difference == 1 ? '' : 's'} than it called canvas.restore().',
+            ),
+            ErrorDescription(
+              'This leaves the canvas in an inconsistent state '
+              'and will probably result in a broken display.',
+            ),
+            ErrorHint(
+              'Ensure that each save()/saveLayer() call is paired '
+              'with a later matching call to restore().',
+            ),
+          ]);
+        case < 0:
+          throw FlutterError.fromParts([
+            ErrorSummary(
+              'The $painter hook painter called canvas.restore() '
+              '${-difference} more time${difference == -1 ? '' : 's'} '
+              'than it called canvas.save() or canvas.saveLayer().',
+            ),
+            ErrorDescription(
+              'This leaves the canvas in an inconsistent state '
+              'and will result in a broken display.',
+            ),
+            ErrorHint('Ensure that each restore() call is preceded by save() or saveLayer().'),
+          ]);
       }
-      if (debugNewCanvasSaveCount < debugPreviousCanvasSaveCount) {
-        throw FlutterError.fromParts(<DiagnosticsNode>[
-          ErrorSummary(
-            'The $painter hook painter called canvas.restore() '
-            '${debugPreviousCanvasSaveCount - debugNewCanvasSaveCount} more '
-            'time${debugPreviousCanvasSaveCount - debugNewCanvasSaveCount == 1 ? '' : 's'} '
-            'than it called canvas.save() or canvas.saveLayer().',
-          ),
-          ErrorDescription(
-            'This leaves the canvas in an inconsistent state and will result in a broken display.',
-          ),
-          ErrorHint('You should only call restore() if you first called save() or saveLayer().'),
-        ]);
-      }
-      return debugNewCanvasSaveCount == debugPreviousCanvasSaveCount;
-    }());
+    }
     canvas.restore();
     if (!foreground) super.paint(context, offset);
-    _element.handledPaint = true;
+    element.handledPaint = true;
   }
 
   List<CustomPainterSemantics> painterSemantics = const [];
@@ -467,13 +581,10 @@ class _RenderRefPaint extends RenderProxyBox {
 
   @override
   void describeSemanticsConfiguration(SemanticsConfiguration config) {
-    super.describeSemanticsConfiguration(config);
-    // final List<CustomPainterSemantics> semantics = _invoke(
-    //   _PainterMethod.buildSemantics,
-    //   () => hookPainter.buildSemantics(size),
-    // );
-    // config.isSemanticBoundary = semantics.isNotEmpty;
-    _element.handledSemantics = true;
+    if (painter.semanticsBuilder case final buildSemantics?) {
+      painterSemantics = buildSemantics(PaintRef._semantics(this, element));
+      element.handledSemantics = true;
+    }
   }
 
   @override
@@ -482,20 +593,17 @@ class _RenderRefPaint extends RenderProxyBox {
     SemanticsConfiguration config,
     Iterable<SemanticsNode> children,
   ) {
-    assert(() {
-      if (child == null && children.isNotEmpty) {
-        throw FlutterError.fromParts(<DiagnosticsNode>[
-          ErrorSummary(
-            '$runtimeType does not have a child widget but received a non-empty list of child SemanticsNode:\n'
-            '${children.join('\n')}',
-          ),
-        ]);
-      }
-      return true;
-    }());
+    if (kDebugMode && child == null && children.isNotEmpty) {
+      throw FlutterError.fromParts([
+        ErrorSummary(
+          '$runtimeType does not have a child widget but received a non-empty list of child SemanticsNode:\n'
+          '${children.join('\n')}',
+        ),
+      ]);
+    }
 
     final List<SemanticsNode> nodes =
-        semanticsNodes = _updateSemanticsChildren(semanticsNodes, painterSemantics);
+        semanticsNodes = semantics.updateSemanticsChildren(semanticsNodes, painterSemantics);
 
     final List<SemanticsNode> finalChildren = <SemanticsNode>[
       if (!foreground) ...nodes,
@@ -511,369 +619,15 @@ class _RenderRefPaint extends RenderProxyBox {
     semanticsNodes = null;
   }
 
-  /// Updates the nodes of `oldSemantics` using data in `newChildSemantics`, and
-  /// returns a new list containing child nodes sorted according to the order
-  /// specified by `newChildSemantics`.
-  ///
-  /// [SemanticsNode]s that match [CustomPainterSemantics] by [Key]s preserve
-  /// their [SemanticsNode.key] field. If a node with the same key appears in
-  /// a different position in the list, it is moved to the new position, but the
-  /// same object is reused.
-  ///
-  /// [SemanticsNode]s whose `key` is null may be updated from
-  /// [CustomPainterSemantics] whose `key` is also null. However, the algorithm
-  /// does not guarantee it. If your semantics require that specific nodes are
-  /// updated from specific [CustomPainterSemantics], it is recommended to match
-  /// them by specifying non-null keys.
-  ///
-  /// The algorithm tries to be as close to [RenderObjectElement.updateChildren]
-  /// as possible, deviating only where the concepts diverge between widgets and
-  /// semantics. For example, a [SemanticsNode] can be updated from a
-  /// [CustomPainterSemantics] based on `Key` alone; their types are not
-  /// considered because there is only one type of [SemanticsNode]. There is no
-  /// concept of a "forgotten" node in semantics, deactivated nodes, or global
-  /// keys.
-  static List<SemanticsNode> _updateSemanticsChildren(
-    List<SemanticsNode>? oldSemantics,
-    List<CustomPainterSemantics>? newChildSemantics,
-  ) {
-    oldSemantics = oldSemantics ?? const <SemanticsNode>[];
-    newChildSemantics = newChildSemantics ?? const <CustomPainterSemantics>[];
-
-    assert(() {
-      final Map<Object, int> keys = HashMap<Object, int>();
-      final List<DiagnosticsNode> information = <DiagnosticsNode>[];
-      for (int i = 0; i < newChildSemantics!.length; i += 1) {
-        final CustomPainterSemantics child = newChildSemantics[i];
-        if (child.key != null) {
-          if (keys.containsKey(child.key)) {
-            information.add(ErrorDescription('- duplicate key ${child.key} found at position $i'));
-          }
-          keys[child.key!] = i;
-        }
-      }
-
-      if (information.isNotEmpty) {
-        information.insert(0, ErrorSummary('Failed to update the list of CustomPainterSemantics:'));
-        throw FlutterError.fromParts(information);
-      }
-
-      return true;
-    }());
-
-    int newChildrenTop = 0;
-    int oldChildrenTop = 0;
-    int newChildrenBottom = newChildSemantics.length - 1;
-    int oldChildrenBottom = oldSemantics.length - 1;
-
-    final List<SemanticsNode?> newChildren = List<SemanticsNode?>.filled(
-      newChildSemantics.length,
-      null,
-    );
-
-    // Update the top of the list.
-    while ((oldChildrenTop <= oldChildrenBottom) && (newChildrenTop <= newChildrenBottom)) {
-      final SemanticsNode oldChild = oldSemantics[oldChildrenTop];
-      final CustomPainterSemantics newSemantics = newChildSemantics[newChildrenTop];
-      if (!_canUpdateSemanticsChild(oldChild, newSemantics)) {
-        break;
-      }
-      final SemanticsNode newChild = _updateSemanticsChild(oldChild, newSemantics);
-      newChildren[newChildrenTop] = newChild;
-      newChildrenTop += 1;
-      oldChildrenTop += 1;
-    }
-
-    // Scan the bottom of the list.
-    while ((oldChildrenTop <= oldChildrenBottom) && (newChildrenTop <= newChildrenBottom)) {
-      final SemanticsNode oldChild = oldSemantics[oldChildrenBottom];
-      final CustomPainterSemantics newChild = newChildSemantics[newChildrenBottom];
-      if (!_canUpdateSemanticsChild(oldChild, newChild)) {
-        break;
-      }
-      oldChildrenBottom -= 1;
-      newChildrenBottom -= 1;
-    }
-
-    // Scan the old children in the middle of the list.
-    final bool haveOldChildren = oldChildrenTop <= oldChildrenBottom;
-    late final Map<Key, SemanticsNode> oldKeyedChildren;
-    if (haveOldChildren) {
-      oldKeyedChildren = <Key, SemanticsNode>{};
-      while (oldChildrenTop <= oldChildrenBottom) {
-        final SemanticsNode oldChild = oldSemantics[oldChildrenTop];
-        if (oldChild.key != null) {
-          oldKeyedChildren[oldChild.key!] = oldChild;
-        }
-        oldChildrenTop += 1;
-      }
-    }
-
-    // Update the middle of the list.
-    while (newChildrenTop <= newChildrenBottom) {
-      SemanticsNode? oldChild;
-      final CustomPainterSemantics newSemantics = newChildSemantics[newChildrenTop];
-      if (haveOldChildren) {
-        final Key? key = newSemantics.key;
-        if (key != null) {
-          oldChild = oldKeyedChildren[key];
-          if (oldChild != null) {
-            if (_canUpdateSemanticsChild(oldChild, newSemantics)) {
-              // we found a match!
-              // remove it from oldKeyedChildren so we don't unsync it later
-              oldKeyedChildren.remove(key);
-            } else {
-              // Not a match, let's pretend we didn't see it for now.
-              oldChild = null;
-            }
-          }
-        }
-      }
-      assert(oldChild == null || _canUpdateSemanticsChild(oldChild, newSemantics));
-      final SemanticsNode newChild = _updateSemanticsChild(oldChild, newSemantics);
-      assert(oldChild == newChild || oldChild == null);
-      newChildren[newChildrenTop] = newChild;
-      newChildrenTop += 1;
-    }
-
-    // We've scanned the whole list.
-    assert(oldChildrenTop == oldChildrenBottom + 1);
-    assert(newChildrenTop == newChildrenBottom + 1);
-    assert(newChildSemantics.length - newChildrenTop == oldSemantics.length - oldChildrenTop);
-    newChildrenBottom = newChildSemantics.length - 1;
-    oldChildrenBottom = oldSemantics.length - 1;
-
-    // Update the bottom of the list.
-    while ((oldChildrenTop <= oldChildrenBottom) && (newChildrenTop <= newChildrenBottom)) {
-      final SemanticsNode oldChild = oldSemantics[oldChildrenTop];
-      final CustomPainterSemantics newSemantics = newChildSemantics[newChildrenTop];
-      assert(_canUpdateSemanticsChild(oldChild, newSemantics));
-      final SemanticsNode newChild = _updateSemanticsChild(oldChild, newSemantics);
-      assert(oldChild == newChild);
-      newChildren[newChildrenTop] = newChild;
-      newChildrenTop += 1;
-      oldChildrenTop += 1;
-    }
-
-    assert(() {
-      for (final SemanticsNode? node in newChildren) {
-        assert(node != null);
-      }
-      return true;
-    }());
-
-    return newChildren.cast<SemanticsNode>();
-  }
-
-  /// Whether `oldChild` can be updated with properties from `newSemantics`.
-  ///
-  /// If `oldChild` can be updated, it is updated using [_updateSemanticsChild].
-  /// Otherwise, the node is replaced by a new instance of [SemanticsNode].
-  static bool _canUpdateSemanticsChild(
-    SemanticsNode oldChild,
-    CustomPainterSemantics newSemantics,
-  ) {
-    return oldChild.key == newSemantics.key;
-  }
-
-  /// Updates `oldChild` using the properties of `newSemantics`.
-  ///
-  /// This method requires that `_canUpdateSemanticsChild(oldChild, newSemantics)`
-  /// is true prior to calling it.
-  static SemanticsNode _updateSemanticsChild(
-    SemanticsNode? oldChild,
-    CustomPainterSemantics newSemantics,
-  ) {
-    assert(oldChild == null || _canUpdateSemanticsChild(oldChild, newSemantics));
-
-    final SemanticsNode newChild = oldChild ?? SemanticsNode(key: newSemantics.key);
-
-    final SemanticsProperties properties = newSemantics.properties;
-    final SemanticsConfiguration config = SemanticsConfiguration();
-    if (properties.sortKey != null) {
-      config.sortKey = properties.sortKey;
-    }
-    if (properties.checked != null) {
-      config.isChecked = properties.checked;
-    }
-    if (properties.mixed != null) {
-      config.isCheckStateMixed = properties.mixed;
-    }
-    if (properties.selected != null) {
-      config.isSelected = properties.selected!;
-    }
-    if (properties.button != null) {
-      config.isButton = properties.button!;
-    }
-    if (properties.expanded != null) {
-      config.isExpanded = properties.expanded;
-    }
-    if (properties.link != null) {
-      config.isLink = properties.link!;
-    }
-    if (properties.linkUrl != null) {
-      config.linkUrl = properties.linkUrl;
-    }
-    if (properties.textField != null) {
-      config.isTextField = properties.textField!;
-    }
-    if (properties.slider != null) {
-      config.isSlider = properties.slider!;
-    }
-    if (properties.keyboardKey != null) {
-      config.isKeyboardKey = properties.keyboardKey!;
-    }
-    if (properties.readOnly != null) {
-      config.isReadOnly = properties.readOnly!;
-    }
-    if (properties.focusable != null) {
-      config.isFocusable = properties.focusable!;
-    }
-    if (properties.focused != null) {
-      config.isFocused = properties.focused!;
-    }
-    if (properties.enabled != null) {
-      config.isEnabled = properties.enabled;
-    }
-    if (properties.inMutuallyExclusiveGroup != null) {
-      config.isInMutuallyExclusiveGroup = properties.inMutuallyExclusiveGroup!;
-    }
-    if (properties.obscured != null) {
-      config.isObscured = properties.obscured!;
-    }
-    if (properties.multiline != null) {
-      config.isMultiline = properties.multiline!;
-    }
-    if (properties.hidden != null) {
-      config.isHidden = properties.hidden!;
-    }
-    if (properties.header != null) {
-      config.isHeader = properties.header!;
-    }
-    if (properties.headingLevel != null) {
-      config.headingLevel = properties.headingLevel!;
-    }
-    if (properties.scopesRoute != null) {
-      config.scopesRoute = properties.scopesRoute!;
-    }
-    if (properties.namesRoute != null) {
-      config.namesRoute = properties.namesRoute!;
-    }
-    if (properties.liveRegion != null) {
-      config.liveRegion = properties.liveRegion!;
-    }
-    if (properties.maxValueLength != null) {
-      config.maxValueLength = properties.maxValueLength;
-    }
-    if (properties.currentValueLength != null) {
-      config.currentValueLength = properties.currentValueLength;
-    }
-    if (properties.toggled != null) {
-      config.isToggled = properties.toggled;
-    }
-    if (properties.image != null) {
-      config.isImage = properties.image!;
-    }
-    if (properties.label != null) {
-      config.label = properties.label!;
-    }
-    if (properties.value != null) {
-      config.value = properties.value!;
-    }
-    if (properties.increasedValue != null) {
-      config.increasedValue = properties.increasedValue!;
-    }
-    if (properties.decreasedValue != null) {
-      config.decreasedValue = properties.decreasedValue!;
-    }
-    if (properties.hint != null) {
-      config.hint = properties.hint!;
-    }
-    if (properties.textDirection != null) {
-      config.textDirection = properties.textDirection;
-    }
-    if (properties.onTap != null) {
-      config.onTap = properties.onTap;
-    }
-    if (properties.onLongPress != null) {
-      config.onLongPress = properties.onLongPress;
-    }
-    if (properties.onScrollLeft != null) {
-      config.onScrollLeft = properties.onScrollLeft;
-    }
-    if (properties.onScrollRight != null) {
-      config.onScrollRight = properties.onScrollRight;
-    }
-    if (properties.onScrollUp != null) {
-      config.onScrollUp = properties.onScrollUp;
-    }
-    if (properties.onScrollDown != null) {
-      config.onScrollDown = properties.onScrollDown;
-    }
-    if (properties.onIncrease != null) {
-      config.onIncrease = properties.onIncrease;
-    }
-    if (properties.onDecrease != null) {
-      config.onDecrease = properties.onDecrease;
-    }
-    if (properties.onCopy != null) {
-      config.onCopy = properties.onCopy;
-    }
-    if (properties.onCut != null) {
-      config.onCut = properties.onCut;
-    }
-    if (properties.onPaste != null) {
-      config.onPaste = properties.onPaste;
-    }
-    if (properties.onMoveCursorForwardByCharacter != null) {
-      config.onMoveCursorForwardByCharacter = properties.onMoveCursorForwardByCharacter;
-    }
-    if (properties.onMoveCursorBackwardByCharacter != null) {
-      config.onMoveCursorBackwardByCharacter = properties.onMoveCursorBackwardByCharacter;
-    }
-    if (properties.onMoveCursorForwardByWord != null) {
-      config.onMoveCursorForwardByWord = properties.onMoveCursorForwardByWord;
-    }
-    if (properties.onMoveCursorBackwardByWord != null) {
-      config.onMoveCursorBackwardByWord = properties.onMoveCursorBackwardByWord;
-    }
-    if (properties.onSetSelection != null) {
-      config.onSetSelection = properties.onSetSelection;
-    }
-    if (properties.onSetText != null) {
-      config.onSetText = properties.onSetText;
-    }
-    if (properties.onDidGainAccessibilityFocus != null) {
-      config.onDidGainAccessibilityFocus = properties.onDidGainAccessibilityFocus;
-    }
-    if (properties.onDidLoseAccessibilityFocus != null) {
-      config.onDidLoseAccessibilityFocus = properties.onDidLoseAccessibilityFocus;
-    }
-    if (properties.onFocus != null) {
-      config.onFocus = properties.onFocus;
-    }
-    if (properties.onDismiss != null) {
-      config.onDismiss = properties.onDismiss;
-    }
-
-    newChild.updateWith(
-      config: config,
-      // As of now CustomPainter does not support multiple tree levels.
-      childrenInInversePaintOrder: const <SemanticsNode>[],
-    );
-
-    newChild
-      ..rect = newSemantics.rect
-      ..transform = newSemantics.transform
-      ..tags = newSemantics.tags;
-
-    return newChild;
+  @override
+  void dispose() {
+    _element = null;
+    super.dispose();
   }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty('painter', painter));
-    properties.add(StringProperty('current method', _method?.name));
   }
 }

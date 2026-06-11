@@ -62,7 +62,7 @@ class _Vsync implements Vsync {
 
   @override
   void registerAnimation(StyledAnimation<Object?> animation) {
-    animation.updateStyle(AnimationStyle());
+    animation.updateStyle(const AnimationStyle());
   }
 
   @override
