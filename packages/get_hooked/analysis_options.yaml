@@ -183,7 +183,7 @@ linter:
     sort_constructors_first: true
     # sort_pub_dependencies: true
     sort_unnamed_constructors_first: true
-    specify_nonobvious_local_variable_types: true
+    # specify_nonobvious_local_variable_types: true
     test_types_in_equals: true
     throw_in_finally: true
     tighten_type_of_initializing_formals: true
