@@ -14,22 +14,21 @@ abstract class RefLayoutState<T extends RefLayout> {
 
   final _delegates = <RefLayoutDelegate>[];
 
+  bool _dryRun = false;
+
   /// Called when the [RefLayout] widget is first inserted into the widget tree.
-  /// Returns a [Object] containing every [RefLayoutDelegate] used by this state.
   ///
-  /// This ensures that `late final` delegate fields are initialized at the correct time.
-  ///
-  /// When implementing this method, feel free to include any other relevant initialization logic
-  /// as well.
-  Object initState();
+  /// Override this method for any additional initialization logic.
+  /// Delegate initialization is handled automatically via a dry run of [performLayout].
+  void initState() {}
 
   /// Called during the layout phase. The provided [LayoutRef] object contains methods for laying
   /// out the widget's children.
   void performLayout(LayoutRef ref);
 
   int _zIndex = 0;
-  late BoxConstraints _constraints;
-  late Size _size = _constraints.biggest;
+  BoxConstraints _constraints = const BoxConstraints();
+  Size _size = .zero;
   Rect get _rect => Offset.zero & _size;
   RefLayoutElement? _element;
 
@@ -91,6 +90,15 @@ final class RefLayoutDelegate {
 
   /// The [Element] associated with the child widget, as specified by the `getChild` callback.
   Element? _element;
+
+  /// The horizontal and vertical distance from the top-left corner of the [RefLayout]
+  /// to the top-left corner of this delegate's widget.
+  Offset get offset => _renderer == null ? Offset.zero : _parentData.offset;
+  set offset(Offset value) {
+    if (_renderer == null) return;
+    _parentData.offset = value;
+  }
+
   Size get size => _size;
   late Size _size = _state._size;
 
@@ -111,6 +119,12 @@ final class RefLayoutDelegate {
   RefLayoutDelegate? get guardNull => _renderer == null ? null : this;
 
   void layoutRect(Rect rect) {
+    if (_state._dryRun) {
+      _renderer?.getDryLayout(BoxConstraints.tight(rect.size));
+      _size = rect.size;
+      _state._zIndex += 1;
+      return;
+    }
     _renderer!
       ..layout(BoxConstraints.tight(rect.size))
       ..parentData = (_parentData
@@ -158,50 +172,56 @@ final class RefLayoutDelegate {
   void layoutAlign(Alignment alignment, {Size? size}) {
     if (size != null) {
       layoutRect(alignment.inscribe(_size = size, _state._rect));
-    } else {
-      final RenderBox renderer = _renderer!
-        ..layout(BoxConstraints.loose(_state._size), parentUsesSize: true);
-      renderer.parentData = _parentData
-        ..offset = alignment.inscribe(_size = renderer.size, _state._rect).topLeft
-        ..zIndex = _state._zIndex;
-
-      _state._zIndex += 1;
+      return;
     }
+    if (_state._dryRun) {
+      if (_renderer != null) {
+        _size = _renderer!.getDryLayout(BoxConstraints.loose(_state._size));
+      } else {
+        _size = Size.zero;
+      }
+      _state._zIndex += 1;
+      return;
+    }
+    final RenderBox renderer = _renderer!
+      ..layout(BoxConstraints.loose(_state._size), parentUsesSize: true);
+    renderer.parentData = _parentData
+      ..offset = alignment.inscribe(_size = renderer.size, _state._rect).topLeft
+      ..zIndex = _state._zIndex;
+
+    _state._zIndex += 1;
   }
 
   /// Lays out the delegate's [RenderBox] using the specified constraints and returns its size.
   ///
-  /// Afterward, [positionAt] can be called to adjust the position accordingly.
+  /// Afterward, the delegate's position can be adjusted by setting its [offset] value.
   Size layout({BoxConstraints? constraints}) {
-    final RenderBox renderer = _renderer!;
-
-    _parentData.zIndex = _state._zIndex;
-
     BoxConstraints effectiveConstraints = BoxConstraints.loose(_state._size);
     effectiveConstraints = constraints?.enforce(effectiveConstraints) ?? effectiveConstraints;
+    if (_state._dryRun) {
+      _state._zIndex += 1;
+      if (_renderer != null) {
+        return _size = _renderer!.getDryLayout(effectiveConstraints);
+      }
+      return _size = effectiveConstraints.smallest;
+    }
+    final RenderBox renderer = _renderer!;
+    _parentData.zIndex = _state._zIndex;
     renderer.layout(effectiveConstraints, parentUsesSize: true);
     _state._zIndex += 1;
     return renderer.size;
   }
 
-  /// Moves the delegate to the specified position.
-  ///
-  /// This method is most commonly called after [layout] is used to obtain the [Size].
-  // ignore: use_setters_to_change_properties, API design choice
-  void positionAt(Offset topLeft) {
-    _parentData.offset = topLeft;
-  }
-
   double getMinIntrinsicWidth(double height) {
-    return _renderer!.getMinIntrinsicWidth(height);
+    return _renderer?.getMinIntrinsicWidth(height) ?? 0.0;
   }
 
   double getMinIntrinsicHeight(double width) {
-    return _renderer!.getMinIntrinsicHeight(width);
+    return _renderer?.getMinIntrinsicHeight(width) ?? 0.0;
   }
 
   Size getSize(BoxConstraints constraints) {
-    return _renderer!.getDryLayout(constraints);
+    return _renderer?.getDryLayout(constraints) ?? .zero;
   }
 
   double? getDistanceToBaseline(TextBaseline baseline, {bool onlyReal = false}) {
@@ -248,7 +268,11 @@ class RefLayoutElement extends RenderObjectElement with ElementCompute {
   @override
   void mount(Element? parent, Object? newSlot) {
     super.mount(parent, newSlot);
-    state.initState();
+    state
+      .._dryRun = true
+      ..initState()
+      ..performLayout(LayoutRef._(this))
+      .._dryRun = false;
     for (final RefLayoutDelegate delegate in state._delegates.toList()) {
       if (delegate._getWidget() case final widget?) {
         delegate._element = updateChild(delegate._element, widget, delegate);
@@ -411,14 +435,17 @@ class RenderRefLayout extends RenderBox {
   Size computeDryLayout(covariant BoxConstraints constraints) {
     final RefLayoutState<RefLayout> state = this.state!;
     final BoxConstraints actualConstraints = state._constraints;
+    final Size actualSize = state._size;
     state
+      .._dryRun = true
       .._constraints = constraints
       .._size = constraints.biggest
-      ..performLayout(LayoutRef._(state._element!));
+      ..performLayout(LayoutRef._(state._element!))
+      .._dryRun = false;
     final Size result = state._size;
     state
       .._constraints = actualConstraints
-      .._size = actualConstraints.biggest;
+      .._size = actualSize;
     return result;
   }
 

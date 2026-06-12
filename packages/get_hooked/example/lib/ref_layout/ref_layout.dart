@@ -73,9 +73,6 @@ class _RefLayoutExampleState extends RefLayoutState<RefLayoutExample> {
   late final bottomChild = delegate((widget) => widget.bottomChild);
 
   @override
-  Record initState() => (topChild, bottomChild);
-
-  @override
   void performLayout(LayoutRef ref) {
     topChild.layoutFractionalRect(const Rect.fromLTWH(0, 0, 1, 0.5));
     bottomChild.layoutFractionalRect(const Rect.fromLTWH(0, 0.5, 1, 0.5));
