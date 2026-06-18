@@ -49,3 +49,6 @@ app.*.map.json
 
 # ignoring the storage package for now
 /packages/get_hooked_storage
+
+**/ios/Flutter/ephemeral/
+**/android/local.properties
