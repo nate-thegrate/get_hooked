@@ -1,12 +1,10 @@
 <a href="https://pub.dev/packages/get_hooked">
-  <p align="center">
-    <img alt="Get Hooked! (logo)" src="https://github.com/user-attachments/assets/aecf1fbf-280e-4a0f-85ec-f8b24f6bc63e" width="200px">
-  </p>
+  <img alt="Get Hooked! (logo)" src="https://github.com/user-attachments/assets/aecf1fbf-280e-4a0f-85ec-f8b24f6bc63e" width="200px">
 </a>
 
 <br>
 
-<h1 align="center">please don't.</h1>
+# please don't.
 
 <br>
 
