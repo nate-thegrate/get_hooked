@@ -67,12 +67,12 @@ class CustomButtonApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        appBar: AppBarConst(title: Text('Custom button animation')),
-        drawer: ScreenSelect(),
-        body: Center(
+        appBar: AppBar(title: const Text('Custom button animation')),
+        drawer: const ScreenSelect(),
+        body: const Center(
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
             onEnter: hover,

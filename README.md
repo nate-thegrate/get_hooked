@@ -393,48 +393,10 @@ GetScope(
 ),
 ```
 
-If the current `context` has an ancestor `GetScope`, building another scope
-isn't necessary:
-
-```dart
-class MyWidget extends HookWidget {
-  const MyWidget({super.key, required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final newData = ref.sub(getMyData, OtherData.new);
-
-    return Row(
-      children: [Text('$newData'), child],
-    );
-  }
-}
-```
-
 If the child widget uses `ref.watch(getMyData)`, it will watch
 the `newData` by default.
 
 <br>
-
-<!-- ## Dart 3 Hooks
-
-Introduced in the phenomenal [**flutter_hooks**](https://pub.dev/packages/flutter_hooks)
-package, the [**HookWidget**](https://pub.dev/documentation/flutter_hooks/latest/flutter_hooks/HookWidget-class.html)
-allows a widget to benefit from a [**StatefulWidget**](https://api.flutter.dev/flutter/widgets/StatefulWidget-class.html)'s
-functionality using a single class declaration.
-
-package as a foundation, **get_hooked** introduces a few tweaks to the API. -->
-
-<!-- ## No magic curtain
-
-Want to find out what's going on?\
-No breakpoints, no print statements. Just type the name.
-
-![getFade](https://github.com/user-attachments/assets/9dbb65b3-c2c2-44eb-9870-28defeede0ad)
-
-<br> -->
 
 # Overview
 

@@ -91,28 +91,6 @@ final class HookRef implements Ref {
       debugLabel: 'compute<$Result>',
     );
   }
-
-  /// Performs a substitution in the nearest ancestor [GetScope].
-  ///
-  /// The `replacer` object should be another [ValueListenable] object
-  /// that implements the same interface as `listenable`, or a function that returns such an object.
-  ///
-  /// If `sub()` is called again with a different `key`, the substitution will be performed
-  /// again, potentially overwriting the first one.
-  ///
-  /// ## Performance Consideration
-  ///
-  /// [GlobalKey] re-parenting has a notable performance impact, and the same is true when a
-  /// substitution is made. Prefer making substitutions all at once, such as when the relevant
-  /// widget(s) are first created, to mitigate unnecessary updates.
-  V sub<V extends ValueListenable<Object?>>(V listenable, Object replacer, {Object? key}) {
-    return use(
-      _SubHook.new,
-      data: (listenable, replacer),
-      key: key,
-      debugLabel: 'useSubstitute<$V>',
-    );
-  }
 }
 
 /// An animation object is synced to an [Vsync] via the first build context
@@ -319,28 +297,4 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<dynamic>>
     _dirty = true;
     return result;
   }
-}
-
-class _SubHook<G extends ValueListenable<Object?>> extends Hook<G, (G, Object?)> {
-  late final G newGet;
-
-  @override
-  void initHook() {
-    var (G replaced, Object? replacer) = data;
-    if (replacer is ValueGetter<Object?>) replacer = replacer();
-    if (kDebugMode && replacer is! G) {
-      throw ArgumentError(
-        'Invalid replacer passed to useSubstitute.\n'
-        'The useSubstitute function expects the replacer '
-        'to be an instance of $G (or an instance of the listenable it encapsulates). '
-        'Instead, a ${data.runtimeType} was received.\n'
-        'Consider double-checking the arguments passed to useSubstitute.',
-      );
-    }
-    newGet = replacer is G ? replacer : replaced;
-    GetScope.add(context, map: {replaced: newGet});
-  }
-
-  @override
-  G build() => newGet;
 }

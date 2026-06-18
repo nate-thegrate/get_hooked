@@ -36,12 +36,12 @@ class FormExampleApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        appBar: AppBarConst(title: Text('Form Sample')),
-        drawer: ScreenSelect(),
-        body: Column(
+        appBar: AppBar(title: const Text('Form Sample')),
+        drawer: const ScreenSelect(),
+        body: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[HookBuilder(textField), button],
         ),

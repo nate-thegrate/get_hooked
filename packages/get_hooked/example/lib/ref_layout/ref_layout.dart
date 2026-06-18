@@ -8,12 +8,12 @@ class RefLayoutApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        appBar: AppBarConst(title: Text('RefLayout Example')),
-        drawer: ScreenSelect(),
-        body: RefLayoutExample(
+        appBar: AppBar(title: const Text('RefLayout Example')),
+        drawer: const ScreenSelect(),
+        body: const RefLayoutExample(
           topChild: Padding(
             padding: .all(64),
             child: ClippedDecoration(

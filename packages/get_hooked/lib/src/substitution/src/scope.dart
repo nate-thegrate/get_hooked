@@ -74,10 +74,9 @@ class GetScope extends StatefulWidget {
     bool? createDependency,
   }) {
     createDependency ??= WidgetsBinding.instance.building;
-    final SubstitutionModel? model =
-        createDependency
-            ? context.dependOnInheritedWidgetOfExactType()
-            : context.getInheritedWidgetOfExactType();
+    final SubstitutionModel? model = createDependency
+        ? context.dependOnInheritedWidgetOfExactType()
+        : context.getInheritedWidgetOfExactType();
 
     late final _GetScopeState? scopeState = context.findAncestorStateOfType<_GetScopeState>();
     if (placeholder is ComputedNotifier || placeholder is ProxyNotifier) {
@@ -137,32 +136,6 @@ class GetScope extends StatefulWidget {
     bool? createDependency,
   }) {
     return maybeOf(context, placeholder, createDependency: createDependency) ?? placeholder;
-  }
-
-  /// Adds more substitutions to the existing ancestor [GetScope].
-  ///
-  /// These substitutes are automatically removed when the associated [BuildContext]
-  /// is unmounted.
-  static void add(
-    BuildContext context, {
-    Map<ValueListenable<Object?>, ValueListenable<Object?>> map = const {},
-    bool throwIfMissing = true,
-  }) {
-    final _ClientSubContainer? container = context.dependOnInheritedWidgetOfExactType(
-      aspect: map,
-    );
-
-    if (kDebugMode && container == null && throwIfMissing) {
-      throw FlutterError.fromParts([
-        ErrorSummary('Ancestor GetScope not found.'),
-        ErrorDescription(
-          'GetScope.add() was called using a BuildContext '
-          'that was unable to locate an ancestor GetScope.',
-        ),
-        ErrorDescription('The widget that attempted this call was:'),
-        context.widget.toDiagnosticsNode(),
-      ]);
-    }
   }
 
   @override
@@ -280,7 +253,7 @@ class _GetScopeState extends State<GetScope> {
   Widget build(BuildContext context) {
     final map = SubMap<_V>();
 
-    for (final Map<_V, _V> refMap in clientSubstitutes.values.toList(growable: false).reversed) {
+    for (final Map<_V, _V> refMap in clientSubstitutes.values.toList().reversed) {
       for (final MapEntry(:key, :value) in refMap.entries) {
         map[key] ??= value;
       }
@@ -302,50 +275,8 @@ class _GetScopeState extends State<GetScope> {
 
     if (_map case final oldMap? when !mapEquals(map, oldMap)) tag = Object();
 
-    return _ClientSubContainer(
-      child: SubstitutionModel(map: _map = map, equalityTag: tag, child: widget.child),
-    );
+    return SubstitutionModel(map: _map = map, equalityTag: tag, child: widget.child);
   }
-}
-
-class _ClientSubContainer extends InheritedWidget {
-  const _ClientSubContainer({required super.child});
-
-  /// Rather than sending notifications, this inherited widget exists
-  /// in order to utilize [InheritedElement.setDependencies] and [InheritedElement.removeDependent].
-  @override
-  bool updateShouldNotify(InheritedWidget oldWidget) => false;
-
-  @override
-  InheritedElement createElement() => _SubContainerElement(this);
-}
-
-class _SubContainerElement extends InheritedElement {
-  _SubContainerElement(_ClientSubContainer super.widget);
-
-  @override
-  void setDependencies(Element dependent, Object? value) {
-    super.setDependencies(dependent, value);
-    if (value is! Map<_V, _V>) {
-      assert(
-        throw ArgumentError(
-          'GetScope expected a map of substitutions, got ${value.runtimeType}',
-          'value',
-        ),
-      );
-      return;
-    }
-    final map = SubMap<_V>({...?clientSubstitutes.remove(dependent), ...value});
-    clientSubstitutes[dependent] = map;
-  }
-
-  @override
-  void removeDependent(Element dependent) {
-    clientSubstitutes.remove(dependent);
-    super.removeDependent(dependent);
-  }
-
-  late final clientSubstitutes = findAncestorStateOfType<_GetScopeState>()!.clientSubstitutes;
 }
 
 /// An [InheritedModel] used by [ref] to store its [Substitution]s

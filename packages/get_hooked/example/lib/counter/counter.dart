@@ -16,12 +16,12 @@ class Counter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        appBar: AppBarConst(title: Text('"Get Hooked" Demo')),
-        drawer: ScreenSelect(),
-        body: Center(
+        appBar: AppBar(title: const Text('"Get Hooked" Demo')),
+        drawer: const ScreenSelect(),
+        body: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -30,7 +30,7 @@ class Counter extends StatelessWidget {
             ],
           ),
         ),
-        floatingActionButton: FloatingActionButton(
+        floatingActionButton: const FloatingActionButton(
           onPressed: _incrementCounter,
           tooltip: 'Increment',
           child: Icon(Icons.add),

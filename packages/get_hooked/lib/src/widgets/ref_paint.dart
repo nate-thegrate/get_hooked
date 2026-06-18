@@ -602,8 +602,10 @@ class _RenderRefPaint extends RenderProxyBox {
       ]);
     }
 
-    final List<SemanticsNode> nodes =
-        semanticsNodes = semantics.updateSemanticsChildren(semanticsNodes, painterSemantics);
+    final List<SemanticsNode> nodes = semanticsNodes = semantics.updateSemanticsChildren(
+      semanticsNodes,
+      painterSemantics,
+    );
 
     final List<SemanticsNode> finalChildren = <SemanticsNode>[
       if (!foreground) ...nodes,

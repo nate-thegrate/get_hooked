@@ -11,10 +11,6 @@ enum Setup {
   refWatchClass,
   customPaint,
   refPaint,
-  renderGet,
-  renderGetClass,
-  renderScopedGet,
-  renderScopedGetClass,
   customRenderObject,
 }
 
@@ -118,20 +114,6 @@ class ColorSlice extends HookWidget {
             ..setWillChangeHint()
             ..canvas.drawRect(Offset.zero & ref.size, Paint()..color = ref.watch(getColor));
         }),
-        Setup.renderGet => RenderGet(
-          get: getColor,
-          render: (context) => RenderColoredBox(color: getColor.value),
-          listen: (renderObject) => renderObject.color = getColor.value,
-          child: child,
-        ),
-        Setup.renderGetClass => const RenderGetClass(),
-        Setup.renderScopedGet => RenderGet.scoped(
-          get: getColor,
-          render: (context, value) => RenderColoredBox(color: value),
-          listen: (render, value) => render.color = value,
-          child: child,
-        ),
-        Setup.renderScopedGetClass => const RenderScopedGetClass(),
         Setup.customRenderObject => const CustomRenderObject(),
       },
     );
@@ -204,38 +186,6 @@ class CustomPainterClass extends CustomPainter {
   /// Designed to use a single delegate.
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => throw Error();
-}
-
-class RenderGetClass extends RenderGetBase {
-  const RenderGetClass({super.key}) : super(child: child);
-
-  @override
-  GetVsyncValue<Color> get get => getColor;
-
-  @override
-  void listen(RenderColoredBox renderObject) => renderObject.color = get.value;
-
-  @override
-  RenderColoredBox render(BuildContext context) {
-    return RenderColoredBox(color: get.value);
-  }
-}
-
-class RenderScopedGetClass extends RenderScopedGetBase<Color> {
-  const RenderScopedGetClass({super.key}) : super(child: child);
-
-  @override
-  GetVsyncValue<Color> get get => getColor;
-
-  @override
-  void listen(RenderColoredBox renderObject, Color value) {
-    renderObject.color = value;
-  }
-
-  @override
-  RenderColoredBox render(BuildContext context, Color value) {
-    return RenderColoredBox(color: value);
-  }
 }
 
 class BottomButton extends HookWidget {
