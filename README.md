@@ -6,4 +6,4 @@
 
 # `get_hooked` package
 
-Documentation can be found in [packages/get_hooked](./packages/get_hooked/README.md).
+Documentation can be found in [packages/get_hooked](./packages/get_hooked/).
