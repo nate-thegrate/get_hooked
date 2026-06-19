@@ -18,32 +18,32 @@ typedef _V = ValueListenable<Object?>;
 /// Most commonly used to create a [GetScope].
 ///
 /// See also: [HookRef.sub], which creates a substitution via a [Hook] function.
-abstract final class Substitution<T> with Diagnosticable {
+abstract final class Substitution with Diagnosticable {
   factory Substitution(
-    ValueListenable<T> placeholder,
-    ValueListenable<T> replacement, {
+    ValueListenable<Object?> placeholder,
+    ValueListenable<Object?> replacement, {
     bool autoDispose,
-  }) = _SubReplacement<T>;
+  }) = _SubReplacement;
 
   factory Substitution.factory(
-    ValueListenable<T> placeholder,
-    ValueGetter<ValueListenable<T>> factory, {
+    ValueListenable<Object?> placeholder,
+    ValueGetter<ValueListenable<Object?>> factory, {
     bool autoDispose,
-  }) = _SubFactory<T>;
+  }) = _SubFactory;
 
   /// Create a [Substitution] using a `value` of the matching type.\
   /// This redirects methods like [Ref.watch] to the provided value.
-  factory Substitution.value(ValueListenable<T> placeholder, T value) = _SubValue;
+  factory Substitution.value(ValueListenable<Object?> placeholder, Object? value) = _SubValue;
 
   Substitution._(this.placeholder, {this.autoDispose = true});
 
   /// The original [ValueListenable] object (i.e. the listenable encapsulated in
   /// a [Get] object).
-  final ValueListenable<T> placeholder;
+  final ValueListenable<Object?> placeholder;
 
   /// A [ValueListenable] of the same type as the [placeholder] which will be referenced
   /// in its place by methods like [HookRef.watch] called from descendant widgets.
-  ValueListenable<T> get replacement;
+  ValueListenable<Object?> get replacement;
 
   /// Whether to automatically call [ChangeNotifier.dispose] when the substitution
   /// is no longer part of an active [GetScope].
@@ -65,12 +65,12 @@ abstract final class Substitution<T> with Diagnosticable {
   static Widget? debugSubWidget<T>(BuildContext context, ValueListenable<T> placeholder) {
     if (!kDebugMode) return null;
 
-    final ValueListenable<T>? scopedGet = GetScope.maybeOf(context, placeholder);
+    final ValueListenable<Object?>? scopedGet = GetScope.maybeOf(context, placeholder);
     if (scopedGet == null) return null;
 
     final _GetScopeState state = context.findAncestorStateOfType()!;
     final GetScope scope = state.widget;
-    for (final Substitution<Object?> sub in scope.substitutes) {
+    for (final Substitution sub in scope.substitutes) {
       if (sub.placeholder == placeholder) return scope;
     }
 
@@ -90,16 +90,16 @@ abstract final class Substitution<T> with Diagnosticable {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<ValueListenable<T>>('placeholder', placeholder));
+    properties.add(DiagnosticsProperty<_V>('placeholder', placeholder));
     properties.add(FlagProperty('autoDispose', value: autoDispose));
   }
 }
 
-final class _SubReplacement<T> extends Substitution<T> {
+final class _SubReplacement extends Substitution {
   _SubReplacement(super.placeholder, this.replacement, {super.autoDispose}) : super._();
 
   @override
-  final ValueListenable<T> replacement;
+  final _V replacement;
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -108,13 +108,13 @@ final class _SubReplacement<T> extends Substitution<T> {
   }
 }
 
-final class _SubFactory<T> extends Substitution<T> {
+final class _SubFactory extends Substitution {
   _SubFactory(super.placeholder, this.factory, {super.autoDispose}) : super._();
 
-  final ValueGetter<ValueListenable<T>> factory;
+  final ValueGetter<_V> factory;
 
   @override
-  ValueListenable<T> get replacement => factory();
+  _V get replacement => factory();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -123,16 +123,16 @@ final class _SubFactory<T> extends Substitution<T> {
   }
 }
 
-final class _SubValue<T> with Diagnosticable implements Substitution<T> {
+final class _SubValue with Diagnosticable implements Substitution {
   _SubValue(this.placeholder, this.value);
 
   @override
-  final ValueListenable<T> placeholder;
+  final _V placeholder;
 
-  final T value;
+  final Object? value;
 
   @override
-  late final ValueListenable<T> replacement = _DummyListenable<T>(value);
+  late final _V replacement = _DummyListenable(value);
 
   @override
   bool get autoDispose => false;
@@ -144,11 +144,11 @@ final class _SubValue<T> with Diagnosticable implements Substitution<T> {
   }
 }
 
-class _DummyListenable<T> implements ValueListenable<T> {
+class _DummyListenable implements ValueListenable<Object?> {
   _DummyListenable(this.value);
 
   @override
-  final T value;
+  final Object? value;
 
   @override
   void addListener(VoidCallback listener) {}

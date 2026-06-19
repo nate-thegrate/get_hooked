@@ -12,13 +12,6 @@ import '../hook_ref/hook_ref.dart';
 import 'ref_clip.dart';
 import 'ref_paint_semantics.dart' as semantics;
 
-extension on BuildContext {
-  /// Similar to [GetScopeRead] but creates a dependency.
-  V _read<V extends ValueListenable<Object?>>(V placeholder) {
-    return GetScope.of(this, placeholder, createDependency: true);
-  }
-}
-
 /// A variation of [CustomPaint] that uses a [PaintRef]
 /// to interface with [ValueListenable] objects.
 class RefPaint extends SingleChildRenderObjectWidget {
@@ -185,7 +178,7 @@ class PaintRef implements ClipRef {
   /// Returns the [Get] object's value, and triggers a re-render when it changes.
   @override
   T watch<T>(ValueListenable<T> listenable, {bool autoVsync = true, bool useScope = true}) {
-    final ValueListenable<T> scoped = useScope ? context._read(listenable) : listenable;
+    final (scoped, value) = context.read(listenable, useScope: useScope, createDependency: true);
 
     if (!_handled) {
       if (autoVsync && listenable is VsyncValue<T> && listenable == scoped) {
@@ -197,7 +190,7 @@ class PaintRef implements ClipRef {
       _listen(scoped, _markForUpdate);
     }
 
-    return scoped.value;
+    return value;
   }
 
   /// Returns the [selector]'s output, and triggers a re-render when it changes.
@@ -208,9 +201,9 @@ class PaintRef implements ClipRef {
     bool autoVsync = true,
     bool useScope = true,
   }) {
-    final ValueListenable<T> scoped = useScope ? context._read(listenable) : listenable;
+    final (scoped, value) = context.read(listenable, useScope: useScope, createDependency: true);
 
-    Result currentValue = selector(scoped.value);
+    Result currentValue = selector(value);
 
     if (_handled) return currentValue;
 
@@ -222,7 +215,9 @@ class PaintRef implements ClipRef {
     }
 
     _listen(listenable, () {
-      final Result newValue = selector(scoped.value);
+      final Result newValue = selector(
+        context.read(listenable, useScope: useScope, createDependency: true).$2,
+      );
       if (newValue != currentValue) {
         currentValue = newValue;
         _markForUpdate();

@@ -54,8 +54,7 @@ class _RefPointerElement extends SingleChildRenderObjectElement implements Ref {
 
   @override
   T watch<T>(ValueListenable<T> get, {bool autoVsync = true, bool useScope = true}) {
-    final ValueListenable<T> scoped = useScope ? read(get) : get;
-    return scoped.value;
+    return read(get, useScope: useScope).$2;
   }
 
   @override
@@ -65,8 +64,7 @@ class _RefPointerElement extends SingleChildRenderObjectElement implements Ref {
     bool autoVsync = true,
     bool useScope = true,
   }) {
-    final ValueListenable<T> scoped = useScope ? read(get) : get;
-    return selector(scoped.value);
+    return selector(read(get, useScope: useScope).$2);
   }
 }
 

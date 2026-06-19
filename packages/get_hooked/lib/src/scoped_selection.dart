@@ -71,21 +71,36 @@ class Selections implements Selection {
   }
 }
 
+class _ScopedNotifier<T> implements ValueListenable<T> {
+  _ScopedNotifier(this.scoped);
+
+  final (Listenable, T) scoped;
+
+  @override
+  T get value => scoped.$2;
+
+  @override
+  void addListener(VoidCallback listener) => scoped.$1.addListener(listener);
+
+  @override
+  void removeListener(VoidCallback listener) => scoped.$1.removeListener(listener);
+}
+
 @internal
 /// Listens to the scoped version of [root], calling [listener] when the selected value changes.
 class ScopedSelection<Result, T> extends SingleSelection<Result, T> {
   ScopedSelection(this.context, this.root, Result Function(T) selector, VoidCallback listener)
-    : super(context.read(root), selector, listener);
+    : super(_ScopedNotifier(context.read(root)), selector, listener);
 
   final BuildContext context;
   final ValueListenable<T> root;
 
   void rescope() {
-    final ValueListenable<T> newScoped = context.read(root);
-    if (newScoped == _listenable) return;
+    final newScoped = context.read(root);
+    if ((_listenable as _ScopedNotifier).scoped.$1 == newScoped.$1) return;
 
     _listenable.removeListener(_reselect);
-    _listenable = newScoped..addListener(_reselect);
+    _listenable = _ScopedNotifier(newScoped)..addListener(_reselect);
     _reselect();
   }
 }

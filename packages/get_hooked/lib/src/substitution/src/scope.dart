@@ -6,8 +6,15 @@ extension GetScopeRead on BuildContext {
   /// Returns the [ValueListenable] object relevant to the provided `placeholder`.
   ///
   /// If no such object is found, the placeholder is returned.
-  V read<V extends ValueListenable<Object?>>(V placeholder) {
-    return GetScope.of<V>(this, placeholder, createDependency: false);
+  (ValueListenable<Object?>, T) read<T extends Object?>(
+    ValueListenable<T> placeholder, {
+    bool useScope = true,
+    bool createDependency = false,
+  }) {
+    final scoped = useScope
+        ? GetScope.of(this, placeholder, createDependency: createDependency)
+        : placeholder;
+    return (scoped, scoped.value as T);
   }
 }
 
@@ -48,7 +55,7 @@ class GetScope extends StatefulWidget {
   });
 
   /// An iterable (typically a [Set]) that points [Get] objects to new values.
-  final Iterable<Substitution<Object?>> substitutes;
+  final Iterable<Substitution> substitutes;
 
   /// The widget below this one in the tree.
   final Widget child;
@@ -68,9 +75,9 @@ class GetScope extends StatefulWidget {
   /// If the [Get] object is overridden in an ancestor [GetScope], returns that object.
   ///
   /// Returns `null` otherwise.
-  static T? maybeOf<T extends ValueListenable<Object?>>(
+  static ValueListenable<Object?>? maybeOf(
     BuildContext context,
-    T placeholder, {
+    ValueListenable<Object?> placeholder, {
     bool? createDependency,
   }) {
     createDependency ??= WidgetsBinding.instance.building;
@@ -85,7 +92,7 @@ class GetScope extends StatefulWidget {
       final SubMap<_V> computers = scopeState.computers;
       if (computers.containsKey(placeholder)) return computers.get(placeholder);
 
-      final Listenable result = switch (placeholder) {
+      final ValueListenable<Object?> result = switch (placeholder) {
         final ComputedNotifier<Object?> computed => computed.scopeWith(
           model.map,
           scopeState.context,
@@ -96,23 +103,7 @@ class GetScope extends StatefulWidget {
         _ => throw StateError('Placeholder is a ${placeholder.runtimeType}'),
       };
 
-      return computers[placeholder] = result as T;
-    }
-
-    if (kDebugMode) {
-      final Object? scoped = model?.map[placeholder];
-      if (scoped is! T?) {
-        throw FlutterError.fromParts([
-          ErrorSummary('An invalid substitution was made for a $T.'),
-          ErrorDescription(
-            'A ${placeholder.runtimeType} was substituted with a ${scoped.runtimeType}.',
-          ),
-          if (Substitution.debugSubWidget(context, placeholder) case final widget?) ...[
-            ErrorDescription('The invalid substitution was made by the following widget:'),
-            widget.toDiagnosticsNode(style: DiagnosticsTreeStyle.error),
-          ],
-        ]);
-      }
+      return computers[placeholder] = result;
     }
 
     return model?.map.maybeGet(placeholder);
@@ -130,9 +121,9 @@ class GetScope extends StatefulWidget {
   ///
   /// * [GetScope.maybeOf], which returns `null` if the relevant [Substitution]
   ///   is not found in the ancestor [GetScope].
-  static T of<T extends ValueListenable<Object?>>(
+  static ValueListenable<Object?> of(
     BuildContext context,
-    T placeholder, {
+    ValueListenable<Object?> placeholder, {
     bool? createDependency,
   }) {
     return maybeOf(context, placeholder, createDependency: createDependency) ?? placeholder;
@@ -145,7 +136,7 @@ class GetScope extends StatefulWidget {
   State<GetScope> createState() => _GetScopeState();
 }
 
-extension<T> on Iterable<Substitution<T>> {
+extension on Iterable<Substitution> {
   bool debugCheckDuplicates([BuildContext? context]) {
     final refs = <Object>{};
     for (final Substitution(placeholder: ref) in this) {
@@ -167,14 +158,14 @@ extension<T> on Iterable<Substitution<T>> {
     return true;
   }
 
-  Substitution<T>? maybeLocate(Object? ref) {
+  Substitution? maybeLocate(Object? ref) {
     for (final sub in this) {
       if (sub.placeholder == ref) return sub;
     }
     return null;
   }
 
-  Substitution<T> locate(Object? ref) => maybeLocate(ref)!;
+  Substitution locate(Object? ref) => maybeLocate(ref)!;
 }
 
 extension on Object {
@@ -189,14 +180,14 @@ extension on Object {
 class _VsyncStatefulElement = StatefulElement with ElementVsync;
 
 class _GetScopeState extends State<GetScope> {
-  late Iterable<Substitution<Object?>> widgetSubs = widget.substitutes;
+  late Iterable<Substitution> widgetSubs = widget.substitutes;
   late final widgetMap = <_V, _V>{
     for (final substitute in widgetSubs) substitute.placeholder: substitute.replacement,
   };
 
   @override
-  late final VsyncContext context = super.context as VsyncContext;
-  late final registry = context.registry;
+  VsyncContext get context => super.context as VsyncContext;
+  VsyncRegistry get registry => context.registry;
 
   @override
   void initState() {
@@ -204,27 +195,28 @@ class _GetScopeState extends State<GetScope> {
     assert(widgetSubs.debugCheckDuplicates(context));
   }
 
-  late final VoidCallback rebuild = (context as Element).markNeedsBuild;
+  void rebuild() => setState(() {});
+
   late final clientSubstitutes = MapNotifier(<Element, SubMap<_V>>{})..addListener(rebuild);
   late final computers = SubMap<_V>();
 
   @override
   void didUpdateWidget(GetScope oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final Iterable<Substitution<Object?>> newSubs = widget.substitutes;
+    final Iterable<Substitution> newSubs = widget.substitutes;
     assert(newSubs.debugCheckDuplicates(context));
 
     for (final Object ref in widgetMap.keys) {
       if (newSubs.maybeLocate(ref) == null) {
         final Object? oldReplacement = widgetMap.remove(ref);
-        final Substitution<Object?> oldSub = widgetSubs.locate(ref);
+        final Substitution oldSub = widgetSubs.locate(ref);
         if (oldSub.autoDispose) oldReplacement?.dispose();
       }
     }
 
     for (final newSub in newSubs) {
       if (widgetMap[newSub.placeholder] case final oldReplacement?) {
-        final Substitution<Object?> oldSub = widgetSubs.locate(newSub.placeholder);
+        final Substitution oldSub = widgetSubs.locate(newSub.placeholder);
         if ((oldSub, newSub) case (
           _SubFactory(:final factory),
           _SubFactory(factory: final newFactory),

@@ -356,7 +356,7 @@ mixin ElementCompute on Element implements ComputeContext, ElementVsync {
 
   @override
   T watch<T>(ValueListenable<T> get, {bool autoVsync = true, bool useScope = true}) {
-    final ValueListenable<T> scoped = useScope && _hasScope ? read(get) : get;
+    final (scoped, value) = read(get, useScope: useScope && _hasScope);
     if (_needsDependencies) {
       scoped.addListener(recompute);
       _disposers.add(() => scoped.removeListener(recompute));
@@ -365,7 +365,7 @@ mixin ElementCompute on Element implements ComputeContext, ElementVsync {
         if (registry.add(get)) _disposers.add(() => registry.remove(get));
       }
     }
-    return scoped.value;
+    return value;
   }
 
   @override
@@ -375,11 +375,11 @@ mixin ElementCompute on Element implements ComputeContext, ElementVsync {
     bool autoVsync = true,
     bool useScope = true,
   }) {
-    final ValueListenable<T> scoped = useScope && _hasScope ? read(get) : get;
-    Result currentValue = selector(scoped.value);
+    final (scoped, value) = read(get, useScope: useScope && _hasScope);
+    Result currentValue = selector(value);
     if (_needsDependencies) {
       void checkSelection() {
-        final Result newValue = selector(get.value);
+        final Result newValue = selector(read(get, useScope: useScope && _hasScope).$2);
         if (newValue != currentValue) {
           currentValue = newValue;
           recompute();

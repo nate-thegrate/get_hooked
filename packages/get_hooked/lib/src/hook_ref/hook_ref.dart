@@ -54,9 +54,10 @@ final class HookRef implements Ref {
   ///   a [HookWidget.build] method.
   @override
   T watch<T>(ValueListenable<T> listenable, {bool autoVsync = true, bool useScope = true}) {
-    final ValueListenable<T> scoped = useScope ? useContext().read(listenable) : listenable;
+    final (scoped, value) = useContext().read(listenable, useScope: useScope);
     if (autoVsync && scoped == listenable) _autoVsync(listenable);
-    return useValueListenable(scoped);
+    useListenable(scoped);
+    return value;
   }
 
   /// Selects a value from a complex [Get] object and triggers a rebuild when
@@ -73,10 +74,10 @@ final class HookRef implements Ref {
     bool autoVsync = true,
     bool useScope = true,
   }) {
-    if (useScope) listenable = useContext().read(listenable);
+    final (scoped, value) = useContext().read(listenable, useScope: useScope);
 
     return HookData.use(
-      _GetSelect<Result, T>(listenable, selector, watching: watching),
+      _GetSelect<Result, T>(scoped, value, selector, watching: watching),
       debugLabel: 'Ref.select',
     );
   }
@@ -102,11 +103,13 @@ void _autoVsync(Listenable get) {
 }
 
 class _GetSelect<Result, T> extends HookData<Result> {
-  const _GetSelect(this.hooked, this.selector, {required this.watching}) : super(key: hooked);
+  const _GetSelect(this.hooked, this.value, this.selector, {required this.watching})
+    : super(key: hooked);
 
   final bool watching;
 
-  final ValueListenable<T> hooked;
+  final Listenable hooked;
+  final T value;
   final Result Function(T value) selector;
 
   @override
@@ -114,10 +117,10 @@ class _GetSelect<Result, T> extends HookData<Result> {
 }
 
 class _SelectHook<Result, T> extends Hook<Result, _GetSelect<Result, T>> {
-  late final ValueListenable<T> listenable = data.hooked;
+  late final Listenable listenable = data.hooked;
   late bool watching = data.watching;
 
-  Result get result => data.selector(listenable.value);
+  Result get result => data.selector(data.value);
   late Result previous = result;
 
   @override
@@ -198,17 +201,17 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<dynamic>>
     _listenable.addListener(markMayNeedRebuild);
   }
 
-  V _read<V extends ValueListenable<Object?>>(
-    V listenable, {
+  (ValueListenable<Object?>, T) _read<T extends Object?>(
+    ValueListenable<T> listenable, {
     bool autoVsync = true,
     bool useScope = true,
   }) {
-    final V scoped = useScope ? context.read(listenable) : listenable;
+    final (scoped, value) = context.read(listenable, useScope: useScope);
     if (listenable case final _Animation animation when _needsDependencies && autoVsync) {
       if (scoped is! _Animation) {
         assert(
           throw FlutterError.fromParts([
-            ErrorSummary('An invalid substitution was made for a $V.'),
+            ErrorSummary('An invalid substitution was made for an animation.'),
             ErrorDescription(
               'A ${listenable.runtimeType} was substituted with a ${scoped.runtimeType}.',
             ),
@@ -218,7 +221,7 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<dynamic>>
             ],
           ]),
         );
-        return scoped;
+        return (scoped, value);
       }
       _rootAnimations.add(animation);
       if (animation == scoped) {
@@ -228,17 +231,17 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<dynamic>>
         registry.add(animation);
       }
     }
-    return scoped;
+    return (scoped, value);
   }
 
   @override
   T watch<T>(ValueListenable<T> get, {bool autoVsync = true, bool useScope = true}) {
-    final ValueListenable<T> scoped = _read(get, useScope: useScope);
+    final (scoped, value) = _read(get, useScope: useScope);
     if (_needsDependencies) {
       _rootDependencies.add(get);
       _scopedDependencies.add(scoped);
     }
-    return scoped.value;
+    return value;
   }
 
   @override
@@ -248,11 +251,11 @@ class _RefComputerHook<Result> extends Hook<Result, RefComputer<dynamic>>
     bool autoVsync = true,
     bool useScope = true,
   }) {
-    final ValueListenable<T> scoped = _read(get, useScope: useScope, autoVsync: autoVsync);
+    final (scoped, value) = _read(get, useScope: useScope, autoVsync: autoVsync);
     if (_needsDependencies) {
       _selections.add(ScopedSelection<R, T>(context, get, selector, markMayNeedRebuild));
     }
-    return selector(scoped.value);
+    return selector(value);
   }
 
   @override
