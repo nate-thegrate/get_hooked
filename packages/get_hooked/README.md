@@ -1,28 +1,30 @@
-<a href="https://github.com/nate-thegrate/get_hooked">
-  <p align="center">
-    <img alt="Get Hooked! (logo)" src="https://github.com/user-attachments/assets/aecf1fbf-280e-4a0f-85ec-f8b24f6bc63e" width="200px">
-  </p>
+<a href="https://pub.dev/packages/get_hooked">
+  <img alt="Get Hooked! (logo)" src="https://github.com/user-attachments/assets/aecf1fbf-280e-4a0f-85ec-f8b24f6bc63e" width="200px">
 </a>
 
 <br>
 
-<h1 align="center">please don't.</h1>
+# please don't.
 
 <br>
 
-**get_hooked** handles state management by using `ValueListenable` objects as global variables.
-This practice goes against [Flutter's style guide](https://github.com/flutter/flutter/blob/master/docs/contributing/Style-guide-for-Flutter-repo.md#avoid-secret-or-global-state) and in some situations can lead to memory leaks.
+**get_hooked** handles state management with globally-scoped `ValueListenable` objects.
+This practice goes against [Flutter's style guide](https://github.com/flutter/flutter/blob/master/docs/contributing/Style-guide-for-Flutter-repo.md#avoid-secret-or-global-state)
+and in some situations can lead to memory leaks.
 
-Futhermore, prior to the 1.0.0 release this package is subject to breaking changes without prior warning.
+Futhermore, prior to the 1.0.0 release, this package will not have
+deprecation periods for breaking changes.
 
 <br>
 
 Here are a few alternatives to consider:
 
-- [**riverpod**](https://riverpod.dev): if you don't mind using build_runner, this is a fantastic option.
-- [**watch_it**](https://pub.dev/packages/watch_it): this package works great if you're already using [get_it](https://pub.dev/packages/get_it).
-- [**signals**](https://pub.dev/packages/signals): a powerful, feature-rich package with no code generation and no boilerplate.\
-The only downside is how the API deviates a bit from the Flutter framework's simple-yet-effective [**Listenable**](https://api.flutter.dev/flutter/foundation/Listenable-class.html) paradigm.
+- [**signals**](https://pub.dev/packages/signals): a feature-rich package
+  that reduces boilerplate without any code generation.
+- [**riverpod**](https://riverpod.dev): if you don't mind using build_runner,
+  this is a fantastic option.
+- [**watch_it**](https://pub.dev/packages/watch_it): this package works great in
+  combination with [get_it](https://pub.dev/packages/get_it).
 
 <br>
 
@@ -44,22 +46,30 @@ No boilerplate, no `build_runner`, huge performance.
 
 ## Comparison
 
-| | [`InheritedWidget`](https://api.flutter.dev/flutter/widgets/InheritedWidget-class.html) | [provider](https://pub.dev/packages/provider) | [bloc](https://bloclibrary.dev) | [riverpod](https://riverpod.dev) | [get_it](https://pub.dev/packages/get_it) | [get_hooked](https://pub.dev/packages/get_hooked) |
-|---------------------------------------|:--:|:---:|:--:|:---:|:--:|:---:| 
-| shared state between widgets          | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| supports scoping                      | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| optimized for performance             | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| optimized for testability             | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| conditional subscriptions             | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
-| integrated with Hooks                 | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
-| avoids type overlap                   | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
-| no `context` needed                   | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| no boilerplate/code generation needed | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ |
-| supports lazy-loading                 | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| supports auto-dispose                 | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| supports `Animation`s                 | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| Flutter & non-Flutter variants        | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ |
-| Has a stable release                  | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| | [`InheritedWidget`](https://api.flutter.dev/flutter/widgets/InheritedWidget-class.html) | [provider](https://pub.dev/packages/provider) | [bloc](https://bloclibrary.dev) | [riverpod](https://riverpod.dev) | [signals](https://dartsignals.dev/) | [get_it](https://pub.dev/packages/get_it) | [get_hooked](https://pub.dev/packages/get_hooked) |
+|---------------------------------------|:--:|:---:|:--:|:---:|:--:|:---:|:--:|
+| shared state between widgets          | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| supports scoping                      | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| optimized for performance             | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| optimized for testability             | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| boilerplate reduction                 | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| avoids type overlap                   | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ |
+| build_runner not needed               | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| conditional subscriptions             | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `context` not needed                  | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| supports lazy-loading                 | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| supports animations                   | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| supports non-Flutter applications     | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Has a stable release                  | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+
+> [!NOTE]
+> There are a few caveats to the above list:
+> - `build_runner` is recommended, but not required, for riverpod
+> - signals requires a `context` (and suffers from type overlap issues) only when
+>   using `SignalProvider` (as shown [below](#signals)). Both get_hooked and riverpod
+>   follow a convention of "globally-scoped `final` objects", and when applying
+>   this paradigm to signals, the boilerplate reduction gets even better.\
+>   (Then the only drawback becomes a lack of support for scoping.)
 
 <br>
 
@@ -83,6 +93,41 @@ Many packages on [pub.dev](https://pub.dev/) have both a Flutter and a non-Flutt
 
 This is not a planned feature for **get_hooked**.
 
+## Unconditional Subscriptions
+
+Depending on who you ask, a lack of conditional subscriptions
+could be characterized as a "missing feature" or as a "performance tradeoff".\
+(See [flutter.dev/go/inheritedwidget-subscription](https://flutter.dev/go/inheritedwidget-subscription)
+and its linked issue for more discussion.)
+
+Setting up a provider to auto-dispose when it no longer has listeners
+can reduce costs: both in terms of performance and money.
+
+```dart
+Widget build(BuildContext context, WidgetRef ref) {
+  Object? data;
+  if (_showingData) {
+    data = ref.watch(databaseProvider);
+  }
+
+  // The provider can disconnect itself from the database
+  // After the widget builds without a ref.watch() call.
+}
+```
+
+But a similar result is achievable via composition:
+
+```dart
+Widget build(BuildContext context) {
+  return _showingData ? const WidgetA() : const WidgetB();
+}
+```
+
+Implementing conditional subscriptions for this package would be difficult
+due to conflicts with the "Hook" paradigm.\
+That being said: feel free to [post an issue](https://github.com/nate-thegrate/get_hooked/issues/new)
+and share your opinion if you'd like!
+
 <br>
 
 # Highlights
@@ -102,7 +147,6 @@ class Data {
   static const initial = Data('initial data');
 }
 ```
-<sup>(The `==`/`hashCode` overrides could be added manually, or with a [**fancy macro**](https://dart.dev/language/macros)!)</sup>
 
 <br>
 
@@ -188,7 +232,7 @@ class MyData extends _$MyData {
 }
 ```
 
-A `final`, globally-scoped `myDataProvider` object is created via code generation:
+An immutable, globally-scoped `myDataProvider` object is created via code generation:
 ```ps
 $ dart run build_runner watch
 ```
@@ -214,14 +258,45 @@ GetIt.I.registerSingleton(MyData(Data.initial));
 
 <br>
 
+### signals
+
+```dart
+typedef MyData = FlutterSignal<Data>;
+
+class MyWidget extends StatelessWidget {
+  const MyWidget({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SignalProvider(
+      create: () => MyData(Data.initial),
+      child: child,
+    );
+  }
+}
+```
+<sup>
+  To be fair, signals can be set up as <code>static</code> or globally-scoped objects
+  (or as class members) to greatly reduce the boilerplate—the only downside being
+  a lack of support for scoping.
+</sup>
+
+```dart
+    final data = SignalProvider.of<MyData>(context);
+```
+
+<br>
+
 ### get_hooked
 
 ```dart
-final getMyData = Get.it(Data.initial);
+final myData = Get.it(Data.initial);
 ```
 
 ```dart
-    final data = Ref.watch(getMyData);
+    final data = ref.watch(myData);
 ```
 
 <br>
@@ -240,10 +315,12 @@ and in other packages:
   in its internal logic.
 - **get_it** [recommends using ChangeNotifier](https://github.com/fluttercommunity/get_it/blob/589f27a775da471747f2cc47412e596491450264/example/lib/app_model.dart#L5-L9)
   to interact with its service locator API.
+- **signals** has adapted its Flutter signal APIs so that they
+  [implement ValueListenable by default](https://dartsignals.dev/flutter/value-listenable/).
 
 <br>
 
-Then in February 2024, Dart introduced [**extension types**](https://dart.dev/language/extension-types),
+In February 2024, Dart introduced [**extension types**](https://dart.dev/language/extension-types),
 allowing for complete control of an API surface without incurring
 runtime performance costs.
 
@@ -252,7 +329,7 @@ runtime performance costs.
 November 2024:
 
 ```dart
-extension type Get(Listenable _hooked) {
+extension type Get(Listenable hooked) {
   // ...
 }
 ```
@@ -262,26 +339,24 @@ extension type Get(Listenable _hooked) {
 ## Animations
 
 This package makes it easier than ever before for a multitude of widgets to
-subscribe to a single [`Animation`](https://main-api.flutter.dev/flutter/animation/Animation-class.html).
+subscribe to a single animation.
 
-A tailor-made `Vsync` keeps the animation's ticker up-to-date, and
-`RenderHookWidget`s (such as `HookPaint`) can re-render animations
-without ever rebuilding the widget tree.
+A tailor-made `Vsync` keeps the tickers up-to-date, and `RefPaint` can subscribe
+and re-render without ever rebuilding the widget tree.
 
 ```dart
-final getAnimation = Get.vsync();
 
 class MyWidget extends StatelessWidget {
+  static final animation = Get.vsync();
+
   @override
   Widget build(BuildContext context) {
-    return HookPaint.compose(
-      painter: (context, size) {
-        // This widget will re-paint each time getAnimation sends an update.
-        Ref.vsync(getAnimation, watch: true);
+    return RefPaint((ref) {
+      // This widget will re-paint each time the animation sends an update.
+      final double t = ref.watch(animation);
 
-        // ...
-      },
-    );
+      ref.canvas.drawPath(/* ... */);
+    });
   }
 }
 ```
@@ -305,61 +380,23 @@ ProviderScope(
 ),
 ```
 
-Likewise, **get_hooked** enables `Ref.watch()` to subscribe to a different object
+Likewise, **get_hooked** enables `ref.watch()` to subscribe to a different object
 if a substitution is found in an ancestor `GetScope`.
 
 ```dart
 GetScope(
-  substitutes: [Ref(getMyData).subFactory(OtherData.new)],
+  substitutes: [Substitute(myData, OtherData.new)],
   child: HookBuilder(builder: (context) {
-    final data = Ref.watch(getMyData);
+    final data = ref.watch(myData);
     // ...
   }),
 ),
 ```
 
-If the current `context` has an ancestor `GetScope`, building another scope
-isn't necessary:
-
-```dart
-class MyWidget extends HookWidget {
-  const MyWidget({super.key, required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final newData = useSubstitute(getMyData, OtherData.new);
-
-    return Row(
-      children: [Text('$newData'), child],
-    );
-  }
-}
-```
-
-If the child widget uses `Ref.watch(getMyData)`, it will watch
+If the child widget uses `ref.watch(getMyData)`, it will watch
 the `newData` by default.
 
 <br>
-
-<!-- ## Dart 3 Hooks
-
-Introduced in the phenomenal [**flutter_hooks**](https://pub.dev/packages/flutter_hooks)
-package, the [**HookWidget**](https://pub.dev/documentation/flutter_hooks/latest/flutter_hooks/HookWidget-class.html)
-allows a widget to benefit from a [**StatefulWidget**](https://api.flutter.dev/flutter/widgets/StatefulWidget-class.html)'s
-functionality using a single class declaration.
-
-package as a foundation, **get_hooked** introduces a few tweaks to the API. -->
-
-<!-- ## No magic curtain
-
-Want to find out what's going on?\
-No breakpoints, no print statements. Just type the name.
-
-![getFade](https://github.com/user-attachments/assets/9dbb65b3-c2c2-44eb-9870-28defeede0ad)
-
-<br> -->
 
 # Overview
 
@@ -387,7 +424,7 @@ class CounterButton extends HookWidget {
 But the following change would allow any widget to access this value:
 
 ```dart
-final getCount = Get.it(0);
+final counter = Get.it(0);
 
 class CounterButton extends HookWidget {
   const CounterButton({super.key});
@@ -396,9 +433,9 @@ class CounterButton extends HookWidget {
   Widget build(BuildContext context) {
     return FilledButton(
       onPressed: () {
-        getCount.value += 1;
+        counter.value += 1;
       },
-      child: Text('counter value: ${Ref.watch(getCount)}'),
+      child: Text('counter value: ${ref.watch(counter)}'),
     );
   }
 }
@@ -408,27 +445,27 @@ class CounterButton extends HookWidget {
 
 <br>
 
-An object like `getCount` can't be passed into a `const` constructor.\
+An object like `counter` can't be passed into a `const` constructor.\
 However: since access isn't limited in scope, it can be referenced by functions
 and static methods, creating huge potential for rebuild-optimization.
 
 The following example supports the same functionality as before, but
-the `Text` widget updates based on `getCount` without the outer button widget
+the `Text` widget updates based on the `counter` without the outer button widget
 ever being rebuilt:
 
 ```dart
-final getCount = Get.it(0);
+final counter = Get.it(0);
 
 class CounterButton extends FilledButton {
   const CounterButton({super.key})
     : super(onPressed: _increment, child: const HookBuilder(builder: _build));
 
   static void _increment() {
-    getCount.value += 1;
+    counter.value += 1;
   }
 
   static Widget _build(BuildContext context) {
-    return Text('counter value: ${Ref.watch(getCount)}');
+    return Text('counter value: ${ref.watch(counter)}');
   }
 }
 ```
@@ -457,7 +494,7 @@ extension GetHooked<V> on Get<Object?, V> {
 
 > [!CAUTION]
 >
-> **Do not get** `hooked` **directly:** use `Ref.watch()` instead.\
+> **Do not get** `hooked` **directly:** use `ref.watch()` instead.\
 > If a listener is added without automatically being removed, it can result in memory leaks,
 > not to mention the problems that calling `dispose()` would create for other widgets
 > that are still using the object.
@@ -477,22 +514,18 @@ extension GetHooked<V> on Get<Object?, V> {
 <br>
 
 ```dart
-extension type Ref<T, V>(Get _get) {
-  static T watch(Get<T, V> getObject) {
-    return use(_RefWatchHook(getObject));
-  }
+const HookRef ref = HookRef._();
 
-  Substitution sub(Get other) {
-    return _SubEager(_get.hooked, other.hooked);
-  }
+class HookRef implements Ref {
+  // ...
 }
 ```
 
-`Ref.watch()` and other static methods link Get objects with `HookWidget`s
+`ref.watch()` and other static methods link Get objects with `HookWidget`s
 and `RenderHookWidget`s.
 
 The `Ref()` constructor is used in a `GetScope` to make substitutions.\
-Descendant widgets that use `Ref.watch()` will reference the new object
+Descendant widgets that use `ref.watch()` will reference the new object
 in its place.
 
 <br>
@@ -508,13 +541,13 @@ should only be called inside a `HookWidget`'s build method.
 // BAD
 Builder(builder: (context) {
   final focusNode = useFocusNode();
-  final data = Ref.watch(getMyData);
+  final data = ref.watch(myData);
 })
 
 // GOOD
 HookBuilder(builder: (context) {
   final focusNode = useFocusNode();
-  final data = Ref.watch(getMyData);
+  final data = ref.watch(myData);
 })
 ```
 
@@ -528,22 +561,92 @@ For a more detailed explanation, see also:
 - https://pub.dev/packages/flutter_hooks#rules
 - https://react.dev/reference/rules/rules-of-hooks
 
+> [!NOTE]
+> The above `HookBuilder` example uses `ref`, a global constant whose methods
+> are Hook functions that can watch Listenable objects.\
+> Since Hooks iterate through a linked list under the hood, making calls
+> unconditionally in the same order is mandatory.
+>
+> Other APIs, such as `RefPaint`, implement `ref.watch()` calls without any
+> Hook functions; instead, a set of dependencies is established the first
+> time the callback runs, and that set is used throughout the widget's lifetime
+> (unless something changes in the ancestor `GetScope`).\
+> These callbacks technically don't need a consistent ordering, but they do need
+> to make the `ref.watch()` calls unconditionally, to prevent scenarios where a
+> depencency is ignored.
+
 <br>
 
-The `RenderHookWidget` is unique to **get_hooked**—RenderHook methods
-can update `RenderObject`s directly, but they're only compatible with the
-static functions defined in `Ref`:
+## No simultaneous read & write
+
+If a function is calling `ref.watch()`, that function should not mutate
+any non-local values.
 
 ```dart
 // BAD
-HookPaint.compose(painter: (context, size) {
-  final controller = useAnimationController();
-})
+double computeFunction(Ref ref) {
+  final a = ref.watch(getA);
+  if (a > 0) {
+    getB.value += a;
+  }
+  final b = ref.watch(getB);
+  return a + b;
+}
+```
 
+```dart
 // GOOD
-HookPaint.compose(painter: (context, size) {
-  Ref.vsync(getAnimation);
-})
+double computeFunction(Ref ref) {
+  final a = ref.watch(getA);
+  final b = ref.watch(getB);
+  return a + b;
+}
+
+void performUpdate() {
+  final a = getA.value;
+  if (a > 0) {
+    getB.value += a;
+  }
+}
+```
+
+As a rule of thumb:
+- Watching happens during a frame, while widgets are being built and rendered.
+- Updates happen between frames, e.g. in response to user input or after `await`ing a Future.
+
+> [!TIP]
+> Try to avoid [post-frame callbacks](https://api.flutter.dev/flutter/scheduler/SchedulerBinding/addPostFrameCallback.html)
+> whenever possible. It's an easy band-aid solution for
+> `error: setState() called during build()`, but this practice often results in
+> the framework drawing multiple frames in response to a single update.
+
+<br>
+
+## The more `const`, the better
+
+The Flutter framework understands that, when a widget instance is identical
+to the previous version, the underlying `Element` doesn't need to rebuild
+unless `markNeedsBuild()` was called for another reason. Using `const` constructors
+is a super easy way to take advantage of this functionality.
+
+But there's another reason why `const` is great: it helps your changes to show up
+after a hot reload.
+
+Dart considers something as "constant" if it has the `const` keyword, or if it's
+a globally-scoped function or `static` method.
+
+```dart
+// The app needs a "hot restart" after a part of this callback is changed
+final myValue = Get.compute((ref) {
+  return ref.watch(a) + ref.watch(b);
+});
+
+
+// Changes show up after a hot reload!
+final myValue = Get.compute(_myValue);
+double _myValue(Ref ref) {
+  return ref.watch(a) + ref.watch(b);
+}
 ```
 
 <br>
@@ -553,16 +656,16 @@ HookPaint.compose(painter: (context, size) {
 One of the best things about **get_hooked** is the ability to interact
 with providers directly.
 
-The additional `BuildContext` boilerplate is handled by `Ref` functions
-within a hook widget's build method, but scoping makes handling things
-between frames more verbose than it could be.
+While building a HookWidget, the `ref` methods handle the `BuildContext`
+boilerplate, but as far as handling things between frames, scoping makes things
+arguably a bit too verbose.
 
 ```dart
 // With scope:
-context.get(getAnimation).forward();
+context.read(animation).forward();
 
 // No scope:
-getAnimation.forward();
+animation.forward();
 ```
 
 Scoping is sometimes necessitated by the app's target behavior: in these cases,
@@ -587,40 +690,8 @@ const GetScope(
 )
 ```
 
-This reduces the likelihood of `useSubstitute()` and `GetScope.add()` leading to
-conflicting substitutions. Additionally, `RenderHookElement` can safely take a
-performance shortcut (e.g. after [GlobalKey reparenting](https://api.flutter.dev/flutter/widgets/GlobalKey-class.html))
-when the there's no ancestor `GetScope`.
-
-<br>
-
-When creating tests, consider performing global dependency injection when possible.
-
-```dart
-// OKAY, but it assumes that MyWidget doesn't reference the original object.
-testWidgets('my test', (tester) async {
-  await tester.pumpWidget(
-    GetScope(
-      substitutes: {Ref(getMyData).subFactory(TestData.new)},
-      child: MyWidget(),
-    )
-  );
-});
-
-
-// BETTER
-setUp(() {
-  reconfigureMyData();
-});
-
-testWidgets('my test', (tester) async {
-  await tester.pumpWidget(MyWidget());
-});
-```
-<sup>
-  (This code snippet was written for the purpose of instruction;
-  please disregard the glaring lack of a <a href="https://dart.dev/lints/unnecessary_lambdas"><b>tear-off</b></a>.)
-</sup>
+This reduces the likelihood of `ref.sub()` and `GetScope.add()` leading to
+conflicting substitutions, and it mitigates the additional performance costs.
 
 <br>
 
@@ -638,11 +709,9 @@ final getString = ScopedGet.it<String>();
 Unlike a typical `State` member variable, Get objects persist throughout
 changes to the app's state, so a couple of missing `removeListener()` calls
 might create a noticeable performance impact.
-Prefer calling `Ref.watch()` to subscribe to updates.
+Prefer calling `ref.watch()` to subscribe to updates.
 
-When a `GetAsync` object's listeners are removed, it will automatically end its
-stream subscription and restore the listenable to its default state.
-A listenable encapulated in a Get object should avoid calling the internal
+A `static` or globally-scoped object should avoid calling the internal
 `ChangeNotifier.dispose()` method, since the object would be unusable
 from that point onward.
 
@@ -650,5 +719,23 @@ from that point onward.
 
 # Troubleshooting / FAQs
 
-So far, not a single person has reached out because of a problem with this package.
-Which means it's probably flawless!
+#### Ticker `AssertionError`
+
+You might see an error with the message
+`Cannot absorb Ticker after it has been disposed`.
+
+This is a bug: if an `AnimationController` starts its ticker and then calls
+[`resync()`](https://api.flutter.dev/flutter/animation/AnimationController/resync.html)
+before the next frame, the Flutter framework incorrectly assumes that
+the ticker was disposed of.
+
+Eventually, a bugfix will be merged into the framework and subsequently
+will show up in a stable release. Until then, feel free to make a change to
+[ticker.dart](https://github.com/flutter/flutter/blob/d261411b4c3bfb8591f352e3842f64005ba75505/packages/flutter/lib/src/scheduler/ticker.dart#L320-L323):
+```diff
+    assert(
+-     (originalTicker._future == null) == (originalTicker._startTime == null),
++     (originalTicker._future != null) || (originalTicker._startTime == null),
+      'Cannot absorb Ticker after it has been disposed.',
+    );
+```

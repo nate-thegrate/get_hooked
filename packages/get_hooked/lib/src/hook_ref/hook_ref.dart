@@ -22,28 +22,24 @@ const HookRef ref = HookRef._();
 
 /// The class declaration for the global [ref] constant.
 ///
-/// Includes the [Ref] methods along with [compute] and [sub].
+/// In addition to the methods from [Ref], provides [compute] for
+/// derived values that automatically rebuild when their dependencies change.
 final class HookRef implements Ref {
   const HookRef._();
 
-  /// This hook function watches a [Get] object
-  /// and triggers a rebuild when it sends a notification.
+  /// Watches a [ValueListenable] and triggers a rebuild when it sends a notification.
   ///
   /// {@template get_hooked.HookRef.watch}
   /// Must be called inside a [HookWidget.build] method.
   ///
-  /// Notifications are not sent when [watching] is `false`
-  /// (changes to this value will apply the next time the [HookWidget]
-  /// is built).
+  /// If an ancestor [GetScope] overrides the listened object,
+  /// the replacement value is used instead. Set [useScope] to `false` to
+  /// bypass any active [Substitution].
   ///
-  /// If a [GetVsync] object is passed, this hook will check if the
-  /// [Vsync] is attached to a [BuildContext] (which is typically achieved
-  /// via [ref.vsync]) and throws an error if it fails. The check can be
-  /// bypassed by setting [checkVsync] to `false`.
-  ///
-  /// By default, if an ancestor [GetScope] overrides the [Get] object's
-  /// value, the new object is used instead. Setting [useScope] to `false`
-  /// will ignore any overrides.
+  /// When [autoVsync] is `true` (the default) and the listened object is a
+  /// [VsyncValue] (such as those returned by [Get.vsync] or [Get.vsyncValue]),
+  /// it is automatically registered with a [Vsync] from the current context
+  /// so that animations receive ticks.
   /// {@endtemplate}
   ///
   /// See also:
@@ -60,12 +56,15 @@ final class HookRef implements Ref {
     return value;
   }
 
-  /// Selects a value from a complex [Get] object and triggers a rebuild when
+  /// Selects a value from a [ValueListenable] and triggers a rebuild when
   /// the selected value changes.
   ///
   /// Multiple values can be selected by returning a [Record] type.
   ///
   /// {@macro get_hooked.HookRef.watch}
+  ///
+  /// When [watching] is `false`, the selector is evaluated once but no listener
+  /// is attached; the widget will not rebuild when the selected value changes.
   @override
   Result select<Result, T>(
     ValueListenable<T> listenable,
@@ -94,8 +93,8 @@ final class HookRef implements Ref {
   }
 }
 
-/// An animation object is synced to an [Vsync] via the first build context
-/// that uses it.
+/// Attaches a [VsyncValue] (animation) to a [Vsync] using the first
+/// [BuildContext] that watches it.
 void _autoVsync(Listenable get) {
   if (get is VsyncValue<Object?>) {
     use(_VsyncHook.new, key: get, data: get, debugLabel: 'auto-vsync');

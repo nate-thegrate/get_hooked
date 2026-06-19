@@ -1,11 +1,9 @@
 /// @docImport 'package:get_hooked/get_hooked.dart';
 library;
 
-import 'package:collection_notifiers/collection_notifiers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
-import 'package:get_hooked/src/bug_report.dart';
 import 'package:get_hooked/src/computed_notifier.dart';
 import 'package:get_hooked/src/vsync_mixin.dart';
 
@@ -16,8 +14,6 @@ typedef _V = ValueListenable<Object?>;
 /// An immutable description of how one [ValueListenable] object can be used in place of another.
 ///
 /// Most commonly used to create a [GetScope].
-///
-/// See also: [HookRef.sub], which creates a substitution via a [Hook] function.
 abstract final class Substitution with Diagnosticable {
   factory Substitution(
     ValueListenable<Object?> placeholder,
@@ -52,39 +48,13 @@ abstract final class Substitution with Diagnosticable {
   /// as a [DisposeGuard] instance.
   final bool autoDispose;
 
-  /// If a [Substitution] was made, returns the widget that made it.
-  ///
-  /// The result could be:
-  ///
-  /// - A [GetScope], if the substitution was made there
-  /// - A [HookWidget] that called [HookRef.sub]
-  /// - Any other widget that used [GetScope.add]
-  /// - `null`, if no substitution was made
+  /// If a [Substitution] was made, returns the [GetScope] widget that made it.
   ///
   /// The result is always `null` in profile & release mode.
-  static Widget? debugSubWidget<T>(BuildContext context, ValueListenable<T> placeholder) {
-    if (!kDebugMode) return null;
-
-    final ValueListenable<Object?>? scopedGet = GetScope.maybeOf(context, placeholder);
-    if (scopedGet == null) return null;
-
-    final _GetScopeState state = context.findAncestorStateOfType()!;
-    final GetScope scope = state.widget;
-    for (final Substitution sub in scope.substitutes) {
-      if (sub.placeholder == placeholder) return scope;
-    }
-
-    for (final MapEntry(key: context, value: map) in state.clientSubstitutes.entries) {
-      for (final _V key in map.keys) {
-        if (key == placeholder) return context.widget;
-      }
-    }
-
-    throw StateError(
-      'The object $placeholder was substituted with $scopedGet, '
-      'but the substitution was not found.\n'
-      '$bugReport',
-    );
+  static GetScope? debugSubWidget(BuildContext context, ValueListenable<Object?> placeholder) {
+    return kDebugMode && GetScope.maybeOf(context, placeholder) != null
+        ? context.findAncestorStateOfType<_GetScopeState>()?.widget
+        : null;
   }
 
   @override

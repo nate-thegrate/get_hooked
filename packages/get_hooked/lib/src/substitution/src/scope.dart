@@ -195,9 +195,6 @@ class _GetScopeState extends State<GetScope> {
     assert(widgetSubs.debugCheckDuplicates(context));
   }
 
-  void rebuild() => setState(() {});
-
-  late final clientSubstitutes = MapNotifier(<Element, SubMap<_V>>{})..addListener(rebuild);
   late final computers = SubMap<_V>();
 
   @override
@@ -232,12 +229,6 @@ class _GetScopeState extends State<GetScope> {
     }
   }
 
-  @override
-  void dispose() {
-    clientSubstitutes.removeListener(rebuild);
-    super.dispose();
-  }
-
   Object tag = Object();
   SubMap<_V>? _map;
 
@@ -245,11 +236,6 @@ class _GetScopeState extends State<GetScope> {
   Widget build(BuildContext context) {
     final map = SubMap<_V>();
 
-    for (final Map<_V, _V> refMap in clientSubstitutes.values.toList().reversed) {
-      for (final MapEntry(:key, :value) in refMap.entries) {
-        map[key] ??= value;
-      }
-    }
     for (final MapEntry(:key, :value) in widgetMap.entries) {
       map[key] ??= value;
     }
