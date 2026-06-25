@@ -1,5 +1,3 @@
-// ignore_for_file: public_member_api_docs, use_late_for_private_fields_and_variables, unused_field, unused_element, procrastinate!
-
 import 'package:flutter/widgets.dart';
 
 import 'ref_layout_delegates.dart';
@@ -11,6 +9,7 @@ export 'ref_layout_delegates.dart' show LayoutRef, RefLayoutDelegate, RefLayoutS
 /// from the [two_dimensional_scrollables](https://pub.dev/packages/two_dimensional_scrollables)
 /// package.
 abstract class RefLayout extends RenderObjectWidget {
+  /// Initializes fields for subclasses.
   const RefLayout({super.key});
 
   @override
@@ -23,5 +22,6 @@ abstract class RefLayout extends RenderObjectWidget {
 
   @protected
   @factory
+  /// Creates the mutable state for this widget at a given location in the tree.
   RefLayoutState<RefLayout> createState();
 }

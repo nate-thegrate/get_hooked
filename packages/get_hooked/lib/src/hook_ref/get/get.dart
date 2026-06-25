@@ -16,12 +16,8 @@ part 'src/dispose_guard.dart';
 part 'src/scoped.dart';
 part 'src/query.dart';
 
-typedef _V = ValueListenable<Object?>;
-
 /// Gives access to methods such as [ValueListenable.addListener].
-//
-// ignore: library_private_types_in_public_api, I'm a rule-breaker
-extension GetHooked<V extends _V> on Get<Object?, V> {
+extension GetHooked<V extends ValueListenable<Object?>> on Get<Object?, V> {
   /// Don't get hooked.
   V get hooked => _hooked;
 }

@@ -141,7 +141,8 @@ class AsyncNotifier<T> with ChangeNotifier implements ValueListenable<AsyncValue
   /// Can be invoked to update this controller based on a [Stream].
   StreamCallback<T>? streamCallback;
 
-  // ignore: public_member_api_docs, good luck lol
+  /// The initial data used to populate the [value] before any future or stream
+  /// events have been processed.
   T? initialData;
 
   /// The current [AsyncValue.value] of this operation.\

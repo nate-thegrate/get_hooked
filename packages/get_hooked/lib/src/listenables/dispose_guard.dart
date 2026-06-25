@@ -3,7 +3,6 @@ library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:get_hooked/src/hook_ref/hooked/hooked.dart';
 
 /// Mixin for [Get] objects with a [dispose] method.
 ///
@@ -59,14 +58,6 @@ mixin StrictNotifier on ChangeNotifier {
   @override
   void notifyListeners() {
     if (kDebugMode && WidgetsBinding.instance.schedulerPhase == .persistentCallbacks) {
-      BuildContext? context;
-      try {
-        context = useContext();
-      } on FlutterError // ignore: avoid_catching_errors, this is potentially useful info
-      {
-        // Don't include a widget description if no context was found.
-      }
-
       throw FlutterError.fromParts([
         ErrorSummary(
           'A $runtimeType tried sending a notification while the widget tree was being built and rendered.',
@@ -76,7 +67,6 @@ mixin StrictNotifier on ChangeNotifier {
           'since in the best case one change results in multiple rebuilds, '
           'and in the worst case it can trigger an infinite loop.',
         ),
-        ?context?.describeWidget('The error occurred during the build of the following widget:'),
         ErrorHint(
           'This error could be bypassed by wrapping the update in a post-frame callback, '
           "but the recommended solution is to rework this notifier's logic "

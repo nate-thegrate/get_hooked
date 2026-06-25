@@ -1,5 +1,3 @@
-// ignore_for_file: public_member_api_docs, use_late_for_private_fields_and_variables, unused_field, unused_element, procrastinate!
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
@@ -8,9 +6,15 @@ import 'package:get_hooked/src/vsync_mixin.dart';
 
 import 'ref_layout.dart';
 
+/// The logic and state for a [RefLayout] widget.
+///
+/// Subclasses should override [performLayout] to position children using
+/// the provided [LayoutRef].
 abstract class RefLayoutState<T extends RefLayout> {
-  T? _widget;
-  T get widget => _widget!;
+  late T _widget;
+
+  /// The current widget configuration.
+  T get widget => _widget;
 
   final _delegates = <RefLayoutDelegate>[];
 
@@ -32,50 +36,70 @@ abstract class RefLayoutState<T extends RefLayout> {
   Rect get _rect => Offset.zero & _size;
   RefLayoutElement? _element;
 
+  /// The [BuildContext] associated with this [RefLayout].
   BuildContext get context => _element!;
+
+  /// The [Vsync] associated with this [RefLayout].
   Vsync get vsync => _element!;
 
   /// Creates a delegate for one of the [RefLayout] widget's children.
   RefLayoutDelegate delegate(Widget? Function(T widget) getChild) {
-    return RefLayoutDelegate._(this, () => getChild(_widget!));
+    return RefLayoutDelegate._(this, () => getChild(_widget));
   }
 
   @visibleForOverriding
+  /// See [RenderBox.computeMinIntrinsicWidth].
   double minIntrinsicWidth(double height) => 0.0;
   @visibleForOverriding
+  /// See [RenderBox.computeMinIntrinsicHeight].
   double minIntrinsicHeight(double width) => 0.0;
   @visibleForOverriding
+  /// See [RenderBox.computeMaxIntrinsicWidth].
   double maxIntrinsicWidth(double height) => 0.0;
   @visibleForOverriding
+  /// See [RenderBox.computeMaxIntrinsicHeight].
   double maxIntrinsicHeight(double width) => 0.0;
 
   @visibleForOverriding
+  /// See [RenderBox.computeDistanceToActualBaseline].
   double? computeDistanceToActualBaseline(TextBaseline baseline) => null;
 
   @visibleForOverriding
+  /// See [RenderBox.computeDryBaseline].
   double? computeDryBaseline(BoxConstraints constraints, TextBaseline baseline) => null;
 
+  /// Called when the [RefLayout] widget is removed from the tree.
+  ///
+  /// Override this method for any additional cleanup logic.
   void dispose() {}
 }
 
+/// Provides layout utilities and context for [RefLayout] children during [RefLayoutState.performLayout].
 extension type LayoutRef._(RefLayoutElement _element) implements Ref {
   RefLayoutState<RefLayout> get _state => _element.state;
 
+  /// The constraints that the [RefLayout] widget's render object is currently subject to.
   BoxConstraints get constraints => _state._constraints;
 
+  /// The current size of the [RefLayout] widget.
   Size get size => _state._size;
+
+  /// Sets the size of the [RefLayout] widget.
   set size(Size newValue) {
     _state._size = newValue;
   }
 }
 
+/// Parent data used by [RefLayout] to position children.
 class RefLayoutParentData extends BoxParentData {
+  /// The z-index used for paint ordering of this child.
   int zIndex = 0;
 
   @override
   String toString() => 'offset=$offset, z index=$zIndex';
 }
 
+/// A handle for laying out and positioning a child of a [RefLayout].
 final class RefLayoutDelegate {
   RefLayoutDelegate._(RefLayoutState<RefLayout> state, this._getWidget) : _maybeState = state {
     state._delegates.add(this);
@@ -99,6 +123,7 @@ final class RefLayoutDelegate {
     _parentData.offset = value;
   }
 
+  /// The size of the child after layout.
   Size get size => _size;
   late Size _size = _state._size;
 
@@ -118,6 +143,7 @@ final class RefLayoutDelegate {
   /// Otherwise, returns `this`.
   RefLayoutDelegate? get guardNull => _renderer == null ? null : this;
 
+  /// Lays out the child to fill the given [rect], relative to the [RefLayout].
   void layoutRect(Rect rect) {
     if (_state._dryRun) {
       _renderer?.getDryLayout(BoxConstraints.tight(rect.size));
@@ -134,6 +160,8 @@ final class RefLayoutDelegate {
     _state._zIndex += 1;
   }
 
+  /// Lays out the child using a [Rect] whose coordinates are fractions of the
+  /// [RefLayout]'s size (e.g. `Rect.fromLTRB(0, 0, 0.5, 1)` fills the left half).
   void layoutFractionalRect(Rect fractionalRect) {
     if (kDebugMode) {
       final Rect(:double top, :double bottom, :double left, :double right) = fractionalRect;
@@ -156,6 +184,7 @@ final class RefLayoutDelegate {
     layoutRect(Rect.fromLTRB(left * x, top * y, right * x, bottom * y));
   }
 
+  /// Lays out the child inside the [RefLayout], inset by the given [padding].
   void layoutPadding(EdgeInsetsGeometry padding) {
     final Size(:double width, :double height) = _state._size;
     final EdgeInsets(:double left, :double top, :double right, :double bottom) =
@@ -212,42 +241,29 @@ final class RefLayoutDelegate {
     return renderer.size;
   }
 
+  /// Returns the minimum intrinsic width of the child for the given height.
   double getMinIntrinsicWidth(double height) {
     return _renderer?.getMinIntrinsicWidth(height) ?? 0.0;
   }
 
+  /// Returns the minimum intrinsic height of the child for the given width.
   double getMinIntrinsicHeight(double width) {
     return _renderer?.getMinIntrinsicHeight(width) ?? 0.0;
   }
 
+  /// Returns the size that the child would have if laid out with the given constraints.
   Size getSize(BoxConstraints constraints) {
     return _renderer?.getDryLayout(constraints) ?? .zero;
   }
 
+  /// Returns the distance from the top of the child to the first baseline of the given type.
   double? getDistanceToBaseline(TextBaseline baseline, {bool onlyReal = false}) {
     return _renderer?.getDistanceToBaseline(baseline, onlyReal: onlyReal);
   }
 
+  /// Returns the baseline of the child after laying it out with the given constraints.
   double? getBaseline(BoxConstraints constraints, TextBaseline baseline) {
     return _renderer?.getDryBaseline(constraints, baseline);
-  }
-}
-
-extension on Set<RefLayoutDelegate> {
-  RefLayoutDelegate? operator [](Element element) {
-    for (final delegate in this) {
-      if (delegate._element == element) return delegate;
-    }
-    return null;
-  }
-
-  void operator []=(Element element, RefLayoutDelegate? value) {
-    if (this[element] case final delegate?) {
-      remove(delegate);
-    }
-    if (value != null) {
-      add(value.._element = element);
-    }
   }
 }
 
@@ -349,16 +365,6 @@ class RefLayoutElement extends RenderObjectElement with ElementCompute {
     state.dispose();
     _state = null;
     super.unmount();
-  }
-}
-
-extension on List<RenderBox> {
-  List<RenderBox> get sorted {
-    return toList()..sort(
-      (a, b) => (a.parentData! as RefLayoutParentData).zIndex.compareTo(
-        (b.parentData! as RefLayoutParentData).zIndex,
-      ),
-    );
   }
 }
 
