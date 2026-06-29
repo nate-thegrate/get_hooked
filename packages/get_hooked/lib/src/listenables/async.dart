@@ -18,8 +18,7 @@ sealed class AsyncValue<T> {
 
   const factory AsyncValue.data(T value, {bool done}) = AsyncData<T>;
 
-  const factory AsyncValue.error(Object error, StackTrace stackTrace, {bool done}) =
-      AsyncError<T>;
+  const factory AsyncValue.error(Object error, StackTrace stackTrace, {bool done}) = AsyncError<T>;
 
   factory AsyncValue._initial(T? data) {
     return data != null ? AsyncData(data) : const AsyncLoading();
@@ -191,7 +190,7 @@ class AsyncNotifier<T> with ChangeNotifier implements ValueListenable<AsyncValue
     }
 
     _subscription = stream.listen(
-      (T data) => value = AsyncData(data, done: false),
+      (data) => value = AsyncData(data, done: false),
       onError: (Object error, StackTrace stackTrace) {
         value = AsyncError(error, stackTrace, done: cancelOnError);
       },
@@ -220,7 +219,7 @@ class AsyncNotifier<T> with ChangeNotifier implements ValueListenable<AsyncValue
     }
 
     future.then<void>(
-      (T data) {
+      (data) {
         if (identical(_future, future)) {
           value = AsyncData<T>(data);
         }

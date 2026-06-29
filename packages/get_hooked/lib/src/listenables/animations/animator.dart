@@ -30,6 +30,7 @@ extension EnableAnimations on AnimationBehavior {
 abstract class Animator<T> extends ValueNotifier<T> implements StyledAnimation<T> {
   /// Initializes fields for subclasses.
   Animator(
+    // ignore: matching_super_parameters
     super.initialValue, {
     AnimationStatus initialStatus = AnimationStatus.dismissed,
     Vsync vsync = Vsync.fallback,
@@ -90,10 +91,10 @@ abstract class Animator<T> extends ValueNotifier<T> implements StyledAnimation<T
   /// (as opposed to the [TickerProvider] which created the ticker).
   @protected
   TickerFuture start() {
-    return _tickerFuture =
-        _ticker.start()..whenCompleteOrCancel(() {
-          _tickerFuture = null;
-        });
+    return _tickerFuture = _ticker.start()
+      ..whenCompleteOrCancel(() {
+        _tickerFuture = null;
+      });
   }
 
   /// Stops calling the [Ticker]'s callback.

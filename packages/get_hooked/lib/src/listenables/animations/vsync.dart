@@ -70,7 +70,7 @@ class _Vsync implements Vsync {
 }
 
 class _FallbackTicker extends Ticker {
-  _FallbackTicker(super.onTick);
+  _FallbackTicker(super.onTick); // ignore: matching_super_parameters
 
   bool disposed = false;
 

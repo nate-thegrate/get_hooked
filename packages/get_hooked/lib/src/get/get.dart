@@ -23,11 +23,10 @@ extension GetHooked<V extends ValueListenable<Object?>> on Get<Object?, V> {
 
 /// Encapsulates a [ValueListenable] object with an interface for
 /// easy updates and automatic lifecycle management.
-extension type Get<T, V extends ValueListenable<T>>._(V _listenable)
-    implements ValueListenable<T> {
+extension type Get<T, V extends ValueListenable<T>>._(V _listenable) implements ValueListenable<T> {
   /// Don't add a listener directly!
   /// {@template get_hooked.dont}
-  /// Prefer using [ref.watch] or something similar.
+  /// Prefer using [Ref.watch] or something similar.
   ///
   /// …or if you really gotta do it, use the `.hooked` getter.
   /// {@endtemplate}
@@ -244,8 +243,7 @@ extension type GetMap<K, V>._(MapNotifier<K, V> _listenable)
 typedef _Status = ValueListenable<AnimationStatus>;
 
 /// Encapsulates the [Animator.status] listenable.
-extension type GetAnimationStatus._(_Status _listenable)
-    implements Get<AnimationStatus, _Status> {}
+extension type GetAnimationStatus._(_Status _listenable) implements Get<AnimationStatus, _Status> {}
 
 /// Encapsulates an [AnimationController].
 extension type GetVsyncDouble._(VsyncDouble _listenable)

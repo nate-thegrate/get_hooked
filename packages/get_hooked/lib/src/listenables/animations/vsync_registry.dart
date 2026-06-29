@@ -11,7 +11,7 @@ extension VsyncRegistryExtension on Vsync {
 /// Since [AnimationController] does not expose its ticker provider field,
 /// this registry was created to track animations' [Vsync]s.
 extension type VsyncRegistry._(Vsync _vsync) {
-  /// Assigns a [vsync] to an [animation], if it's registered and hasn't already been assigned one.
+  /// Assigns a [Vsync] to an [animation], if it's registered and hasn't already been assigned one.
   bool add(VsyncValue<Object?> animation) {
     if (animation.vsync == Vsync.fallback) {
       animation.resync(_vsync);

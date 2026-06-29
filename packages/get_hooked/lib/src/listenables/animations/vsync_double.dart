@@ -31,12 +31,11 @@ class VsyncDouble extends Animator<double> {
     super.debugLabel,
   }) : super(
          value ?? lowerBound,
-         initialStatus:
-             value == null || value == lowerBound
-                 ? AnimationStatus.dismissed
-                 : value == upperBound
-                 ? AnimationStatus.completed
-                 : AnimationStatus.forward,
+         initialStatus: value == null || value == lowerBound
+             ? AnimationStatus.dismissed
+             : value == upperBound
+             ? AnimationStatus.completed
+             : AnimationStatus.forward,
        );
 
   /// The value at which this animation is deemed to be dismissed.
@@ -55,14 +54,13 @@ class VsyncDouble extends Animator<double> {
 
   void _internalSetValue(double newValue) {
     super.value = clampDouble(newValue, lowerBound, upperBound);
-    statusNotifier.value =
-        value == lowerBound
-            ? AnimationStatus.dismissed
-            : value == upperBound
-            ? AnimationStatus.completed
-            : _forward
-            ? AnimationStatus.forward
-            : AnimationStatus.reverse;
+    statusNotifier.value = value == lowerBound
+        ? AnimationStatus.dismissed
+        : value == upperBound
+        ? AnimationStatus.completed
+        : _forward
+        ? AnimationStatus.forward
+        : AnimationStatus.reverse;
   }
 
   Simulation? _simulation;
@@ -364,10 +362,7 @@ class VsyncDouble extends Animator<double> {
     period ??= duration;
     assert(max >= min);
     assert(max <= upperBound && min >= lowerBound);
-    assert(
-      count == null || count > 0,
-      'If the count is non-null, it should be greater than zero.',
-    );
+    assert(count == null || count > 0, 'If the count is non-null, it should be greater than zero.');
     return _runSimulation(
       _RepeatingSimulation(value, min, max, reverse, period, _directionSetter, count),
     );
@@ -379,9 +374,6 @@ class VsyncDouble extends Animator<double> {
   }
 
   /// The rate of change of [value] per second.
-  ///
-  /// If [isAnimating] is false, then [value] is not changing and the rate of
-  /// change is zero.
   double get velocity {
     if ((_simulation, lastElapsedDuration) case (final simulation?, final duration?)) {
       return simulation.dx(duration.inMicroseconds / Duration.microsecondsPerSecond);
@@ -473,11 +465,10 @@ class _RepeatingSimulation extends Simulation {
         'If the count is non-null, it should be greater than zero.',
       ),
       _periodInSeconds = period.inMicroseconds / Duration.microsecondsPerSecond,
-      _initialT =
-          (max == min)
-              ? 0.0
-              : ((clampDouble(initialValue, min, max) - min) / (max - min)) *
-                  (period.inMicroseconds / Duration.microsecondsPerSecond) {
+      _initialT = (max == min)
+          ? 0.0
+          : ((clampDouble(initialValue, min, max) - min) / (max - min)) *
+                (period.inMicroseconds / Duration.microsecondsPerSecond) {
     assert(_periodInSeconds > 0.0);
     assert(_initialT >= 0.0);
   }

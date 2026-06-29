@@ -1,3 +1,6 @@
+/// @docImport 'package:get_hooked/get_hooked.dart';
+library;
+
 import 'package:flutter/widgets.dart';
 
 import '../ref_element.dart';
@@ -15,7 +18,7 @@ mixin _StatefulRefWidget on StatefulWidget {
   StatefulElement createElement() => _StatefulRefElement(this);
 }
 
-/// A variation of a [StatelessWidget] whose [build] method can use [ref]
+/// A variation of a [StatelessWidget] whose `build` method can use [ref]
 /// to watch [ValueListenable] objects.
 ///
 /// To create a Ref widget, replace `extends StatelessWidget` with `extends RefWidget`.

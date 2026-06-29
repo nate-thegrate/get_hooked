@@ -1,3 +1,4 @@
+/// @docImport 'package:flutter/widgets.dart';
 @internal
 library;
 
@@ -169,10 +170,7 @@ bool _canUpdateSemanticsChild(SemanticsNode oldChild, CustomPainterSemantics new
 ///
 /// This method requires that `_canUpdateSemanticsChild(oldChild, newSemantics)`
 /// is true prior to calling it.
-SemanticsNode _updateSemanticsChild(
-  SemanticsNode? oldChild,
-  CustomPainterSemantics newSemantics,
-) {
+SemanticsNode _updateSemanticsChild(SemanticsNode? oldChild, CustomPainterSemantics newSemantics) {
   assert(oldChild == null || _canUpdateSemanticsChild(oldChild, newSemantics));
 
   final SemanticsNode newChild = oldChild ?? SemanticsNode(key: newSemantics.key);

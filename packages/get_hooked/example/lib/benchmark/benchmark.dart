@@ -109,7 +109,7 @@ class ColorSlice extends RefWidget {
         }),
         Setup.refWatchClass => const RefWatchClass(),
         Setup.customPaint => CustomPaint(painter: CustomPainterClass(), child: child),
-        Setup.refPaint => RefPaint((PaintRef ref) {
+        Setup.refPaint => RefPaint((ref) {
           ref
             ..setWillChangeHint()
             ..canvas.drawRect(Offset.zero & ref.size, Paint()..color = ref.watch(getColor));
@@ -161,17 +161,12 @@ class BenchmarkDropdown extends RefWidget {
   const BenchmarkDropdown({super.key});
 
   static final _items = [
-    for (final value in Setup.values)
-      DropdownMenuItem(value: value, child: Text(value.name)),
+    for (final value in Setup.values) DropdownMenuItem(value: value, child: Text(value.name)),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButton(
-      value: ref.watch(getSetup),
-      items: _items,
-      onChanged: getSetup.emit,
-    );
+    return DropdownButton(value: ref.watch(getSetup), items: _items, onChanged: getSetup.emit);
   }
 }
 

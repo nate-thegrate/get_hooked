@@ -1,6 +1,6 @@
 name: get_hooked
 description: "State management with Listenables and Hooks! Inspired by hooks_riverpod and get_it."
-version: 0.3.0
+version: 0.4.0
 homepage: https://no-tolls.dev/
 issue_tracker: https://github.com/nate-thegrate/get_hooked/issues
 repository: https://github.com/nate-thegrate/get_hooked/tree/main/packages/get_hooked
@@ -10,14 +10,14 @@ topics:
   - state-management
 
 environment:
-  sdk: ^3.10.0
+  sdk: ^3.12.0
 
 dependencies:
   flutter:
     sdk: flutter
   collection: ^1.18.0
   collection_notifiers: ^1.1.0
-  meta: ">=1.10.0 <2.0.0"
+  meta: ^1.10.0
 
 dev_dependencies:
   flutter_test:

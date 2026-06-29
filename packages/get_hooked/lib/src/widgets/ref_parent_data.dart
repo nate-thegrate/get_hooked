@@ -90,9 +90,7 @@ class _RefParentDataElement<P extends ParentData> extends ComponentElement with 
   void recompute() {
     try {
       applyParentData(this);
-    }
-    // ignore: avoid_catches_without_on_clauses, intentional :)
-    catch (exception, stackTrace) {
+    } catch (exception, stackTrace) {
       final FlutterErrorDetails details = FlutterErrorDetails(
         exception: exception,
         stack: stackTrace,

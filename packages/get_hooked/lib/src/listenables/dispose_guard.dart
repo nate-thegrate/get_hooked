@@ -1,4 +1,5 @@
 /// @docImport 'package:flutter/scheduler.dart';
+/// @docImport 'package:get_hooked/get_hooked.dart';
 library;
 
 import 'package:flutter/foundation.dart';
@@ -22,7 +23,7 @@ mixin DisposeGuard on Listenable {
 
   /// {@template get_hooked.DisposeGuard}
   /// [ref] will automatically free associated resources when its associated
-  /// [HookWidget] is no longer in use, so the `dispose()` method of a
+  /// [RefWidget] is no longer in use, so the `dispose()` method of a
   /// [ValueNotifier] or [AnimationController] is unnecessary.
   ///
   /// The [DisposeGuard.dispose] method throws an error.

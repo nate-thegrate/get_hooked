@@ -1,3 +1,6 @@
+/// @docImport 'package:get_hooked/get_hooked.dart';
+library;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
@@ -37,8 +40,9 @@ mixin ElementVsync on Element implements Vsync, _Tickers {
     final ticker = _ElementVsyncTicker(onTick, this);
     (_tickers ??= {}).add(ticker);
 
-    final ValueListenable<TickerModeData> tickerMode = _tickerMode ??=
-        TickerMode.getValuesNotifier(this)..addListener(_updateTickers);
+    final ValueListenable<TickerModeData> tickerMode = _tickerMode ??= TickerMode.getValuesNotifier(
+      this,
+    )..addListener(_updateTickers);
 
     return ticker
       ..muted = !tickerMode.value.enabled
@@ -131,8 +135,9 @@ mixin ElementCompute on Element implements RefContext, _Tickers {
     final ticker = _ElementVsyncTicker(onTick, this);
     (_tickers ??= {}).add(ticker);
 
-    final ValueListenable<TickerModeData> tickerMode = _tickerMode ??=
-        TickerMode.getValuesNotifier(this)..addListener(_updateTickers);
+    final ValueListenable<TickerModeData> tickerMode = _tickerMode ??= TickerMode.getValuesNotifier(
+      this,
+    )..addListener(_updateTickers);
 
     return ticker
       ..muted = !tickerMode.value.enabled
@@ -288,7 +293,7 @@ mixin ElementCompute on Element implements RefContext, _Tickers {
 }
 
 class _ElementVsyncTicker extends Ticker {
-  _ElementVsyncTicker(super.onTick, this._creator)
+  _ElementVsyncTicker(super.onTick, this._creator) // ignore: matching_super_parameters
     : super(debugLabel: 'created by ${describeIdentity(_creator.widget)}');
 
   final _Tickers _creator;

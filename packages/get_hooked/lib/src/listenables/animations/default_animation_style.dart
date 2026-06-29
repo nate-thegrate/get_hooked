@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 /// Designates an [AnimationStyle] for descendant widgets to fall back to.
+// ignore: avoid_implementing_value_types, will eventually add a cleaner implementation to framework
 sealed class DefaultAnimationStyle implements Widget {
   /// Creates a default [AnimationStyle] widget.
   ///
@@ -30,10 +31,9 @@ sealed class DefaultAnimationStyle implements Widget {
   /// If [createDependency] is true, the provided [context] is notified to rebuild
   /// when the animation style changes.
   static AnimationStyle of(BuildContext context, {bool createDependency = false}) {
-    final _InheritedAnimationStyle? inherited =
-        createDependency
-            ? context.dependOnInheritedWidgetOfExactType()
-            : context.getInheritedWidgetOfExactType();
+    final _InheritedAnimationStyle? inherited = createDependency
+        ? context.dependOnInheritedWidgetOfExactType()
+        : context.getInheritedWidgetOfExactType();
 
     return inherited?.style ?? const AnimationStyle();
   }
@@ -78,9 +78,11 @@ enum _AnimationStyleAspect<T> {
 }
 
 class _InheritedAnimationStyle extends InheritedModel<_AnimationStyleAspect<Object?>>
-    implements DefaultAnimationStyle, InheritedTheme {
-  _InheritedAnimationStyle({required this.notifier, required super.child})
-    : style = notifier.value;
+    implements
+        DefaultAnimationStyle,
+        InheritedTheme // ignore: avoid_implementing_value_types
+        {
+  _InheritedAnimationStyle({required this.notifier, required super.child}) : style = notifier.value;
 
   final ValueListenable<AnimationStyle> notifier;
   final AnimationStyle style;

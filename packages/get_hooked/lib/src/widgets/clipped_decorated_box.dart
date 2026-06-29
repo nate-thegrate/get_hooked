@@ -261,9 +261,7 @@ class RenderClippedDecoration extends RenderProxyBox {
 
           if (shape.preferPaintInterior) {
             for (final BoxShadow shadow in shadows) {
-              final Rect bounds = (offset & size)
-                  .shift(shadow.offset)
-                  .inflate(shadow.spreadRadius);
+              final Rect bounds = (offset & size).shift(shadow.offset).inflate(shadow.spreadRadius);
               assert(
                 debugHandleDisabledShadowStart(
                   shadow,
@@ -340,7 +338,7 @@ class RenderClippedDecoration extends RenderProxyBox {
           offset,
           rect,
           clipPath,
-          (PaintingContext context, Offset offset) {
+          (context, offset) {
             if (position == .background) {
               if (paint != null) context.canvas.drawPaint(paint);
               _imagePainter?.paint(context.canvas, offset & size, null, configuration);
