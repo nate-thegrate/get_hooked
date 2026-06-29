@@ -1,17 +1,6 @@
 ## 0.4.0
-- `ref` rework
-  - functions like `ref.watch()` are now part of a beautiful type heirarchy\
-    (i.e. `ref` is now a global constant)
-  - Now uses the `ValueListenable` interface, so wrapping with `Get` is optional
-- `Vsync` rework
-  - The `Vsync` API is essentially "ticker provider + animation style"
-  - Auto-vsync should always work, even if an animation is referenced
-    in a triple-nested `compute()` callback
-- `MediaQuery` notifier
-  - Responds to screen metric changes before the build phase!
-- `SingleChildComputeElement`
-  - Re-render with a `RefComputer`: readable & convenient
-  - Currently in use for `RefIgnorePointer` and `RefTransform`
+- Rewrote many (most?) of the APIs
+  - I thought about maybe getting an agent to hallucinate a detailed list here, but it probably wouldn't be helpful
 
 ## 0.3.0
 - Add disclaimer to README :)
