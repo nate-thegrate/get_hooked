@@ -4,7 +4,7 @@ library;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
-import 'package:get_hooked/src/substitution/substitution.dart';
+import 'package:get_hooked/src/scope.dart';
 
 /// A variant of [IgnorePointer] or [AbsorbPointer] that evaluates based on a [RefComputer<bool>].
 ///

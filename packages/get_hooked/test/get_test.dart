@@ -18,7 +18,7 @@ void main() {
               return Column(
                 children: [
                   Text('outer=$outerBuilds'),
-                  HookBuilder((_) {
+                  RefBuilder((_) {
                     final c = ref.watch(counter);
                     innerBuilds++;
                     return Text('inner=$c builds=$innerBuilds');
@@ -38,7 +38,7 @@ void main() {
       counter.value = 42;
       await tester.pump();
 
-      // Only the HookBuilder part should rebuild.
+      // Only the RefBuilder part should rebuild.
       expect(find.text('outer=1'), findsOneWidget);
       expect(find.text('inner=42 builds=2'), findsOneWidget);
       expect(outerBuilds, 1);
@@ -52,7 +52,7 @@ void main() {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: HookBuilder((context) {
+          child: RefBuilder((context) {
             final len = ref.select(data, (d) => d.name.length);
             selectBuilds++;
             return Text('len=$len builds=$selectBuilds');
@@ -79,7 +79,7 @@ void main() {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: HookBuilder((context) {
+          child: RefBuilder((context) {
             final v = ref.watch(computed);
             return Text('c=$v');
           }),
@@ -100,7 +100,7 @@ void main() {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: HookBuilder((context) {
+          child: RefBuilder((context) {
             ref.watch(glist);
             ref.watch(gset);
             ref.watch(gmap);
@@ -130,7 +130,7 @@ void main() {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: HookBuilder((context) {
+          child: RefBuilder((context) {
             final d = ref.watch(vdouble);
             final vv = ref.watch(vvalue);
             dBuilds++;
@@ -153,7 +153,7 @@ void main() {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: HookBuilder((context) {
+          child: RefBuilder((context) {
             final snap = ref.watch(gasync);
             return Text('done=${snap.done} val=${snap.value}');
           }),

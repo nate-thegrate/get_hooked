@@ -13,7 +13,7 @@ void main() {
           textDirection: TextDirection.ltr,
           child: GetScope(
             substitutes: {Substitution(original, replacement)},
-            child: HookBuilder((context) {
+            child: RefBuilder((context) {
               final v = ref.watch(original);
               return Text('val=$v');
             }),
@@ -34,7 +34,7 @@ void main() {
             substitutes: {Substitution(key, Get.it('root-val'))},
             child: GetScope(
               inherit: false,
-              child: HookBuilder((context) {
+              child: RefBuilder((context) {
                 return Text(ref.watch(key));
               }),
             ),

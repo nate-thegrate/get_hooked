@@ -1,7 +1,7 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
-import 'package:get_hooked/src/vsync_mixin.dart';
+import 'package:get_hooked/src/ref_element.dart';
 
 /// A variant of [Opacity] that evaluates based on a [RefComputer<double>].
 class RefAlign extends SingleChildRenderObjectWidget {

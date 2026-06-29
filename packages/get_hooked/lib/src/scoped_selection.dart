@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
-import 'package:get_hooked/src/substitution/substitution.dart';
+import 'package:get_hooked/src/scope.dart';
 import 'package:meta/meta.dart';
 
 @internal

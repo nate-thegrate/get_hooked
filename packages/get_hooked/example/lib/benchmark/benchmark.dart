@@ -76,7 +76,7 @@ class _BenchmarkAppState extends State<BenchmarkApp> {
   }
 }
 
-class ColorSlice extends HookWidget {
+class ColorSlice extends RefWidget {
   const ColorSlice({super.key});
 
   static void openDrawer() {
@@ -103,7 +103,7 @@ class ColorSlice extends HookWidget {
             return ColoredBox(color: color, child: child);
           },
         ),
-        Setup.refWatchBuilder => HookBuilder((context) {
+        Setup.refWatchBuilder => RefBuilder((context) {
           final Color color = ref.watch(getColor);
           return ColoredBox(color: color, child: child);
         }),
@@ -147,7 +147,7 @@ class ColorSlice extends HookWidget {
   }
 }
 
-class RefWatchClass extends HookWidget {
+class RefWatchClass extends RefWidget {
   const RefWatchClass({super.key});
 
   @override
@@ -157,19 +157,19 @@ class RefWatchClass extends HookWidget {
   }
 }
 
-class BenchmarkDropdown extends HookWidget {
+class BenchmarkDropdown extends RefWidget {
   const BenchmarkDropdown({super.key});
+
+  static final _items = [
+    for (final value in Setup.values)
+      DropdownMenuItem(value: value, child: Text(value.name)),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return DropdownButton(
       value: ref.watch(getSetup),
-      items: useMemoized(
-        () => [
-          for (final value in Setup.values)
-            DropdownMenuItem(value: value, child: Text(value.name)),
-        ],
-      ),
+      items: _items,
       onChanged: getSetup.emit,
     );
   }
@@ -188,7 +188,7 @@ class CustomPainterClass extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => throw Error();
 }
 
-class BottomButton extends HookWidget {
+class BottomButton extends RefWidget {
   const BottomButton(this.setup, {super.key});
 
   final Setup setup;

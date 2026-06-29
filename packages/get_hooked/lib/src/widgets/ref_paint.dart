@@ -5,10 +5,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
-import 'package:get_hooked/src/substitution/substitution.dart';
-import 'package:get_hooked/src/vsync_mixin.dart';
+import 'package:get_hooked/src/ref_element.dart';
+import 'package:get_hooked/src/scope.dart';
 
-import '../hook_ref/hook_ref.dart';
+import '../get/get.dart';
 import 'ref_clip.dart';
 import 'ref_paint_semantics.dart' as semantics;
 
@@ -87,7 +87,7 @@ class RefPaint extends SingleChildRenderObjectWidget {
 }
 
 /// Signature for the callback within a [RefPaint] widget that paints
-/// a UI element, using a [Canvas] retrieved via [PaintRef.stageCanvas].
+/// a UI element using a [PaintRef].
 typedef RefPaintCallback = void Function(PaintRef ref);
 
 /// Builds semantics information describing the picture drawn by a

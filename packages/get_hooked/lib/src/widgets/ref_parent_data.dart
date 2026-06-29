@@ -1,7 +1,7 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/src/listenables/ref.dart';
-import 'package:get_hooked/src/vsync_mixin.dart';
+import 'package:get_hooked/src/ref_element.dart';
 
 /// When using a [ParentDataWidget], the widget contains fields that translate
 /// to [ParentData] properties, and its corresponding [ParentDataElement] updates the

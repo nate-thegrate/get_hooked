@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
-import 'package:get_hooked/src/substitution/substitution.dart';
+import 'package:get_hooked/src/scope.dart';
 
 /// {@template get_hooked.SchedulerBuilding}
 /// Provides an estimate regarding whether a build is imminent.

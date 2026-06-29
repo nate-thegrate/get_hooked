@@ -9,7 +9,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
 import 'package:get_hooked/src/computed_notifier.dart';
-import 'package:get_hooked/src/hook_ref/hook_ref.dart';
 import 'package:meta/meta.dart';
 
 part 'src/dispose_guard.dart';
@@ -19,12 +18,13 @@ part 'src/query.dart';
 /// Gives access to methods such as [ValueListenable.addListener].
 extension GetHooked<V extends ValueListenable<Object?>> on Get<Object?, V> {
   /// Don't get hooked.
-  V get hooked => _hooked;
+  V get hooked => _listenable;
 }
 
 /// Encapsulates a [ValueListenable] object with an interface for
 /// easy updates and automatic lifecycle management.
-extension type Get<T, V extends ValueListenable<T>>._(V _hooked) implements ValueListenable<T> {
+extension type Get<T, V extends ValueListenable<T>>._(V _listenable)
+    implements ValueListenable<T> {
   /// Don't add a listener directly!
   /// {@template get_hooked.dont}
   /// Prefer using [ref.watch] or something similar.
@@ -197,15 +197,15 @@ class _VsyncProxyNotifier<Result, Input> extends ProxyNotifier<Result, Input>
 }
 
 /// Encapsulates a [ValueNotifier].
-extension type GetValue<T>._(ValueNotifier<T> _hooked) implements Get<T, ValueNotifier<T>> {
+extension type GetValue<T>._(ValueNotifier<T> _listenable) implements Get<T, ValueNotifier<T>> {
   // ignore: avoid_setters_without_getters, annotate_redeclares, false positive
   set value(T newValue) {
-    _hooked.value = newValue;
+    _listenable.value = newValue;
   }
 
   /// Sets a new value and emits a notification.
   void emit(T? newValue) {
-    if (newValue is T) _hooked.value = newValue;
+    if (newValue is T) _listenable.value = newValue;
   }
 }
 
@@ -218,7 +218,7 @@ extension ToggleValue on GetValue<bool> {
 }
 
 /// Encapsulates a [ListNotifier] and can be used as a [List] directly.
-extension type GetList<E>._(ListNotifier<E> _hooked)
+extension type GetList<E>._(ListNotifier<E> _listenable)
     implements List<E>, Get<List<E>, ListNotifier<E>> {
   /// Returns an [UnmodifiableListView] of this object.
   @redeclare
@@ -226,7 +226,7 @@ extension type GetList<E>._(ListNotifier<E> _hooked)
 }
 
 /// Encapsulates a [SetNotifier] and can be used as a [Set] directly.
-extension type GetSet<E>._(SetNotifier<E> _hooked)
+extension type GetSet<E>._(SetNotifier<E> _listenable)
     implements Set<E>, Get<Set<E>, SetNotifier<E>> {
   /// Returns an [UnmodifiableSetView] of this object.
   @redeclare
@@ -234,7 +234,7 @@ extension type GetSet<E>._(SetNotifier<E> _hooked)
 }
 
 /// Encapsulates a [MapNotifier] and can be used as a [Map] directly.
-extension type GetMap<K, V>._(MapNotifier<K, V> _hooked)
+extension type GetMap<K, V>._(MapNotifier<K, V> _listenable)
     implements Map<K, V>, Get<Map<K, V>, MapNotifier<K, V>> {
   /// Returns an [UnmodifiableMapView] of this object.
   @redeclare
@@ -244,10 +244,11 @@ extension type GetMap<K, V>._(MapNotifier<K, V> _hooked)
 typedef _Status = ValueListenable<AnimationStatus>;
 
 /// Encapsulates the [Animator.status] listenable.
-extension type GetAnimationStatus._(_Status _hooked) implements Get<AnimationStatus, _Status> {}
+extension type GetAnimationStatus._(_Status _listenable)
+    implements Get<AnimationStatus, _Status> {}
 
 /// Encapsulates an [AnimationController].
-extension type GetVsyncDouble._(VsyncDouble _hooked)
+extension type GetVsyncDouble._(VsyncDouble _listenable)
     implements VsyncDouble, Get<double, VsyncDouble> {
   /// Don't add a listener directly!
   /// {@macro get_hooked.dont}
@@ -260,11 +261,11 @@ extension type GetVsyncDouble._(VsyncDouble _hooked)
   void get removeListener {}
 
   @redeclare
-  GetAnimationStatus get status => GetAnimationStatus._(_hooked.status);
+  GetAnimationStatus get status => GetAnimationStatus._(_listenable.status);
 }
 
 /// Encapsulates a [ValueAnimation].
-extension type GetVsyncValue<T>._(ValueAnimation<T> _hooked)
+extension type GetVsyncValue<T>._(ValueAnimation<T> _listenable)
     implements ValueAnimation<T>, Get<T, ValueAnimation<T>> {
   /// Don't add a listener directly!
   /// {@macro get_hooked.dont}
@@ -277,21 +278,21 @@ extension type GetVsyncValue<T>._(ValueAnimation<T> _hooked)
   void get removeListener {}
 
   @redeclare
-  GetAnimationStatus get status => GetAnimationStatus._(_hooked.status);
+  GetAnimationStatus get status => GetAnimationStatus._(_listenable.status);
 }
 
 /// Encapsulates an [AsyncNotifier].
-extension type GetAsync<T>._(AsyncNotifier<T> _hooked)
+extension type GetAsync<T>._(AsyncNotifier<T> _listenable)
     implements Get<AsyncValue<T>, AsyncNotifier<T>> {}
 
 /// Encapsulates an [OverlayPortalController].
-extension type GetOverlay._(OverlayNotifier _hooked)
+extension type GetOverlay._(OverlayNotifier _listenable)
     implements OverlayPortalController, Get<bool, OverlayNotifier> {}
 
 /// Encapsulates a [Listenable] which notifies based on a [RefComputer] callback.
-extension type GetComputed<Result>._(ComputedNotifier<Result> _hooked)
+extension type GetComputed<Result>._(ComputedNotifier<Result> _listenable)
     implements Get<Result, ValueListenable<Result>> {}
 
 /// Encapsulates a [Listenable] which notifies based on a [RefComputer] callback.
-extension type GetSelection<Result, Input>._(ProxyNotifier<Result, Input> _hooked)
+extension type GetSelection<Result, Input>._(ProxyNotifier<Result, Input> _listenable)
     implements Get<Result, ValueListenable<Result>> {}

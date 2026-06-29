@@ -18,7 +18,7 @@ enum Screen {
   static final current = Get.it(counter);
 }
 
-class App extends HookWidget {
+class App extends RefWidget {
   const App({super.key});
 
   @override

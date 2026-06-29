@@ -3,103 +3,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_hooked/get_hooked.dart';
 
 void main() {
-  group('Hook functions', () {
-    testWidgets('useRef preserves mutable value across rebuilds without causing rebuilds', (tester) async {
-      final trigger = Get.it(0);
-      int buildCount = 0;
-
-      await tester.pumpWidget(
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: HookBuilder((context) {
-            ref.watch(trigger);
-            final obj = useRef(0);
-            buildCount++;
-            if (buildCount == 1) {
-              obj.value = 123;
-            }
-            return Text('val=${obj.value} builds=$buildCount');
-          }),
-        ),
-      );
-
-      expect(find.text('val=123 builds=1'), findsOneWidget);
-      expect(buildCount, 1);
-
-      // Trigger a rebuild via watched value; the ref value should persist.
-      trigger.value = 1;
-      await tester.pump();
-      expect(find.text('val=123 builds=2'), findsOneWidget);
-      expect(buildCount, 2);
-    });
-
-    testWidgets('useMemoized caches value until key changes', (tester) async {
-      final trigger = Get.it(0);
-      int createCount = 0;
-
-      Widget buildMemo(Object? key) {
-        return Directionality(
-          textDirection: TextDirection.ltr,
-          child: HookBuilder((context) {
-            ref.watch(trigger);
-            final value = useMemoized(() {
-              createCount++;
-              return 'created#$createCount';
-            }, key: key);
-            return Text(value);
-          }),
-        );
-      }
-
-      await tester.pumpWidget(buildMemo(null));
-      expect(find.text('created#1'), findsOneWidget);
-      expect(createCount, 1);
-
-      // Same key (null): no recreate
-      trigger.value = 1;
-      await tester.pump();
-      expect(find.text('created#1'), findsOneWidget);
-      expect(createCount, 1);
-
-      // Change key: recreate
-      await tester.pumpWidget(buildMemo('new-key'));
-      expect(find.text('created#2'), findsOneWidget);
-      expect(createCount, 2);
-    });
-
-    testWidgets('useEffect runs on key change and disposes previous', (tester) async {
-      final keyGet = Get.it<Object?>('a');
-      final log = <String>[];
-
-      await tester.pumpWidget(
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: HookBuilder((context) {
-            final k = ref.watch(keyGet);
-            useEffect(() {
-              log.add('effect-$k');
-              return () => log.add('dispose-$k');
-            }, key: k);
-            return const SizedBox();
-          }),
-        ),
-      );
-      expect(log, ['effect-a']);
-
-      keyGet.value = 'b';
-      await tester.pump();
-      expect(log, ['effect-a', 'effect-b', 'dispose-a']);
-    });
-
-    testWidgets('useValueListenable returns value and rebuilds on change', (tester) async {
+  group('RefWidget and ref', () {
+    testWidgets('ref.watch subscribes and rebuilds on change', (tester) async {
       final vn = Get.it('initial');
       int builds = 0;
 
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: HookBuilder((context) {
-            final v = useValueListenable(vn);
+          child: RefBuilder((context) {
+            final v = ref.watch(vn);
             builds++;
             return Text('v=$v builds=$builds');
           }),
@@ -112,35 +25,66 @@ void main() {
       expect(find.text('v=updated builds=2'), findsOneWidget);
     });
 
-    testWidgets('useListenable subscribes without returning value', (tester) async {
-      final ln = Get.it(0); // actually GetValue but used as Listenable
+    testWidgets('ref.watch can be called conditionally without errors', (tester) async {
+      final a = Get.it(10);
+      final b = Get.it(20);
+      final showB = Get.it(false);
       int builds = 0;
 
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: HookBuilder((context) {
-            useListenable(ln);
+          child: RefBuilder((context) {
+            final aVal = ref.watch(a);
+            final bVal = ref.watch(showB) ? ref.watch(b) : 0;
             builds++;
-            return Text('builds=$builds');
+            return Text('a=$aVal b=$bVal builds=$builds');
           }),
         ),
       );
-      expect(find.text('builds=1'), findsOneWidget);
 
-      ln.value = 99;
+      expect(find.text('a=10 b=0 builds=1'), findsOneWidget);
+
+      // Turn on watching b
+      showB.value = true;
       await tester.pump();
-      expect(find.text('builds=2'), findsOneWidget);
+      expect(find.text('a=10 b=20 builds=2'), findsOneWidget);
+
+      // Now changing b should trigger rebuild
+      b.value = 30;
+      await tester.pump();
+      expect(find.text('a=10 b=30 builds=3'), findsOneWidget);
     });
 
-    testWidgets('HookWidget works (not just HookBuilder)', (tester) async {
-      final vn = Get.it(false);
+    testWidgets('ref.watch same listenable twice is safe', (tester) async {
+      final counter = Get.it(0);
+      int builds = 0;
 
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: _TestHookWidget(vn),
+          child: RefBuilder((context) {
+            final a = ref.watch(counter);
+            final b = ref.watch(counter); // same listenable again
+            builds++;
+            return Text('a=$a b=$b builds=$builds');
+          }),
         ),
+      );
+
+      expect(find.text('a=0 b=0 builds=1'), findsOneWidget);
+
+      counter.value = 5;
+      await tester.pump();
+      expect(find.text('a=5 b=5 builds=2'), findsOneWidget);
+      expect(builds, 2);
+    });
+
+    testWidgets('RefWidget works (not just RefBuilder)', (tester) async {
+      final vn = Get.it(false);
+
+      await tester.pumpWidget(
+        Directionality(textDirection: TextDirection.ltr, child: _TestRefWidget(vn)),
       );
       expect(find.text('flag=false'), findsOneWidget);
 
@@ -151,8 +95,8 @@ void main() {
   });
 }
 
-class _TestHookWidget extends HookWidget {
-  const _TestHookWidget(this.flag);
+class _TestRefWidget extends RefWidget {
+  const _TestRefWidget(this.flag);
 
   final ValueListenable<bool> flag;
 

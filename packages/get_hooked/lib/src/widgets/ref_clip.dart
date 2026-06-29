@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
-import 'package:get_hooked/src/vsync_mixin.dart';
+import 'package:get_hooked/src/ref_element.dart';
 
 /// Signature for the callback passed to [RefClip].
 typedef RefClipCallback<T> = T Function(ClipRef ref);
@@ -199,31 +199,29 @@ class _RenderRefClip extends RenderProxyBox {
         context.canvas.drawPath(
           _path?.shift(offset) ?? Path()
             ..addRect(offset & size),
-          _debugPaint ??=
-              Paint()
-                ..shader = ui.Gradient.linear(
-                  Offset.zero,
-                  const Offset(10.0, 10.0),
-                  <Color>[
-                    const Color(0x00000000),
-                    const Color(0xFFFF00FF),
-                    const Color(0xFFFF00FF),
-                    const Color(0x00000000),
-                  ],
-                  <double>[0.25, 0.25, 0.75, 0.75],
-                  TileMode.repeated,
-                )
-                ..strokeWidth = 2.0
-                ..style = PaintingStyle.stroke,
+          _debugPaint ??= Paint()
+            ..shader = ui.Gradient.linear(
+              Offset.zero,
+              const Offset(10.0, 10.0),
+              <Color>[
+                const Color(0x00000000),
+                const Color(0xFFFF00FF),
+                const Color(0xFFFF00FF),
+                const Color(0x00000000),
+              ],
+              <double>[0.25, 0.25, 0.75, 0.75],
+              TileMode.repeated,
+            )
+            ..strokeWidth = 2.0
+            ..style = PaintingStyle.stroke,
         );
         (_debugText ??= TextPainter(
-              text: const TextSpan(
-                text: '✂',
-                style: TextStyle(color: Color(0xFFFF00FF), fontSize: 14.0),
-              ),
-              textDirection: TextDirection.rtl, // doesn't matter, it's one character
-            )..layout())
-            .paint(context.canvas, offset);
+          text: const TextSpan(
+            text: '✂',
+            style: TextStyle(color: Color(0xFFFF00FF), fontSize: 14.0),
+          ),
+          textDirection: TextDirection.rtl, // doesn't matter, it's one character
+        )..layout()).paint(context.canvas, offset);
       }
     }
   }

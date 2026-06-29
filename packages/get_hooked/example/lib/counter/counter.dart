@@ -26,7 +26,7 @@ class Counter extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text('You have pushed the button this many times:'),
-              HookBuilder(_counterText),
+              RefBuilder(_counterText),
             ],
           ),
         ),

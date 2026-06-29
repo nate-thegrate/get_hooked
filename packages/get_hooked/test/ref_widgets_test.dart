@@ -135,7 +135,7 @@ void main() {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: HookBuilder((context) {
+          child: RefBuilder((context) {
             final v = ref.watch(computed);
             return Text('c=$v');
           }),
@@ -155,7 +155,7 @@ void main() {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: HookBuilder((context) {
+          child: RefBuilder((context) {
             final s = ref.watch(sel);
             return Text('s=$s');
           }),
@@ -168,15 +168,15 @@ void main() {
       expect(find.text('s=9'), findsOneWidget);
     });
 
-    testWidgets('useAnimation works for ValueAnimations', (tester) async {
+    testWidgets('ref.watch works for ValueAnimations', (tester) async {
       final v = Get.vsyncValue<double>(0.0, duration: const Duration(milliseconds: 1));
       int builds = 0;
 
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: HookBuilder((context) {
-            final cur = useAnimation(v);
+          child: RefBuilder((context) {
+            final cur = ref.watch(v);
             builds++;
             return Text('anim=$cur builds=$builds');
           }),
@@ -189,7 +189,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 2));
       // At minimum, subscription didn't crash and we can still see widget.
-      expect(find.byType(HookBuilder), findsOneWidget);
+      expect(find.byType(RefBuilder), findsOneWidget);
     });
 
     testWidgets('Get.mediaQuery provides query values', (tester) async {
@@ -198,7 +198,7 @@ void main() {
           textDirection: TextDirection.ltr,
           child: MediaQuery(
             data: const MediaQueryData(size: Size(400, 800)),
-            child: HookBuilder((context) {
+            child: RefBuilder((context) {
               final size = ref.watch(Get.mediaQuery((d) => d.size));
               return Text('w=${size.width}');
             }),

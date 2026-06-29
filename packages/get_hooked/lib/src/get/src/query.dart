@@ -1,10 +1,10 @@
 part of '../get.dart';
 
 /// Encapsulates a [MediaQueryNotifier].
-extension type GetQuery<T>._(MediaQueryNotifier<T> _hooked)
+extension type GetQuery<T>._(MediaQueryNotifier<T> _listenable)
     implements Get<T, MediaQueryNotifier<T>> {
   /// {@macro get_hooked.MediaQueryNotifier.assignView}
-  void assignView(FlutterView view) => _hooked.assignView(view);
+  void assignView(FlutterView view) => _listenable.assignView(view);
 
   /// Encapsulates a [ValueListenable] that stores the current screen [Size].
   ///
@@ -52,7 +52,8 @@ class _WidgetsBindingNotifier<T> extends ValueNotifier<T> {
 
 /// A variation of the [Get] API that double-checks the [FlutterView] count
 /// when retrieving the [value].
-extension type GetViewData<T>._(ValueListenable<T> _hooked) implements Get<T, ValueListenable<T>> {
+extension type GetViewData<T>._(ValueListenable<T> _listenable)
+    implements Get<T, ValueListenable<T>> {
   @redeclare
   T get value {
     if (kDebugMode &&
@@ -73,10 +74,10 @@ extension type GetViewData<T>._(ValueListenable<T> _hooked) implements Get<T, Va
         ),
       ]);
     }
-    return _hooked.value;
+    return _listenable.value;
   }
 
-  /// Whether APIs that assume a single window should throw an error when multiple [FlutterView]s
+  /// Whether APIs such as [GetQuery.size] should throw an error when multiple [FlutterView]s
   /// are found.
   ///
   /// This value is referenced in [GetQuery.size] and [GetQuery.brightness].
@@ -86,7 +87,7 @@ extension type GetViewData<T>._(ValueListenable<T> _hooked) implements Get<T, Va
 /// An interface for obtaining the current platform [Brightness].
 ///
 /// Includes an [isDark] field
-extension type GetBrightness._(ValueNotifier<Brightness> _hooked)
+extension type GetBrightness._(ValueNotifier<Brightness> _listenable)
     implements Get<Brightness, ValueListenable<Brightness>> {
   static final _isDark = Get.select(GetQuery.brightness, (value) => value == Brightness.dark);
 

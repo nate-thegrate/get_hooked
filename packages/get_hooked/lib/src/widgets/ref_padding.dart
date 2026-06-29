@@ -1,7 +1,7 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
-import 'package:get_hooked/src/vsync_mixin.dart';
+import 'package:get_hooked/src/ref_element.dart';
 
 /// A variant of [Padding] that evaluates based on a [RefComputer<EdgeInsetsGeometry>].
 class RefPadding extends SingleChildRenderObjectWidget {

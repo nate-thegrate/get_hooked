@@ -386,7 +386,7 @@ if a substitution is found in an ancestor `GetScope`.
 ```dart
 GetScope(
   substitutes: [Substitute(myData, OtherData.new)],
-  child: HookBuilder(builder: (context) {
+  child: RefBuilder(builder: (context) {
     final data = ref.watch(myData);
     // ...
   }),
@@ -404,18 +404,23 @@ the `newData` by default.
 This example shows how to make a button with a number that increases each time it's tapped:
 
 ```dart
-class CounterButton extends HookWidget {
+class CounterButton extends StatefulWidget {
   const CounterButton({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final counter = useState(0);
+  State<CounterButton> createState() => _CounterButtonState();
+}
 
+class _CounterButtonState extends State<CounterButton> {
+  int counter = 0;
+
+  @override
+  Widget build(BuildContext context) {
     return FilledButton(
       onPressed: () {
-        counter.value += 1;
+        setState(() => counter += 1);
       },
-      child: Text('counter value: ${counter.value}'),
+      child: Text('counter value: $counter'),
     );
   }
 }
@@ -426,7 +431,7 @@ But the following change would allow any widget to access this value:
 ```dart
 final counter = Get.it(0);
 
-class CounterButton extends HookWidget {
+class CounterButton extends RefWidget {
   const CounterButton({super.key});
 
   @override
@@ -440,8 +445,6 @@ class CounterButton extends HookWidget {
   }
 }
 ```
-
-15 lines of code, same as before!
 
 <br>
 
@@ -458,7 +461,7 @@ final counter = Get.it(0);
 
 class CounterButton extends FilledButton {
   const CounterButton({super.key})
-    : super(onPressed: _increment, child: const HookBuilder(builder: _build));
+    : super(onPressed: _increment, child: const RefBuilder(builder: _build));
 
   static void _increment() {
     counter.value += 1;
@@ -514,66 +517,43 @@ extension GetHooked<V> on Get<Object?, V> {
 <br>
 
 ```dart
-const HookRef ref = HookRef._();
+Ref get ref => _elementDoingBuild!;
+RefElement? _elementDoingBuild;
 
-class HookRef implements Ref {
+base mixin RefElement on ComponentElement implements ComputeContext {
   // ...
 }
 ```
 
-`ref.watch()` and other static methods link Get objects with `HookWidget`s
-and `RenderHookWidget`s.
+`ref.watch()` and `ref.select()` link Get objects with `RefWidget`s
+and render object widgets that use `ComputeContext`.
 
-The `Ref()` constructor is used in a `GetScope` to make substitutions.\
-Descendant widgets that use `ref.watch()` will reference the new object
-in its place.
+A `GetScope` enables substitutions: descendant widgets that use `ref.watch()`
+will reference the new object in its place.
 
 <br>
 
 # Tips for success
 
-## Follow the rules of Hooks
+## Use `ref` inside build methods
 
-`Ref` functions, along with any function name starting with `use`,
-should only be called inside a `HookWidget`'s build method.
+`ref.watch()` and `ref.select()` should only be called inside a
+`RefWidget`'s or `StatefulRefWidget`'s build method, or a `RefBuilder` callback.
 
 ```dart
 // BAD
 Builder(builder: (context) {
-  final focusNode = useFocusNode();
   final data = ref.watch(myData);
 })
 
 // GOOD
-HookBuilder(builder: (context) {
-  final focusNode = useFocusNode();
+RefBuilder(builder: (context) {
   final data = ref.watch(myData);
 })
 ```
 
-A `HookWidget`'s `context` keeps track of:
-1. how many hook functions are called, and
-2. the order they're called in.
-
-Neither of these should change throughout the widget's lifetime.
-
-For a more detailed explanation, see also:
-- https://pub.dev/packages/flutter_hooks#rules
-- https://react.dev/reference/rules/rules-of-hooks
-
-> [!NOTE]
-> The above `HookBuilder` example uses `ref`, a global constant whose methods
-> are Hook functions that can watch Listenable objects.\
-> Since Hooks iterate through a linked list under the hood, making calls
-> unconditionally in the same order is mandatory.
->
-> Other APIs, such as `RefPaint`, implement `ref.watch()` calls without any
-> Hook functions; instead, a set of dependencies is established the first
-> time the callback runs, and that set is used throughout the widget's lifetime
-> (unless something changes in the ancestor `GetScope`).\
-> These callbacks technically don't need a consistent ordering, but they do need
-> to make the `ref.watch()` calls unconditionally, to prevent scenarios where a
-> depencency is ignored.
+Unlike hook-based approaches, `ref.watch()` calls can be made conditionally
+and in any order. Subscriptions are tracked by identity, not by position.
 
 <br>
 
@@ -656,7 +636,7 @@ double _myValue(Ref ref) {
 One of the best things about **get_hooked** is the ability to interact
 with providers directly.
 
-While building a HookWidget, the `ref` methods handle the `BuildContext`
+While building a RefWidget, the `ref` methods handle the `BuildContext`
 boilerplate, but as far as handling things between frames, scoping makes things
 arguably a bit too verbose.
 

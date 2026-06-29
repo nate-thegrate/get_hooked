@@ -80,6 +80,3 @@ class _FallbackTicker extends Ticker {
     super.dispose();
   }
 }
-
-/// A [BuildContext] that also functions as a ticker provider.
-abstract interface class VsyncContext implements Vsync, BuildContext {}

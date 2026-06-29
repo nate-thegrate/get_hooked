@@ -43,7 +43,7 @@ class FormExampleApp extends StatelessWidget {
         drawer: const ScreenSelect(),
         body: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[HookBuilder(textField), button],
+          children: <Widget>[RefBuilder(textField), button],
         ),
       ),
     );

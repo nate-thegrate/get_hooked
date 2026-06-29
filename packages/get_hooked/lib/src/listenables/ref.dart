@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/foundation.dart' show ValueListenable;
+import 'package:flutter/widgets.dart' show BuildContext;
 
 import 'animations/vsync.dart';
 
@@ -50,4 +51,9 @@ abstract interface class Ref {
 /// - [Ref]
 /// - [Vsync]
 /// - [TickerProvider] (supertype of [Vsync])
-abstract class ComputeContext implements VsyncContext, Ref {}
+abstract class RefContext implements Ref, Vsync, BuildContext {
+  /// The context that is currently performing a build or update.
+  ///
+  /// See also: [ref], which points to this value.
+  static RefContext? current;
+}

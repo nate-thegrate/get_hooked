@@ -47,17 +47,19 @@ class CustomButtonApp extends StatelessWidget {
   static void tapUp([_]) => _elevation.forward();
 
   static Widget _label(BuildContext context) {
-    final String text = ref.compute((ref) {
-      const suffix = 'ing';
-      final int suffixLength = ((1 - ref.watch(_elevation)) * suffix.length).round();
-      final bool hovering = ref.watch(_hovered) > 0.25;
-      final String punctuation = switch (ref.watch(_elevation.status)) {
-        .dismissed => '!',
-        .forward || .completed when hovering => '?',
-        _ => '',
-      };
-      return 'click${suffix.substring(0, suffixLength)} here$punctuation';
-    });
+    final double elevation = ref.watch(_elevation);
+    final double hovered = ref.watch(_hovered);
+    final AnimationStatus status = ref.watch(_elevation.status);
+
+    const suffix = 'ing';
+    final int suffixLength = ((1 - elevation) * suffix.length).round();
+    final bool hovering = hovered > 0.25;
+    final String punctuation = switch (status) {
+      AnimationStatus.dismissed => '!',
+      AnimationStatus.forward || AnimationStatus.completed when hovering => '?',
+      _ => '',
+    };
+    final String text = 'click${suffix.substring(0, suffixLength)} here$punctuation';
 
     return Text(
       text,
@@ -82,7 +84,7 @@ class CustomButtonApp extends StatelessWidget {
               onTapUpInside: tapUp,
               child: RefDecoration(
                 _decorate,
-                child: RefSizedBox(_size, child: Center(child: HookBuilder(_label))),
+                child: RefSizedBox(_size, child: Center(child: RefBuilder(_label))),
               ),
             ),
           ),
