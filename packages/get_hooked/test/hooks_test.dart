@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_hooked/get_hooked.dart';
 
@@ -91,6 +92,62 @@ void main() {
       vn.value = true;
       await tester.pump();
       expect(find.text('flag=true'), findsOneWidget);
+    });
+
+    testWidgets('ref.watch resubscribes after reassemble', (tester) async {
+      final counter = Get.it(0);
+      var builds = 0;
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: RefBuilder((context) {
+            builds++;
+            return Text('v=${ref.watch(counter)} builds=$builds');
+          }),
+        ),
+      );
+      expect(find.text('v=0 builds=1'), findsOneWidget);
+
+      await tester.binding.reassembleApplication();
+      await tester.pump();
+      expect(builds, greaterThan(1));
+      final buildsAfterReassemble = builds;
+
+      counter.value = 1;
+      await tester.pump();
+      expect(builds, buildsAfterReassemble + 1);
+      expect(find.textContaining('v=1'), findsOneWidget);
+    });
+
+    testWidgets('Get.vsync keeps driving UI after reassemble', (tester) async {
+      final progress = Get.vsync(initialValue: 0.0, duration: const Duration(milliseconds: 100));
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: RefOpacity(
+            (ref) => ref.watch(progress),
+            child: const SizedBox(width: 10, height: 10),
+          ),
+        ),
+      );
+
+      double opacity() => tester.renderObject<RenderOpacity>(find.byType(RefOpacity)).opacity;
+
+      expect(opacity(), 0.0);
+
+      await tester.binding.reassembleApplication();
+      await tester.pump();
+
+      progress.forward();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(opacity(), greaterThan(0.0));
+      expect(opacity(), lessThan(1.0));
+
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(opacity(), 1.0);
     });
   });
 }

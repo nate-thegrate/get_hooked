@@ -29,15 +29,9 @@ typedef _Animation = VsyncValue<Object?>;
 class ComputedNotifier<Result> with ChangeNotifier implements Ref, VsyncValue<Result> {
   /// Initializes class fields.
   ///
-  /// If [scope] is non-null, [Ref.watch] and [Ref.select] calls targeting
+  /// If [_scope] is non-null, [Ref.watch] and [Ref.select] calls targeting
   /// the map keys will subscribe to the respective values.
-  ComputedNotifier(
-    this.compute, {
-    this.concurrent,
-    SubMap<ValueListenable<Object?>>? scope,
-    Vsync vsync = Vsync.fallback,
-  }) : _vsync = vsync,
-       _scope = scope;
+  ComputedNotifier(this.compute, {this.concurrent, this._scope, this._vsync = Vsync.fallback});
 
   /// The function on which this notifier is based.
   final RefComputer<Result> compute;

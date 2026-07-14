@@ -189,5 +189,58 @@ void main() {
       // No exceptions during paint.
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('gesture localPosition accounts for layout paint offsets', (tester) async {
+      // Regression: hit-testing children with a manual position shift (without
+      // [BoxHitTestResult.addWithPaintOffset]) left the hit-test transform stack
+      // missing the paint offset, so PointerEvent.localPosition was wrong for
+      // descendants of padded RefLayouts.
+      Offset? localPosition;
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Center(
+            child: SizedBox(
+              width: 400,
+              height: 400,
+              child: _PaddingLayout(
+                padding: const EdgeInsets.all(50),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onPanDown: (details) => localPosition = details.localPosition,
+                  child: const SizedBox.expand(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Global center of the padded child content is (200, 200) in the 400x400
+      // host; the child's top-left is at (50, 50), so local should be (150, 150).
+      await tester.tapAt(tester.getCenter(find.byType(_PaddingLayout)));
+      expect(localPosition, const Offset(150, 150));
+    });
   });
+}
+
+/// A [RefLayout] that insets its child, similar to PaperPadding in tic_tac_go.
+class _PaddingLayout extends RefLayout {
+  const _PaddingLayout({required this.padding, required this.child});
+
+  final EdgeInsets padding;
+  final Widget child;
+
+  @override
+  RefLayoutState<_PaddingLayout> createState() => _PaddingLayoutState();
+}
+
+class _PaddingLayoutState extends RefLayoutState<_PaddingLayout> {
+  late final content = delegate((w) => w.child);
+
+  @override
+  void performLayout(LayoutRef ref) {
+    content.layoutPadding(widget.padding);
+  }
 }

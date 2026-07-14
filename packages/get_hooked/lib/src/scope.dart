@@ -240,7 +240,10 @@ class GetScope extends StatefulRefWidget {
         ? context.dependOnInheritedWidgetOfExactType()
         : context.getInheritedWidgetOfExactType();
 
+    if (model?.map.maybeGet(placeholder) case final scoped?) return scoped;
+
     late final _GetScopeState? scopeState = context.findAncestorStateOfType<_GetScopeState>();
+
     if (placeholder is ComputedNotifier || placeholder is ProxyNotifier) {
       if (model == null || scopeState == null) return null;
 
@@ -261,7 +264,7 @@ class GetScope extends StatefulRefWidget {
       return computers[placeholder] = result;
     }
 
-    return model?.map.maybeGet(placeholder);
+    return null;
   }
 
   /// Returns the [Get] object that overrides this one.

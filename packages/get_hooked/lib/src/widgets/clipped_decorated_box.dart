@@ -61,13 +61,10 @@ class RenderClippedDecoration extends RenderProxyBox {
   /// Creates a decorated box.
   RenderClippedDecoration({
     required Decoration decoration,
-    DecorationPosition position = DecorationPosition.background,
-    ImageConfiguration configuration = ImageConfiguration.empty,
-    Clip clipBehavior = Clip.none,
-  }) : _decoration = decoration,
-       _position = position,
-       _clipBehavior = clipBehavior,
-       _configuration = configuration {
+    this._position = DecorationPosition.background,
+    this._configuration = ImageConfiguration.empty,
+    this._clipBehavior = Clip.none,
+  }) : _decoration = decoration {
     _imagePainter = switch (decoration) {
       BoxDecoration(:final image?) ||
       ShapeDecoration(:final image?) => image.createPainter(markNeedsPaint),

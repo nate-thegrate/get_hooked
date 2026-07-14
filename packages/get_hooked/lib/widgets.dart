@@ -1,6 +1,7 @@
 export 'src/widgets/clipped_decorated_box.dart';
 export 'src/widgets/hook_widgets.dart';
 export 'src/widgets/ref_align.dart';
+export 'src/widgets/ref_aspect_ratio.dart';
 export 'src/widgets/ref_clip.dart';
 export 'src/widgets/ref_constraints.dart';
 export 'src/widgets/ref_decoration.dart';
@@ -12,4 +13,5 @@ export 'src/widgets/ref_paint.dart';
 export 'src/widgets/ref_parent_data.dart';
 export 'src/widgets/ref_position.dart';
 export 'src/widgets/ref_sized_box.dart';
+export 'src/widgets/ref_shader_mask.dart';
 export 'src/widgets/ref_transform.dart';

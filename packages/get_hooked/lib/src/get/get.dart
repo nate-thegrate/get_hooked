@@ -1,4 +1,5 @@
 /// @docImport 'package:flutter/material.dart';
+/// @docImport 'package:get_hooked/get_hooked.dart';
 library;
 
 import 'dart:ui';
@@ -12,7 +13,6 @@ import 'package:get_hooked/src/computed_notifier.dart';
 import 'package:meta/meta.dart';
 
 part 'src/dispose_guard.dart';
-part 'src/scoped.dart';
 part 'src/query.dart';
 
 /// Gives access to methods such as [ValueListenable.addListener].
@@ -71,11 +71,11 @@ extension type Get<T, V extends ValueListenable<T>>._(V _listenable) implements 
     return GetVsyncDouble._(
       _VsyncDouble(
         value: initialValue,
-        lowerBound: lowerBound ?? (bounded ? 0.0 : double.negativeInfinity),
-        upperBound: upperBound ?? (bounded ? 1.0 : double.infinity),
+        lowerBound: lowerBound ?? (bounded ? 0.0 : .negativeInfinity),
+        upperBound: upperBound ?? (bounded ? 1.0 : .infinity),
         duration: duration,
         reverseDuration: reverseDuration,
-        behavior: behavior ?? (bounded ? AnimationBehavior.normal : AnimationBehavior.preserve),
+        behavior: behavior ?? (bounded ? .normal : .preserve),
         debugLabel: debugLabel,
       ),
     );
@@ -260,6 +260,9 @@ extension type GetVsyncDouble._(VsyncDouble _listenable)
 
   @redeclare
   GetAnimationStatus get status => GetAnimationStatus._(_listenable.status);
+
+  @redeclare
+  GetValue<bool> get toggler => GetValue._(_listenable.toggler);
 }
 
 /// Encapsulates a [ValueAnimation].

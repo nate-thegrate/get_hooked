@@ -10,5 +10,6 @@ export 'src/listenables/async.dart';
 export 'src/listenables/dispose_guard.dart';
 export 'src/listenables/media_query.dart';
 export 'src/listenables/overlay.dart';
+export 'src/listenables/placeholder.dart';
 export 'src/listenables/proxy.dart';
 export 'src/listenables/ref.dart';

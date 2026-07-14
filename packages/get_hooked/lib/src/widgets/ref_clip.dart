@@ -51,10 +51,7 @@ sealed class _RefClip<T extends Object> extends RefClip {
 
   @override
   RenderObject createRenderObject(BuildContext context) {
-    return _RenderRefClip(
-      clipBehavior: clipBehavior,
-      newSize: (context as _ClipElement)._newSize,
-    );
+    return _RenderRefClip(clipBehavior: clipBehavior, newSize: (context as _ClipElement)._newSize);
   }
 
   @override
@@ -128,9 +125,7 @@ class _ShapeElement extends _ClipElement {
 }
 
 class _RenderRefClip extends RenderProxyBox {
-  _RenderRefClip({Clip clipBehavior = Clip.antiAlias, required this.newSize})
-    : _clipBehavior = clipBehavior,
-      super(null);
+  _RenderRefClip({this._clipBehavior = .antiAlias, required this.newSize}) : super(null);
 
   Path? get path => _path;
   Path? _path;

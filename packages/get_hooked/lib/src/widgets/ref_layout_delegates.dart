@@ -204,11 +204,7 @@ final class RefLayoutDelegate {
       return;
     }
     if (_state._dryRun) {
-      if (_renderer != null) {
-        _size = _renderer!.getDryLayout(BoxConstraints.loose(_state._size));
-      } else {
-        _size = Size.zero;
-      }
+      _size = _renderer?.getDryLayout(BoxConstraints.loose(_state._size)) ?? Size.zero;
       _state._zIndex += 1;
       return;
     }
@@ -464,15 +460,22 @@ class RenderRefLayout extends RenderBox {
       .._size = constraints.biggest
       ..performLayout(LayoutRef._(state._element!))
       .._delegates.sort((a, b) => a._parentData.zIndex.compareTo(b._parentData.zIndex));
-    size = state._size;
+    size = constraints.constrain(state._size);
   }
 
   @override
   bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
-    for (final RenderBox renderBox in children.toList().reversed) {
-      if (renderBox.parentData case RefLayoutParentData(:final offset)
-          when (offset & renderBox.size).contains(position) &&
-              renderBox.hitTest(result, position: position - offset)) {
+    for (final RenderBox child in children.toList().reversed) {
+      final childParentData = child.parentData! as RefLayoutParentData;
+      final bool isHit = result.addWithPaintOffset(
+        offset: childParentData.offset,
+        position: position,
+        hitTest: (result, transformed) {
+          assert(transformed == position - childParentData.offset);
+          return child.hitTest(result, position: transformed);
+        },
+      );
+      if (isHit) {
         return true;
       }
     }

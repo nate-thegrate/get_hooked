@@ -12,8 +12,7 @@ class RefPadding extends SingleChildRenderObjectWidget {
   final RefComputer<EdgeInsetsGeometry> padding;
 
   @override
-  RenderPadding createRenderObject(BuildContext context) =>
-      RenderPadding(padding: EdgeInsets.zero);
+  RenderPadding createRenderObject(BuildContext context) => RenderPadding(padding: .zero);
 
   @override
   SingleChildRenderObjectElement createElement() => _PaddingElement(this);

@@ -255,6 +255,10 @@ mixin ElementCompute on Element implements RefContext, _Tickers {
     }
     _disposers.clear();
     _selectors.clear();
+    // Allow watch() to re-subscribe after hot reload / scope changes. Without
+    // this, `_subscriptions.add` returns false and the animation is left on
+    // Vsync.fallback with no element listener — toggles appear frozen.
+    _subscriptions.clear();
     recompute();
   }
 

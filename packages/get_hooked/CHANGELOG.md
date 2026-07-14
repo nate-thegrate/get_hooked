@@ -1,3 +1,11 @@
+## 0.5.0
+- Replace `ScopedGet` with `ListenablePlaceholder` (lenient + strict modes)
+- New widgets: `RefAspectRatio`, `RefShaderMask`
+- `VsyncDouble.toggler` / `GetVsyncDouble.toggler` for simple bool-driven animations
+- Fix `ref.watch` subscriptions after hot reload / reassemble (animations no longer freeze)
+- Fix `RefLayout` hit-testing so gesture `localPosition` accounts for paint offsets
+- Small `GetScope` / `VsyncDouble` behavior cleanups
+
 ## 0.4.0
 - Rewrote many (most?) of the APIs
   - I thought about maybe getting an agent to hallucinate a detailed list here, but it probably wouldn't be helpful

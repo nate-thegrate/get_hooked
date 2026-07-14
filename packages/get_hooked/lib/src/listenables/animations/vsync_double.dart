@@ -8,6 +8,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/src/bug_report.dart';
+import 'package:get_hooked/src/computed_notifier.dart';
 import 'package:get_hooked/src/listenables/animations/vsync.dart';
 
 import 'animator.dart';
@@ -29,7 +30,8 @@ class VsyncDouble extends Animator<double> {
     super.reverseCurve,
     super.behavior,
     super.debugLabel,
-  }) : super(
+  }) : _forward = value != null && value != lowerBound,
+       super(
          value ?? lowerBound,
          initialStatus: value == null || value == lowerBound
              ? AnimationStatus.dismissed
@@ -44,7 +46,7 @@ class VsyncDouble extends Animator<double> {
   /// The value at which this animation is deemed to be completed.
   final double upperBound;
 
-  bool _forward = true;
+  bool _forward;
 
   @override
   set value(double newValue) {
@@ -62,6 +64,10 @@ class VsyncDouble extends Animator<double> {
         ? AnimationStatus.forward
         : AnimationStatus.reverse;
   }
+
+  /// A much simpler version of this animator that can drive it to [upperBound] (true)
+  /// or [lowerBound] (false).
+  late final ValueNotifier<bool> toggler = _VsyncToggler(this);
 
   Simulation? _simulation;
 
@@ -257,6 +263,7 @@ class VsyncDouble extends Animator<double> {
     assert(debugCheckDisposal('forward'));
     stop();
 
+    if (from != null) value = from;
     _forward = true;
     return _runSimulation(
       _InterpolationSimulation(
@@ -287,6 +294,7 @@ class VsyncDouble extends Animator<double> {
     assert(debugCheckDisposal('reverse'));
     stop();
 
+    if (from != null) value = from;
     _forward = false;
     return _runSimulation(
       _InterpolationSimulation(
@@ -416,6 +424,18 @@ class VsyncDouble extends Animator<double> {
   /// Shorthand for `status.value.isCompleted`.
   /// (See [AnimationStatus.isCompleted] for more details.)
   bool get isCompleted => status.value.isCompleted;
+}
+
+class _VsyncToggler extends ComputedNotifier<bool> implements ValueNotifier<bool> {
+  _VsyncToggler(this._controller)
+    : super((ref) => ref.watch(_controller.status).isForwardOrCompleted);
+
+  final VsyncDouble _controller;
+
+  @override
+  set value(bool newValue) {
+    newValue ? _controller.forward() : _controller.reverse();
+  }
 }
 
 class _InterpolationSimulation extends Simulation {

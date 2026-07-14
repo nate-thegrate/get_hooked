@@ -32,22 +32,16 @@ abstract class Animator<T> extends ValueNotifier<T> implements StyledAnimation<T
   Animator(
     // ignore: matching_super_parameters
     super.initialValue, {
-    AnimationStatus initialStatus = AnimationStatus.dismissed,
-    Vsync vsync = Vsync.fallback,
-    this.behavior = AnimationBehavior.normal,
-    Duration? duration,
-    Curve? curve,
-    Duration? reverseDuration,
-    Curve? reverseCurve,
+    this._initialStatus = .dismissed,
+    this._vsync = .fallback,
+    this.behavior = .normal,
+    this._duration,
+    this._curve,
+    this._reverseDuration,
+    this._reverseCurve,
     this.debugLabel,
   }) : _initialValue = initialValue,
-       _initialStatus = initialStatus,
-       _vsync = vsync,
-       _duration = duration,
-       _curve = curve,
-       _reverseDuration = reverseDuration,
-       _reverseCurve = reverseCurve,
-       statusNotifier = ValueNotifier(initialStatus) {
+       statusNotifier = ValueNotifier(_initialStatus) {
     _ticker = vsync.createTicker(_tick);
     vsync.registerAnimation(this);
   }
