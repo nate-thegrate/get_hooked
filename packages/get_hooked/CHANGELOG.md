@@ -1,3 +1,7 @@
+## 0.5.1
+- Remove a few unused files
+- Also just a sanity check since I'm not 100% sure 0.5.0 was published correctly
+
 ## 0.5.0
 - Replace `ScopedGet` with `ListenablePlaceholder` (lenient + strict modes)
 - New widgets: `RefAspectRatio`, `RefShaderMask`
