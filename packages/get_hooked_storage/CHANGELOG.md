@@ -1,3 +1,6 @@
+## 0.1.1
+- add documentation & analysis rules
+
 ## 0.1.0
 - Initial release!
 - `Stored<T>`: persistent `GetValue` backed by `SharedPreferences`

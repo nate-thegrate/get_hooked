@@ -6,8 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get_hooked/get_hooked.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _bugReport =
-    'Please file a bug report at https://github.com/nate-thegrate/get_hooked/issues';
+const _bugReport = 'Please file a bug report at https://github.com/nate-thegrate/get_hooked/issues';
 
 SharedPreferences? _storage;
 const _nullToken = '_nullToken';
@@ -34,7 +33,27 @@ Future<bool> _save(String name, Object? newValue) => switch (newValue) {
 /// For some reason, the `?` works in a type argument but not when creating a [Type] object.
 typedef _Maybe<T> = T?;
 
+/// A [GetValue] that is automatically persisted to and restored from
+/// [SharedPreferences].
+///
+/// Call [Stored.init] before reading or writing any values.
+///
+/// Supported types with the default constructor include `bool`, `int`, `double`,
+/// `String`, `List<String>`, [Color], and their nullable variants. Use
+/// [Stored.enumValue] for enums and [Stored.custom] for other types.
+///
+/// ```dart
+/// final counter = Stored('counter', 0);
+/// counter.value = 1; // persists automatically
+/// ```
 extension type Stored<T>._(_Stored<T, Object> _hooked) implements GetValue<T> {
+  /// Creates a [Stored] value under [storageKey], using [initialValue] when no
+  /// persisted value exists.
+  ///
+  /// Supported types: `bool`, `int`, `double`, `String`, `List<String>`, [Color],
+  /// and their nullable variants.
+  ///
+  /// For enums, use [Stored.enumValue]. For other types, use [Stored.custom].
   factory Stored(String storageKey, T initialValue) {
     final _Stored<Object?, Object>? result = switch ((T, initialValue)) {
       (const (_Maybe<bool>), final bool? value) => _Stored.nullable<bool?>(storageKey, value),
@@ -71,7 +90,7 @@ extension type Stored<T>._(_Stored<T, Object> _hooked) implements GetValue<T> {
       return stored;
     } else if (result != null) {
       throw StateError(
-        'Internal error: Stored(\'$storageKey\', $initialValue) was parsed into '
+        "Internal error: Stored('$storageKey', $initialValue) was parsed into "
         'a ${result.runtimeType}, which is not a Stored<$T>.\n$_bugReport',
       );
     }
@@ -81,6 +100,15 @@ extension type Stored<T>._(_Stored<T, Object> _hooked) implements GetValue<T> {
     ]);
   }
 
+  /// Creates a [Stored] enum value, persisted by the enum's `name`.
+  ///
+  /// Pass the enum's `values` list (e.g. `ThemeMode.values`) and an [initial]
+  /// value used when nothing is stored yet. If [storageKey] is omitted, the
+  /// runtime type of [initial] is used as the key.
+  ///
+  /// ```dart
+  /// final themeMode = Stored.enumValue(ThemeMode.values, ThemeMode.system);
+  /// ```
   static Stored<E> enumValue<E extends Enum?>(List<Enum> values, E initial, {String? storageKey}) {
     assert(values is List<E>, () {
       var type = '$E';
@@ -93,12 +121,29 @@ extension type Stored<T>._(_Stored<T, Object> _hooked) implements GetValue<T> {
       _Stored<E, String>(
         storageKey ?? '${initial.runtimeType}',
         initial,
-        encode: (E value) => value?.name ?? _nullToken,
-        decode: (String name) => (name == _nullToken ? null : values.byName(name)) as E,
+        encode: (value) => value?.name ?? _nullToken,
+        decode: (name) => (name == _nullToken ? null : values.byName(name)) as E,
       ),
     );
   }
 
+  /// Creates a [Stored] value with custom [encode] and [decode] for types not
+  /// handled by the default constructor or [Stored.enumValue].
+  ///
+  /// [Encoded] must be a type that [SharedPreferences] can store natively
+  /// (`bool`, `int`, `double`, `String`, or `List<String>`).
+  ///
+  /// ```dart
+  /// final point = Stored.custom<Offset, String>(
+  ///   'point',
+  ///   Offset.zero,
+  ///   encode: (o) => '${o.dx},${o.dy}',
+  ///   decode: (s) {
+  ///     final parts = s.split(',');
+  ///     return Offset(double.parse(parts[0]), double.parse(parts[1]));
+  ///   },
+  /// );
+  /// ```
   static Stored<T> custom<T, Encoded extends Object>(
     String storageKey,
     T initialValue, {
@@ -122,7 +167,7 @@ extension type Stored<T>._(_Stored<T, Object> _hooked) implements GetValue<T> {
   /// with the [_Stored] API.
   ///
   /// If `clearExisting` is true, all existing preferences are cleared.
-  static FutureOr<void> init({SharedPreferences? prefs, bool clearExisting = false}) {
+  static Future<void> init({SharedPreferences? prefs, bool clearExisting = false}) {
     void maybeClearStorage(SharedPreferences prefs) {
       _storage = prefs;
       if (clearExisting) prefs.clear();
@@ -130,7 +175,7 @@ extension type Stored<T>._(_Stored<T, Object> _hooked) implements GetValue<T> {
 
     if (prefs ?? _storage case final existing?) {
       maybeClearStorage(existing);
-      return null;
+      return SynchronousFuture(null);
     }
 
     return SharedPreferences.getInstance().then(maybeClearStorage);

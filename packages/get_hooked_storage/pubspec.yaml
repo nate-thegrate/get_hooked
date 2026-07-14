@@ -1,6 +1,6 @@
 name: get_hooked_storage
 description: "Persistent GetValue objects backed by SharedPreferences for get_hooked."
-version: 0.1.0
+version: 0.1.1
 homepage: https://no-tolls.dev/
 issue_tracker: https://github.com/nate-thegrate/get_hooked/issues
 repository: https://github.com/nate-thegrate/get_hooked/tree/main/packages/get_hooked_storage
