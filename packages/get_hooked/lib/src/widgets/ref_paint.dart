@@ -8,7 +8,6 @@ import 'package:get_hooked/listenables.dart';
 import 'package:get_hooked/src/ref_element.dart';
 import 'package:get_hooked/src/scope.dart';
 
-import '../get/get.dart';
 import 'ref_clip.dart';
 import 'ref_paint_semantics.dart' as semantics;
 
@@ -37,8 +36,7 @@ class RefPaint extends SingleChildRenderObjectWidget {
   /// If `null` (the default), the painter fills the available space
   /// but does not apply additional constraints to the [child].
   ///
-  /// If the child is `null`, the painter fills the available space
-  /// and changing this value has no effect.
+  /// If the child is `null`, this value is ignored and the painter fills the available space.
   final bool? expanded;
 
   /// Called whenever the object needs to paint. The given [Canvas] has its
@@ -100,41 +98,12 @@ typedef RefPaintCallback = void Function(PaintRef ref);
 typedef RefPaintSemanticsBuilder = List<CustomPainterSemantics> Function(PaintRef ref);
 
 /// An interface used by [RefPaint.paint] and [RefPaint.semanticsBuilder].
-class PaintRef implements ClipRef {
-  PaintRef._paint(_RenderRefPaint renderer, this._element, this._paintingContext)
-    : _debugPainting = true,
-      size = renderer.size,
-      _handled = _element.handledPaint,
-      _markForUpdate = renderer.markNeedsPaint,
-      _updateHitArea = renderer.updateHitArea;
-
-  PaintRef._semantics(_RenderRefPaint renderer, this._element)
-    : _debugPainting = false,
-      size = renderer.size,
-      _paintingContext = null,
-      _handled = _element.handledSemantics,
-      _markForUpdate = renderer.markNeedsSemanticsUpdate,
-      _updateHitArea = renderer.updateHitArea;
-
-  final _RefPainterElement _element;
-  final PaintingContext? _paintingContext;
-  final bool _handled;
-  final bool _debugPainting;
-  final VoidCallback _markForUpdate;
-  final ValueChanged<Path> _updateHitArea;
-
-  /// The [Size] of the canvas.
-  @override
-  final Size size;
-
+abstract interface class PaintRef implements ClipRef {
   /// The painter's [BuildContext].
-  BuildContext get context => _element;
+  BuildContext get context;
 
   /// The [Canvas] on which to paint.
-  Canvas get canvas {
-    if (kDebugMode) _debugCheckPainting('canvas');
-    return _paintingContext!.canvas;
-  }
+  Canvas get canvas;
 
   /// Hints that the painting in the current layer is complex and would benefit
   /// from caching.
@@ -146,10 +115,7 @@ class PaintRef implements ClipRef {
   /// Calling this ensures a [Canvas] is available. Only draw calls on the
   /// current canvas will be hinted; the hint is not propagated to new canvases
   /// created after a new layer is added to the painting context.
-  void setIsComplexHint() {
-    if (kDebugMode) _debugCheckPainting('setIsComplexHint()');
-    _paintingContext?.setIsComplexHint();
-  }
+  void setIsComplexHint();
 
   /// Hints that the painting in the current layer is likely to change next frame.
   ///
@@ -161,71 +127,7 @@ class PaintRef implements ClipRef {
   /// Calling this ensures a [Canvas] is available. Only draw calls on the
   /// current canvas will be hinted; the hint is not propagated to new canvases
   /// created after a new layer is added to the painting context.
-  void setWillChangeHint() {
-    if (kDebugMode) _debugCheckPainting('setWillChangeHint()');
-    _paintingContext?.setWillChangeHint();
-  }
-
-  void _debugCheckPainting(String fieldName) {
-    if (kDebugMode && !_debugPainting) {
-      throw FlutterError.fromParts([
-        ErrorSummary('PaintRef.$fieldName accessed during buildSemantics.'),
-        ErrorHint('Consider removing this method call from the buildSemantics() method body.'),
-      ]);
-    }
-  }
-
-  /// Returns the [Get] object's value, and triggers a re-render when it changes.
-  @override
-  T watch<T>(ValueListenable<T> listenable, {bool autoVsync = true, bool useScope = true}) {
-    final (scoped, value) = context.read(listenable, useScope: useScope, createDependency: true);
-
-    if (!_handled) {
-      if (autoVsync && listenable is VsyncValue<T> && listenable == scoped) {
-        final VsyncValue<T> vsyncValue = listenable;
-        if (_element.registry.add(vsyncValue)) {
-          _element.disposers.add(() => _element.registry.remove(vsyncValue));
-        }
-      }
-      _listen(scoped, _markForUpdate);
-    }
-
-    return value;
-  }
-
-  /// Returns the [selector]'s output, and triggers a re-render when it changes.
-  @override
-  Result select<Result, T>(
-    ValueListenable<T> listenable,
-    Result Function(T value) selector, {
-    bool autoVsync = true,
-    bool useScope = true,
-  }) {
-    final (scoped, value) = context.read(listenable, useScope: useScope, createDependency: true);
-
-    Result currentValue = selector(value);
-
-    if (_handled) return currentValue;
-
-    if (autoVsync && listenable is VsyncValue<T> && listenable == scoped) {
-      final VsyncValue<T> vsyncValue = listenable;
-      if (_element.registry.add(vsyncValue)) {
-        _element.disposers.add(() => _element.registry.remove(vsyncValue));
-      }
-    }
-
-    _listen(listenable, () {
-      final Result newValue = selector(
-        context.read(listenable, useScope: useScope, createDependency: true).$2,
-      );
-      if (newValue != currentValue) {
-        currentValue = newValue;
-        _markForUpdate();
-      }
-    });
-
-    return currentValue;
-  }
+  void setWillChangeHint();
 
   /// Load and paint an image using the specified [ImageProvider].\
   /// The `size` parameter corresponds to [ImageConfiguration.size].
@@ -244,53 +146,38 @@ class PaintRef implements ClipRef {
   ///  - [Image], a dedicated widget that gives more fine-grained control
   ///    over how the image is loaded and displayed.
   ///  - [ImageStream], Flutter's built-in image loading API.
-  ui.Image? loadImage(ImageProvider provider, {Size? size}) {
-    if (_element._imageProviders[provider] case _ImageProviderState(:final image)) {
-      return image;
-    }
-    return _ImageProviderState(this, provider, size).image;
-  }
+  ui.Image? loadImage(ImageProvider provider, {Size? size});
 
   /// Configure the area where this widget should respond to hit tests.
   /// Typically, [Path.combine] is used with [PathOperation.union] to represent
   /// the total area being painted.
   ///
   /// If this method is not called, anywhere inside the canvas is considered to be a hit.
-  void hitTestArea({Path? path, Rect? rect}) {
-    if (rect != null) path = Path()..addRect(rect);
-    if (path != null) _updateHitArea(path);
-  }
-
-  void _listen(Listenable listenable, VoidCallback listener) {
-    listenable.addListener(listener);
-    _element.disposers.add(() => listenable.removeListener(listener));
-  }
+  void hitTestArea({Path? path, Rect? rect});
 }
 
-class _RefPainterElement extends SingleChildRenderObjectElement with ElementVsync {
+class _RefPainterElement extends SingleChildComputeElement<_RenderRefPaint> implements PaintRef {
   _RefPainterElement(RefPaint super.widget);
 
   @override
-  Size? get size => _size ?? super.size;
-  Size? _size;
+  void recompute() => renderer.markNeedsPaint();
 
-  bool handledPaint = false;
-  bool handledSemantics = false;
+  /// Set to `true` while [RefPaint.semanticsBuilder] is being invoked.
+  var buildingSemantics = false;
 
-  void resetListeners() {
-    for (final VoidCallback dispose in disposers) {
-      dispose();
-    }
-    disposers.clear();
-    handledPaint = handledSemantics = false;
-    renderObject
-      ..markNeedsPaint()
-      ..markNeedsSemanticsUpdate();
-  }
+  /// Listenables subscribed via [watch] during [RefPaint.semanticsBuilder].
+  final _subscriptions = <ValueListenable<Object?>>{};
 
-  final disposers = <VoidCallback>{};
+  /// Disposers for [watch] listeners registered during [RefPaint.semanticsBuilder].
+  final _disposers = <VoidCallback>{};
+
+  /// Keys are listenables, values are disposers for [select] during semantics.
+  final _selectors = <ValueListenable<Object?>, VoidCallback>{};
+
+  PaintingContext? _paintingContext;
 
   final _imageProviders = _ImageProviders();
+
   void _prepImages() {
     if (_imageProviders.isEmpty) return;
 
@@ -306,44 +193,157 @@ class _RefPainterElement extends SingleChildRenderObjectElement with ElementVsyn
     });
   }
 
-  bool get hasScope => scopeTag != null;
-  Object? scopeTag;
+  /// Stable tear-off target so [Listenable.removeListener] matches add.
+  void _markNeedsSemanticsUpdate() => renderer.markNeedsSemanticsUpdate();
+
+  void _clearSemanticsListeners() {
+    for (final VoidCallback dispose in _disposers.followedBy(_selectors.values)) {
+      dispose();
+    }
+    _disposers.clear();
+    _selectors.clear();
+    _subscriptions.clear();
+  }
+
+  void _resetSemanticsListeners() {
+    _clearSemanticsListeners();
+    _markNeedsSemanticsUpdate();
+  }
+
+  bool get _hasSemanticsScope => _semanticsScopeTag != null;
+  Object? _semanticsScopeTag;
+  Object? get _newSemanticsScopeTag =>
+      getInheritedWidgetOfExactType<SubstitutionModel>()?.equalityTag;
+
+  @override
+  Size get size => renderer.size;
+
+  @override
+  BuildContext get context => this;
+
+  @override
+  Canvas get canvas {
+    if (kDebugMode) _debugCheckPainting('canvas');
+    return _paintingContext!.canvas;
+  }
+
+  @override
+  void setIsComplexHint() {
+    if (kDebugMode) _debugCheckPainting('setIsComplexHint()');
+    _paintingContext?.setIsComplexHint();
+  }
+
+  @override
+  void setWillChangeHint() {
+    if (kDebugMode) _debugCheckPainting('setWillChangeHint()');
+    _paintingContext?.setWillChangeHint();
+  }
+
+  void _debugCheckPainting(String fieldName) {
+    if (kDebugMode && buildingSemantics) {
+      throw FlutterError.fromParts([
+        ErrorSummary('PaintRef.$fieldName accessed during buildSemantics.'),
+        ErrorHint('Consider removing this method call from the buildSemantics() method body.'),
+      ]);
+    }
+  }
+
+  @override
+  T watch<T>(ValueListenable<T> listenable, {bool autoVsync = true, bool useScope = true}) {
+    if (!buildingSemantics) {
+      return super.watch(listenable, autoVsync: autoVsync, useScope: useScope);
+    }
+
+    final (scoped, value) = read(listenable, useScope: useScope && _hasSemanticsScope);
+    if (_subscriptions.add(listenable)) {
+      scoped.addListener(_markNeedsSemanticsUpdate);
+      _disposers.add(() => scoped.removeListener(_markNeedsSemanticsUpdate));
+
+      if (listenable == scoped && autoVsync && listenable is VsyncValue<T>) {
+        if (registry.add(listenable)) _disposers.add(() => registry.remove(listenable));
+      }
+    }
+    return value;
+  }
+
+  @override
+  Result select<Result, T>(
+    ValueListenable<T> listenable,
+    Result Function(T value) selector, {
+    bool autoVsync = true,
+    bool useScope = true,
+  }) {
+    if (!buildingSemantics) {
+      return super.select(listenable, selector, autoVsync: autoVsync, useScope: useScope);
+    }
+
+    final (scoped, value) = read(listenable, useScope: useScope && _hasSemanticsScope);
+    Result currentValue = selector(value);
+    void checkSelection() {
+      final Result newValue = selector(
+        read(listenable, useScope: useScope && _hasSemanticsScope).$2,
+      );
+      if (newValue != currentValue) {
+        currentValue = newValue;
+        _markNeedsSemanticsUpdate();
+      }
+    }
+
+    _selectors.remove(listenable)?.call();
+    scoped.addListener(checkSelection);
+    _selectors[listenable] = () => scoped.removeListener(checkSelection);
+
+    if (listenable == scoped && autoVsync && listenable is VsyncValue<T>) {
+      if (registry.add(listenable)) _disposers.add(() => registry.remove(listenable));
+    }
+    return currentValue;
+  }
+
+  @override
+  ui.Image? loadImage(ImageProvider provider, {Size? size}) {
+    if (_imageProviders[provider] case _ImageProviderState(:final image)) {
+      return image;
+    }
+    return _ImageProviderState(this, provider, size).image;
+  }
+
+  @override
+  void hitTestArea({Path? path, Rect? rect}) {
+    if (rect != null) path = Path()..addRect(rect);
+    if (path != null) renderer.updateHitArea(path);
+  }
+
   @override
   void mount(Element? parent, Object? newSlot) {
     super.mount(parent, newSlot);
-    scopeTag = getInheritedWidgetOfExactType<SubstitutionModel>()?.equalityTag;
+    _semanticsScopeTag = _newSemanticsScopeTag;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final Object? oldTag = scopeTag;
-    scopeTag = getInheritedWidgetOfExactType<SubstitutionModel>()?.equalityTag;
-    if (scopeTag != oldTag) resetListeners();
-    renderObject
-      ..markNeedsPaint()
-      ..markNeedsSemanticsUpdate();
+    final Object? newTag = _newSemanticsScopeTag;
+    if (newTag != _semanticsScopeTag) {
+      _semanticsScopeTag = newTag;
+      _resetSemanticsListeners();
+    }
   }
 
   /// Ensures that any changes to subscriptions are picked up after a Hot Reload.
   @override
   void reassemble() {
     super.reassemble();
-    resetListeners();
+    _resetSemanticsListeners();
   }
 
   @override
   void unmount() {
-    for (final VoidCallback dispose in disposers) {
-      dispose();
-    }
-    disposers.clear();
+    _clearSemanticsListeners();
 
-    if (_imageProviders case final providers) {
-      for (final _ImageProviderState provider in providers.values.toSet()) {
-        provider.dispose();
-      }
+    for (final _ImageProviderState provider in _imageProviders.values.toSet()) {
+      provider.dispose();
     }
+    // ElementCompute.unmount clears paint watch/select listeners, tickers, etc.
     super.unmount();
   }
 }
@@ -351,12 +351,11 @@ class _RefPainterElement extends SingleChildRenderObjectElement with ElementVsyn
 typedef _ImageProviders = HashMap<ImageProvider, _ImageProviderState>;
 
 class _ImageProviderState {
-  _ImageProviderState(PaintRef ref, ImageProvider imageProvider, this.size)
+  _ImageProviderState(this.element, ImageProvider imageProvider, this.size)
     : provider = ScrollAwareImageProvider(
-        context: _Context(ref.context),
+        context: _Context(element),
         imageProvider: imageProvider,
       ) {
-    final _RefPainterElement element = ref._element;
     final HashMap<ImageProvider<Object>, _ImageProviderState> providers = element._imageProviders;
 
     providers[imageProvider] = this;
@@ -368,7 +367,7 @@ class _ImageProviderState {
         _image = info.image;
       }
 
-      if (!synchronousCall) element.renderObject.markNeedsPaint();
+      if (!synchronousCall) element.renderer.markNeedsPaint();
     });
 
     final ImageStream imageStream = provider.resolve(
@@ -383,6 +382,7 @@ class _ImageProviderState {
     };
   }
 
+  final _RefPainterElement element;
   final ScrollAwareImageProvider provider;
   final Size? size;
 
@@ -532,7 +532,13 @@ class _RenderRefPaint extends RenderProxyBox {
     if (offset != Offset.zero) {
       canvas.translate(offset.dx, offset.dy);
     }
-    painter.paint(PaintRef._paint(this, element.._prepImages(), context));
+    final _RefPainterElement element = this.element.._prepImages();
+    element._paintingContext = context;
+    try {
+      painter.paint(element);
+    } finally {
+      element._paintingContext = null;
+    }
     if (kDebugMode) {
       final int difference = canvas.getSaveCount() - debugPreviousCanvasSaveCount;
       switch (difference) {
@@ -568,7 +574,6 @@ class _RenderRefPaint extends RenderProxyBox {
     }
     canvas.restore();
     if (!foreground) super.paint(context, offset);
-    element.handledPaint = true;
   }
 
   List<CustomPainterSemantics> painterSemantics = const [];
@@ -577,8 +582,13 @@ class _RenderRefPaint extends RenderProxyBox {
   @override
   void describeSemanticsConfiguration(SemanticsConfiguration config) {
     if (painter.semanticsBuilder case final buildSemantics?) {
-      painterSemantics = buildSemantics(PaintRef._semantics(this, element));
-      element.handledSemantics = true;
+      final _RefPainterElement element = this.element;
+      element.buildingSemantics = true;
+      try {
+        painterSemantics = buildSemantics(element);
+      } finally {
+        element.buildingSemantics = false;
+      }
     }
   }
 
