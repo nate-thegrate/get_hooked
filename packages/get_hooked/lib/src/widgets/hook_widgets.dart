@@ -5,8 +5,15 @@ import 'package:flutter/widgets.dart';
 
 import '../ref_element.dart';
 
-final class _StatelessRefElement = StatelessElement with RefElement;
-final class _StatefulRefElement = StatefulElement with RefElement;
+// Use `extends … with` (not mixin application `=`) so mixin fields initialize
+// correctly on web (DDC/dart2js); `= Super with Mixin` only exposes getters.
+final class _StatelessRefElement extends StatelessElement with RefElement {
+  _StatelessRefElement(super.widget);
+}
+
+final class _StatefulRefElement extends StatefulElement with RefElement {
+  _StatefulRefElement(super.widget);
+}
 
 mixin _StatelessRefWidget on StatelessWidget {
   @override

@@ -315,10 +315,12 @@ mixin _Render<R extends RenderObject> on RenderObjectElement {
 
 /// A convenience class for making a [SingleChildRenderObjectWidget] with a
 /// [RefComputer].
-//
-// dart format off
-abstract class SingleChildComputeElement<Render extends RenderObject> =
-    SingleChildRenderObjectElement with ElementCompute, _Render<Render>;
+abstract class SingleChildComputeElement<Render extends RenderObject>
+    extends SingleChildRenderObjectElement
+    with ElementCompute, _Render<Render> {
+  /// Creates an element that recomputes from [RefContext] subscriptions.
+  SingleChildComputeElement(super.widget);
+}
 
 /// Provides access to the current [RefElement] during a build.
 ///
@@ -353,7 +355,6 @@ Ref get ref {
 /// Calling [select] with the same listenable more than once during a
 /// single build will throw in debug mode.
 base mixin RefElement on ComponentElement implements RefContext, _Tickers {
-
   /// Listeners added by [watch].
   final _watchedListenables = <Listenable, VoidCallback>{};
 
@@ -370,7 +371,6 @@ base mixin RefElement on ComponentElement implements RefContext, _Tickers {
   Object? _scopeTag;
 
   Object? get _newScopeTag => getInheritedWidgetOfExactType<SubstitutionModel>()?.equalityTag;
-
 
   @override
   T watch<T>(ValueListenable<T> listenable, {bool autoVsync = true, bool useScope = true}) {
@@ -455,7 +455,7 @@ base mixin RefElement on ComponentElement implements RefContext, _Tickers {
     return computeCallback(this);
   }
 
-@override
+  @override
   Set<Ticker>? _tickers;
   _TickerMode? _tickerMode;
 
@@ -467,8 +467,9 @@ base mixin RefElement on ComponentElement implements RefContext, _Tickers {
     final ticker = _ElementVsyncTicker(onTick, this);
     (_tickers ??= {}).add(ticker);
 
-    final ValueListenable<TickerModeData> tickerMode = _tickerMode ??=
-        TickerMode.getValuesNotifier(this)..addListener(_updateTickers);
+    final ValueListenable<TickerModeData> tickerMode = _tickerMode ??= TickerMode.getValuesNotifier(
+      this,
+    )..addListener(_updateTickers);
 
     return ticker
       ..muted = !tickerMode.value.enabled
