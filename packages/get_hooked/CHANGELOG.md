@@ -1,3 +1,8 @@
+## 0.5.2
+- Update `RefElement` / compute elements so they correctly compile for web (DDC/dart2js)
+- Fix `RefElement` unmount cleanup so all subscriptions are cleared
+- Update `RefPaint` so it can subscribe to listenables after the first paint
+
 ## 0.5.1
 - Remove a few unused files
 - Also just a sanity check since I'm not 100% sure 0.5.0 was published correctly
