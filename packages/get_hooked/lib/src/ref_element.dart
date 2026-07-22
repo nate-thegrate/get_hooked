@@ -281,10 +281,12 @@ mixin ElementCompute on Element implements RefContext, _Tickers {
 
   @override
   void unmount() {
-    for (final VoidCallback dispose in _disposers) {
+    for (final VoidCallback dispose in _disposers.followedBy(_selectors.values)) {
       dispose();
     }
     _disposers.clear();
+    _selectors.clear();
+    _subscriptions.clear();
 
     for (final Ticker ticker in _tickers ?? const {}) {
       ticker.dispose();
