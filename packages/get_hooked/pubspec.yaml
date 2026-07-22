@@ -1,6 +1,6 @@
 name: get_hooked
 description: "State management with Listenables and Hooks! Inspired by hooks_riverpod and get_it."
-version: 0.5.1
+version: 0.5.2
 homepage: https://no-tolls.dev/
 issue_tracker: https://github.com/nate-thegrate/get_hooked/issues
 repository: https://github.com/nate-thegrate/get_hooked/tree/main/packages/get_hooked
