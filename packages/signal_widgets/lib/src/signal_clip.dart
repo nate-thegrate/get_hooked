@@ -149,7 +149,7 @@ class _RenderSignalClip extends RenderProxyBox {
 
   @override
   void paint(PaintingContext context, ui.Offset offset) {
-    if (_path case final path? when clipBehavior != Clip.none && child != null) {
+    if (_path case final path? when clipBehavior != .none && child != null) {
       layer = context.pushClipPath(
         needsCompositing,
         offset,
@@ -174,8 +174,7 @@ class _RenderSignalClip extends RenderProxyBox {
       super.debugPaintSize(context, offset);
       if (clipBehavior != Clip.none) {
         context.canvas.drawPath(
-          _path?.shift(offset) ??
-              (Path()..addRect(offset & size)),
+          _path?.shift(offset) ?? (Path()..addRect(offset & size)),
           _debugPaint ??= Paint()
             ..shader = ui.Gradient.linear(
               Offset.zero,

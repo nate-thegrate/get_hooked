@@ -175,15 +175,17 @@ class RenderClippedDecoration extends RenderProxyBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    assert(() {
-      if (decoration case BoxDecoration() || ShapeDecoration()) {
-        return true;
+    if (kDebugMode) {
+      switch (decoration) {
+        case BoxDecoration() || ShapeDecoration():
+          break;
+        default:
+          throw FlutterError.fromParts([
+            ErrorSummary('Invalid decoration: ${decoration.runtimeType}'),
+            ErrorHint('Consider using a BoxDecoration or ShapeDecoration instead.'),
+          ]);
       }
-      throw FlutterError.fromParts([
-        ErrorSummary('Invalid decoration: ${decoration.runtimeType}'),
-        ErrorHint('Consider using a BoxDecoration or ShapeDecoration instead.'),
-      ]);
-    }());
+    }
 
     final ImageConfiguration filledConfiguration = configuration.copyWith(size: size);
 

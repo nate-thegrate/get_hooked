@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
@@ -114,7 +115,7 @@ class RenderRefAlign extends RenderShiftedBox {
   @override
   void debugPaintSize(PaintingContext context, Offset offset) {
     super.debugPaintSize(context, offset);
-    assert(() {
+    if (kDebugMode) {
       if (child != null && !child!.size.isEmpty) {
         final path = Path();
         final paint = Paint()
@@ -161,8 +162,7 @@ class RenderRefAlign extends RenderShiftedBox {
       } else {
         context.canvas.drawRect(offset & size, Paint()..color = const Color(0x90909090));
       }
-      return true;
-    }());
+    }
   }
 
   @override

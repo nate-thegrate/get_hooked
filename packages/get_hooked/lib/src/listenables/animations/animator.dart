@@ -254,19 +254,21 @@ abstract class Animator<T> extends ValueNotifier<T> implements StyledAnimation<T
 
   @override
   void dispose() {
-    assert(() {
-      if (!_debugDisposed) return _debugDisposed = true;
-
-      throw FlutterError.fromParts(<DiagnosticsNode>[
-        ErrorSummary('Animator.dispose() called more than once.'),
-        ErrorDescription('A given $runtimeType cannot be disposed more than once.\n'),
-        DiagnosticsProperty<Animator<T>>(
-          'The following $runtimeType object was disposed multiple times',
-          this,
-          style: DiagnosticsTreeStyle.errorProperty,
-        ),
-      ]);
-    }());
+    if (kDebugMode) {
+      if (!_debugDisposed) {
+        _debugDisposed = true;
+      } else {
+        throw FlutterError.fromParts(<DiagnosticsNode>[
+          ErrorSummary('Animator.dispose() called more than once.'),
+          ErrorDescription('A given $runtimeType cannot be disposed more than once.\n'),
+          DiagnosticsProperty<Animator<T>>(
+            'The following $runtimeType object was disposed multiple times',
+            this,
+            style: DiagnosticsTreeStyle.errorProperty,
+          ),
+        ]);
+      }
+    }
     _proxy?._statusListeners.clear();
     statusNotifier.dispose();
     _ticker.dispose();

@@ -406,23 +406,20 @@ base mixin RefElement on ComponentElement implements RefContext, _Tickers {
     final (scoped, value) = read(listenable, useScope: useScope);
 
     // In debug mode, throw if the same listenable is selected twice in one build.
-    assert(() {
-      if (_selectionsThisBuild != null && !_selectionsThisBuild!.add(scoped)) {
-        throw FlutterError.fromParts([
-          ErrorSummary('ref.select() called multiple times with the same listenable.'),
-          ErrorDescription(
-            'A build method or RefComputer callback called ref.select() more than once '
-            'with ${describeIdentity(listenable)}.',
-          ),
-          ErrorHint(
-            'Combine multiple selections into a single ref.select() call '
-            'that returns a Record, for example:\n'
-            '  final (a, b) = ref.select(listenable, (v) => (v.a, v.b));',
-          ),
-        ]);
-      }
-      return true;
-    }());
+    if (kDebugMode && !(_selectionsThisBuild?.add(scoped) ?? true)) {
+      throw FlutterError.fromParts([
+        ErrorSummary('ref.select() called multiple times with the same listenable.'),
+        ErrorDescription(
+          'A build method or RefComputer callback called ref.select() more than once '
+          'with ${describeIdentity(listenable)}.',
+        ),
+        ErrorHint(
+          'Combine multiple selections into a single ref.select() call '
+          'that returns a Record, for example:\n'
+          '  final (a, b) = ref.select(listenable, (v) => (v.a, v.b));',
+        ),
+      ]);
+    }
 
     Result currentValue = selector(value);
 
@@ -539,20 +536,14 @@ base mixin RefElement on ComponentElement implements RefContext, _Tickers {
 
   @override
   Widget build() {
-    assert(() {
-      _selectionsThisBuild = <Listenable>{};
-      return true;
-    }());
+    if (kDebugMode) _selectionsThisBuild = <Listenable>{};
 
     RefContext.current = this;
     try {
       return super.build();
     } finally {
       RefContext.current = null;
-      assert(() {
-        _selectionsThisBuild = null;
-        return true;
-      }());
+      if (kDebugMode) _selectionsThisBuild = null;
     }
   }
 
