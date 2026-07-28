@@ -18,7 +18,7 @@ void main() {
           child: Builder(
             builder: (context) {
               childBuilds++;
-              return const SizedBox(width: 10, height: 10);
+              return const SizedBox.square(dimension: 10);
             },
           ),
         ),
@@ -46,9 +46,8 @@ void main() {
       Directionality(
         textDirection: TextDirection.ltr,
         child: Center(
-          child: SizedBox(
-            width: 100,
-            height: 100,
+          child: SizedBox.square(
+            dimension: 100,
             child: SignalPadding(
               (_) => EdgeInsets.all(pad.value),
               child: Builder(
@@ -108,7 +107,7 @@ void main() {
           children: [
             SignalPosition.rect(
               (_) => Rect.fromLTWH(left.value, 0, 20, 20),
-              child: const SizedBox(width: 20, height: 20),
+              child: const SizedBox.square(dimension: 20),
             ),
           ],
         ),
@@ -132,9 +131,8 @@ void main() {
       Directionality(
         textDirection: TextDirection.ltr,
         child: Center(
-          child: SizedBox(
-            width: 100,
-            height: 100,
+          child: SizedBox.square(
+            dimension: 100,
             child: SignalPaint(
               (context, canvas, size) {
                 canvas.drawRect(Offset.zero & size, Paint()..color = color.value);

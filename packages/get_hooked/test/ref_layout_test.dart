@@ -89,9 +89,8 @@ void main() {
         const Directionality(
           textDirection: TextDirection.ltr,
           child: Center(
-            child: SizedBox(
-              width: 200,
-              height: 200,
+            child: SizedBox.square(
+              dimension: 200,
               child: _SplitLayout(topChild: SizedBox.expand(), bottomChild: SizedBox.expand()),
             ),
           ),
@@ -174,9 +173,8 @@ void main() {
         const Directionality(
           textDirection: TextDirection.ltr,
           child: Center(
-            child: SizedBox(
-              width: 400,
-              height: 400,
+            child: SizedBox.square(
+              dimension: 400,
               child: _SplitLayout(
                 topChild: ColoredBox(color: Color(0xFFFF0000)),
                 bottomChild: ColoredBox(color: Color(0xFF0000FF)),
@@ -201,9 +199,8 @@ void main() {
         Directionality(
           textDirection: TextDirection.ltr,
           child: Center(
-            child: SizedBox(
-              width: 400,
-              height: 400,
+            child: SizedBox.square(
+              dimension: 400,
               child: _PaddingLayout(
                 padding: const EdgeInsets.all(50),
                 child: GestureDetector(

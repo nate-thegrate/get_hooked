@@ -34,9 +34,8 @@ void main() {
         Directionality(
           textDirection: TextDirection.ltr,
           child: Center(
-            child: SizedBox(
-              width: 100,
-              height: 100,
+            child: SizedBox.square(
+              dimension: 100,
               child: RefPadding(
                 (r) => EdgeInsets.all(r.watch(padVal)),
                 child: const ColoredBox(color: Colors.blue),
@@ -63,7 +62,7 @@ void main() {
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: RefOpacity((r) => r.watch(opac), child: const SizedBox(width: 10, height: 10)),
+          child: RefOpacity((r) => r.watch(opac), child: const SizedBox.square(dimension: 10)),
         ),
       );
 
@@ -83,7 +82,7 @@ void main() {
           child: Center(
             child: RefTransform(
               (r) => Matrix4.diagonal3Values(r.watch(scale), r.watch(scale), 1),
-              child: const SizedBox(width: 20, height: 20),
+              child: const SizedBox.square(dimension: 20),
             ),
           ),
         ),
@@ -104,9 +103,8 @@ void main() {
         Directionality(
           textDirection: TextDirection.ltr,
           child: Center(
-            child: SizedBox(
-              width: 100,
-              height: 100,
+            child: SizedBox.square(
+              dimension: 100,
               child: RefPaint((ref) {
                 final c = ref.watch(color);
                 // draw something

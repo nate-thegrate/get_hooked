@@ -128,7 +128,7 @@ void main() {
           textDirection: TextDirection.ltr,
           child: RefOpacity(
             (ref) => ref.watch(progress),
-            child: const SizedBox(width: 10, height: 10),
+            child: const SizedBox.square(dimension: 10),
           ),
         ),
       );
