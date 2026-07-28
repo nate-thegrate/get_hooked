@@ -21,12 +21,12 @@ abstract class SignalPosition extends SignalParentData<StackParentData> {
   }) = _Rect;
 
   /// Initializes fields for subclasses.
-  const SignalPosition.constructor({super.key, required super.child})
+  const SignalPosition._constructor({super.key, required super.child})
     : super(debugTypicalAncestorWidgetClass: Stack);
 }
 
 class _RelativeRect extends SignalPosition {
-  const _RelativeRect(this.getRect, {super.key, required super.child}) : super.constructor();
+  const _RelativeRect(this.getRect, {super.key, required super.child}) : super._constructor();
 
   final SignalComputer<RelativeRect> getRect;
 
@@ -41,7 +41,7 @@ class _RelativeRect extends SignalPosition {
 }
 
 class _Rect extends SignalPosition {
-  const _Rect(this.getRect, {super.key, required super.child}) : super.constructor();
+  const _Rect(this.getRect, {super.key, required super.child}) : super._constructor();
 
   final SignalComputer<Rect> getRect;
 
