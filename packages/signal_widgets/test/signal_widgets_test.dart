@@ -122,4 +122,44 @@ void main() {
     await tester.pump();
     expect(parentData.left, 40.0);
   });
+
+  testWidgets('SignalPaint subscribes to signals and repaints without rebuild', (tester) async {
+    final color = signal(const Color(0xFF00FF00));
+    var paintCount = 0;
+    var childBuilds = 0;
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(
+          child: SizedBox(
+            width: 100,
+            height: 100,
+            child: SignalPaint(
+              (context, canvas, size) {
+                canvas.drawRect(Offset.zero & size, Paint()..color = color.value);
+                paintCount++;
+              },
+              child: Builder(
+                builder: (context) {
+                  childBuilds++;
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    expect(paintCount, greaterThan(0));
+    expect(childBuilds, 1);
+
+    final before = paintCount;
+    color.value = const Color(0xFFFF0000);
+    await tester.pump();
+    expect(paintCount, greaterThan(before));
+    expect(childBuilds, 1);
+  });
 }
