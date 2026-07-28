@@ -90,7 +90,9 @@ class RefPaint extends SingleChildRenderObjectWidget {
 
   @override
   void updateRenderObject(BuildContext context, RenderBox renderObject) {
-    (renderObject as _RenderRefPaint).painter = this;
+    (renderObject as _RenderRefPaint)
+      ..painter = this
+      ..markNeedsPaint();
   }
 }
 
@@ -429,7 +431,6 @@ class _RenderRefPaint extends RenderProxyBox {
   _RenderRefPaint(RefPaint refPaint, BuildContext context)
     : _element = context as _RefPainterElement,
       _painter = refPaint,
-      _foreground = refPaint.foreground,
       _expanded = refPaint.expanded;
 
   _RefPainterElement get element => _element!;
@@ -440,18 +441,10 @@ class _RenderRefPaint extends RenderProxyBox {
   set painter(RefPaint newValue) {
     if (newValue == _painter) return;
     _painter = newValue;
-    foreground = newValue.foreground;
     expanded = newValue.expanded;
   }
 
-  bool get foreground => _foreground;
-  bool _foreground;
-  set foreground(bool newValue) {
-    if (newValue == _foreground) return;
-
-    _foreground = newValue;
-    markNeedsPaint();
-  }
+  bool get foreground => _painter.foreground;
 
   bool? get expanded => _expanded;
   bool? _expanded;
