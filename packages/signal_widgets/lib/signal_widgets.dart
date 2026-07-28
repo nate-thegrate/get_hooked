@@ -15,6 +15,7 @@ export 'src/signal_clip.dart';
 export 'src/signal_constraints.dart';
 export 'src/signal_decoration.dart';
 export 'src/signal_element.dart';
+export 'src/signal_layout.dart';
 export 'src/signal_opacity.dart';
 export 'src/signal_padding.dart';
 export 'src/signal_paint.dart';
