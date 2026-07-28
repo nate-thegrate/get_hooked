@@ -21,6 +21,7 @@ class RefPaint extends SingleChildRenderObjectWidget {
     this.foreground = false,
     this.expanded,
     this.semanticsBuilder,
+    this.isRepaintBoundary = false,
     super.child,
   });
 
@@ -71,6 +72,15 @@ class RefPaint extends SingleChildRenderObjectWidget {
   /// Rather than creating & modifying a single object, this callback should
   /// return a new list literal each time.
   final RefPaintSemanticsBuilder? semanticsBuilder;
+
+  /// If true, this widget creates a separate display list for its child, which
+  /// can improve performance if the subtree repaints at different times than
+  /// the surrounding parts of the tree.
+  ///
+  /// Defaults to false.
+  ///
+  /// See also: [RepaintBoundary]
+  final bool isRepaintBoundary;
 
   @override
   SingleChildRenderObjectElement createElement() => _RefPainterElement(this);
@@ -416,11 +426,11 @@ class _Context implements DisposableBuildContext {
 }
 
 class _RenderRefPaint extends RenderProxyBox {
-  _RenderRefPaint(RefPaint hookPaint, BuildContext context)
+  _RenderRefPaint(RefPaint refPaint, BuildContext context)
     : _element = context as _RefPainterElement,
-      _painter = hookPaint,
-      _foreground = hookPaint.foreground,
-      _expanded = hookPaint.expanded;
+      _painter = refPaint,
+      _foreground = refPaint.foreground,
+      _expanded = refPaint.expanded;
 
   _RefPainterElement get element => _element!;
   _RefPainterElement? _element;
@@ -475,6 +485,9 @@ class _RenderRefPaint extends RenderProxyBox {
       return hitTestChildren(result, position: position) || hitTestSelf();
     }
   }
+
+  @override
+  bool get isRepaintBoundary => painter.isRepaintBoundary;
 
   @override
   bool get sizedByParent => child == null || (_expanded ?? true);
