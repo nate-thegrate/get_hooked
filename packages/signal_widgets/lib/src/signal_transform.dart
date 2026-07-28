@@ -1,0 +1,86 @@
+import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
+
+import 'signal_element.dart';
+
+/// A variant of [Transform] that evaluates based on a [SignalComputer<Matrix4>].
+class SignalTransform extends SingleChildRenderObjectWidget {
+  /// Creates a [Transform] widget using the provided [SignalComputer] callback.
+  ///
+  /// [transformHitTests] defaults to `true`.
+  const SignalTransform(
+    this.transform, {
+    super.key,
+    this.origin,
+    this.alignment,
+    this.transformHitTests = true,
+    this.filterQuality,
+    super.child,
+  });
+
+  /// The transformation to apply to the [child] (and its descendants).
+  final SignalComputer<Matrix4> transform;
+
+  /// The origin of the coordinate system (relative to the upper left corner of
+  /// this render object) in which to apply the matrix.
+  ///
+  /// Setting an origin is equivalent to conjugating the transform matrix by a
+  /// translation. This property is provided just for convenience.
+  final Offset? origin;
+
+  /// The alignment of the origin, relative to the size of the box.
+  ///
+  /// This is equivalent to setting an origin based on the size of the box.
+  /// If it is specified at the same time as the [origin], both are applied.
+  ///
+  /// An [AlignmentDirectional.centerStart] value is the same as an [Alignment]
+  /// whose [Alignment.x] value is `-1.0` if [Directionality.of] returns
+  /// [TextDirection.ltr], and `1.0` if [Directionality.of] returns
+  /// [TextDirection.rtl].  Similarly [AlignmentDirectional.centerEnd] is the
+  /// same as an [Alignment] whose [Alignment.x] value is `1.0` if
+  /// [Directionality.of] returns  [TextDirection.ltr], and `-1.0` if
+  /// [Directionality.of] returns [TextDirection.rtl].
+  final AlignmentGeometry? alignment;
+
+  /// Whether to apply the transformation when performing hit tests.
+  final bool transformHitTests;
+
+  /// The filter quality with which to apply the transform as a bitmap operation.
+  ///
+  /// {@macro flutter.widgets.Transform.optional.FilterQuality}
+  final FilterQuality? filterQuality;
+
+  static final _noTransform = Matrix4.identity();
+
+  @override
+  RenderTransform createRenderObject(BuildContext context) {
+    return RenderTransform(
+      transform: _noTransform,
+      origin: origin,
+      alignment: alignment,
+      transformHitTests: transformHitTests,
+      filterQuality: filterQuality,
+    );
+  }
+
+  @override
+  void updateRenderObject(BuildContext context, RenderTransform renderObject) {
+    renderObject
+      ..origin = origin
+      ..alignment = alignment
+      ..transformHitTests = transformHitTests
+      ..filterQuality = filterQuality;
+  }
+
+  @override
+  SingleChildRenderObjectElement createElement() => _TransformElement(this);
+}
+
+class _TransformElement extends SingleChildSignalElement<RenderTransform> {
+  _TransformElement(super.widget);
+
+  @override
+  void recompute() {
+    renderer.transform = (widget as SignalTransform).transform(this);
+  }
+}
