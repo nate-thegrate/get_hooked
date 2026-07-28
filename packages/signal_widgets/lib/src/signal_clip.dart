@@ -65,7 +65,7 @@ sealed class _ClipElement extends SingleChildSignalElement<_RenderSignalClip> {
 
   Size get _clipSize => renderer.hasSize ? renderer.size : Size.zero;
 
-  void _newSize(Size size) => trackAndRecompute();
+  void _newSize(Size _) => trackAndRecompute();
 }
 
 class _Path extends _SignalClip<Path> {

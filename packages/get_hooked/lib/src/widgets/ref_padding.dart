@@ -5,7 +5,7 @@ import 'package:get_hooked/src/ref_element.dart';
 
 /// A variant of [Padding] that evaluates based on a [RefComputer<EdgeInsetsGeometry>].
 class RefPadding extends SingleChildRenderObjectWidget {
-  /// Creates an [Padding] widget using the provided [RefComputer] callback.
+  /// Creates a [Padding] widget using the provided [RefComputer] callback.
   const RefPadding(this.padding, {super.key, required Widget super.child});
 
   /// The amount of space by which to inset the child.

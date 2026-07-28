@@ -13,12 +13,12 @@ abstract interface class ShaderRef implements Ref {
   abstract final Rect bounds;
 }
 
-/// A variant of [ShaderMask] that evaluates based on a [RefComputer<Shader>].
+/// A variant of [ShaderMask] that evaluates based on a [RefShaderCallback].
 class RefShaderMask extends SingleChildRenderObjectWidget {
-  /// Creates an [Padding] widget using the provided [RefShaderCallback].
+  /// Creates a [ShaderMask] widget using the provided [RefShaderCallback].
   const RefShaderMask(this.createShader, {super.key, this.blendMode = .modulate, super.child});
 
-  /// The amount of space by which to inset the child.
+  /// Called to create the [Shader] each time the mask is painted.
   final RefShaderCallback createShader;
 
   /// The [BlendMode] to use when applying the shader to the child.

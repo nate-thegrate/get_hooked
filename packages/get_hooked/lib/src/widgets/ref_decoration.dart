@@ -4,9 +4,9 @@ import 'package:get_hooked/src/ref_element.dart';
 
 import 'clipped_decorated_box.dart';
 
-/// A variant of [Transform] that evaluates based on a [RefComputer<Matrix4>].
+/// A variant of [DecoratedBox] that evaluates based on a [RefComputer<Decoration>].
 class RefDecoration extends SingleChildRenderObjectWidget {
-  /// Initializes fields for subclasses.
+  /// Creates a decoration widget using the provided [RefComputer] callback.
   const RefDecoration(
     this.decorate, {
     super.key,

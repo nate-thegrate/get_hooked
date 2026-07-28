@@ -3,7 +3,7 @@ import 'package:get_hooked/listenables.dart';
 
 import 'ref_constraints.dart';
 
-/// A variant of [SizedBox] that evaluates based on a [RefComputer<Sized>].
+/// A variant of [SizedBox] that evaluates based on a [RefComputer<BoxSize>].
 ///
 /// (See also: [BoxSize])
 class RefSizedBox extends RefConstraints {

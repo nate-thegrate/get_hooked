@@ -19,8 +19,9 @@ class SignalShaderMask extends SingleChildRenderObjectWidget {
 
   /// Called to create the [Shader] each time the mask is painted.
   ///
-  /// Signals read via `.value` during this callback are tracked; when they
-  /// change, the mask repaints without rebuilding the child.
+  /// The callback is also evaluated during recompute so signal reads via
+  /// `.value` can be tracked; when those signals change, the mask repaints
+  /// without rebuilding the child.
   final SignalShaderCallback createShader;
 
   /// The [BlendMode] to use when applying the shader to the child.

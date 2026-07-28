@@ -8,7 +8,7 @@ import 'package:get_hooked/src/ref_element.dart';
 
 /// A variant of [Align] that evaluates based on a [RefComputer<AlignmentGeometry>].
 class RefAlign extends SingleChildRenderObjectWidget {
-  /// Creates a [Align] widget using the provided [RefComputer] callback.
+  /// Creates an [Align] widget using the provided [RefComputer] callback.
   const RefAlign(this.alignment, {super.key, super.child});
 
   /// Computes the [child]'s alignment.

@@ -3,9 +3,9 @@ import 'package:flutter/widgets.dart';
 import 'package:get_hooked/listenables.dart';
 import 'package:get_hooked/src/ref_element.dart';
 
-/// A variant of [AspectRatio] that evaluates based on a [RefComputer<Matrix4>].
+/// A variant of [AspectRatio] that evaluates based on a [RefComputer<double>].
 class RefAspectRatio extends SingleChildRenderObjectWidget {
-  /// Initializes fields for subclasses.
+  /// Creates an [AspectRatio] widget using the provided [RefComputer] callback.
   const RefAspectRatio(this.ratio, {super.key, super.child});
 
   /// Returns the aspect ratio to attempt to use.

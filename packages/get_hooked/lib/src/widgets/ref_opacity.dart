@@ -5,7 +5,7 @@ import 'package:get_hooked/src/ref_element.dart';
 
 /// A variant of [Opacity] that evaluates based on a [RefComputer<double>].
 class RefOpacity extends SingleChildRenderObjectWidget {
-  /// Creates a [Opacity] widget using the provided [RefComputer] callback.
+  /// Creates an [Opacity] widget using the provided [RefComputer] callback.
   const RefOpacity(this.opacity, {super.key, this.alwaysIncludeSemantics = false, super.child});
 
   /// Computes the fraction to scale the child's alpha value.

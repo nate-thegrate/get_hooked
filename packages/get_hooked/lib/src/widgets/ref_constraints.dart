@@ -8,7 +8,7 @@ class RefConstraints extends SingleChildRenderObjectWidget {
   /// Creates a [ConstrainedBox] widget using the provided [RefComputer] callback.
   const RefConstraints(this.constrain, {super.key, super.child});
 
-  /// The transformation to apply to the [child] (and its descendants).
+  /// Additional constraints to apply to the [child].
   final RefComputer<BoxConstraints> constrain;
 
   @override

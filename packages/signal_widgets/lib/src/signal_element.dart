@@ -95,10 +95,9 @@ mixin ElementSignal on Element {
 /// A convenience base class for [SingleChildRenderObjectWidget] elements that
 /// recompute render-object properties when signals change.
 ///
-/// Mirrors the role of get_hooked's `SingleChildComputeElement`, but tracks
-/// signals the same way `SignalElement` does: any signal read via `.value`
-/// during [recompute] is subscribed, and changes call [recompute] again
-/// instead of marking the element dirty for a full rebuild.
+/// Any signal read via `.value` during [recompute] is subscribed; when those
+/// signals change, [recompute] runs again instead of marking the element dirty
+/// for a full rebuild.
 abstract class SingleChildSignalElement<Render extends RenderObject>
     extends SingleChildRenderObjectElement
     with ElementSignal {

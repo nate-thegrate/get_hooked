@@ -193,11 +193,13 @@ final class RefLayoutDelegate {
     layoutRect(Rect.fromLTRB(left, top, width - right, height - bottom));
   }
 
-  /// To perform an aligned layout without setting a size, use a `delegate()`
-  /// instead of a `fixedDelegate()`.
+  /// Lays out the child with loose constraints and positions it via [alignment].
   ///
-  /// Alternatively, use [layoutFractionalRect] to set both size and position
-  /// relative to the [RefLayout] widget's total size.
+  /// If [size] is provided, the child is given that size (via [layoutRect]).
+  /// Otherwise the child's intrinsic size under loose constraints is used.
+  ///
+  /// Use [layoutFractionalRect] to set both size and position relative to the
+  /// [RefLayout] widget's total size.
   void layoutAlign(Alignment alignment, {Size? size}) {
     if (size != null) {
       layoutRect(alignment.inscribe(_size = size, _state._rect));
