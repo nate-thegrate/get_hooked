@@ -292,15 +292,11 @@ class _PainterElement extends SingleChildSignalElement<_RenderSignalPaint>
   void _updateSemanticsWatch(Set<core.ReadonlySignal<Object?>> signals) {
     _semanticsInitializing = true;
     try {
-      final toRemove = <int>[];
-      _semanticsWatch.forEach((id, dispose) {
-        if (!signals.any((s) => s.globalId == id)) {
-          dispose();
-          toRemove.add(id);
+      final nextIds = {for (final s in signals) s.globalId};
+      for (final id in _semanticsWatch.keys.toList()) {
+        if (!nextIds.contains(id)) {
+          _semanticsWatch.remove(id)?.call();
         }
-      });
-      for (final id in toRemove) {
-        _semanticsWatch.remove(id);
       }
       for (final signal in signals) {
         _semanticsWatch.putIfAbsent(

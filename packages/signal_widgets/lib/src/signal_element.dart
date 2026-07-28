@@ -37,15 +37,11 @@ mixin ElementSignal on Element {
   void _updateWatch(Set<core.ReadonlySignal<Object?>> signals) {
     _initializing = true;
     try {
-      final toRemove = <int>[];
-      _watch.forEach((id, dispose) {
-        if (!signals.any((s) => s.globalId == id)) {
-          dispose();
-          toRemove.add(id);
+      final nextIds = {for (final s in signals) s.globalId};
+      for (final id in _watch.keys.toList()) {
+        if (!nextIds.contains(id)) {
+          _watch.remove(id)?.call();
         }
-      });
-      for (final id in toRemove) {
-        _watch.remove(id);
       }
       for (final signal in signals) {
         watchSignal(signal);
