@@ -1,12 +1,41 @@
 export 'package:signals_flutter/signals_flutter.dart'
     hide
+        //
+        // typedefs
+        AsyncDataBuilder,
+        AsyncErrorBuilder,
+        AsyncStateBuilder,
+        BatchCallback,
+        SignalChange,
+        UntrackedCallback,
+        WriteableSignalUtils,
+        //
+        // Converted widgets
+        ConvertedSignalStatefulElement,
+        ConvertedSignalStatefulWidget,
+        ConvertedSignalWidget,
+        StatefulElementConvertExtension,
+        StatefulWidgetConvertWidgetExtension,
+        StatelessElementConvertExtension,
+        StatelessWidgetConvertWidgetExtension,
+        //
+        // Element subtypes
         SignalElement,
         SignalStatefulElement,
-        SignalPainterWidget,
+        //
+        // APIs with replacements from this package
         SignalCustomPaint,
         SignalCustomPainter,
+        SignalPainterWidget,
         SignalProxyWidget,
-        RenderSignalProxyBox;
+        RenderSignalBox,
+        RenderSignalCustomPaint,
+        RenderSignalProxyBox,
+        //
+        // Deprecated / obsolete
+        SignalAnimatedBuilder,
+        Watch,
+        WatchBuilder;
 
 export 'src/clipped_decorated_box.dart';
 export 'src/signal_align.dart';

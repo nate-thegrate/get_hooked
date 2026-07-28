@@ -1,12 +1,11 @@
 name: signal_widgets
-description: "High-perfomance widgets using signals!"
+description: "High-performance widgets using signals!"
 version: 0.1.0
 homepage: https://no-tolls.dev/
 issue_tracker: https://github.com/nate-thegrate/get_hooked/issues
-repository: https://github.com/nate-thegrate/get_hooked/tree/main/packages/get_hooked
+repository: https://github.com/nate-thegrate/get_hooked/tree/main/packages/signal_widgets
 topics:
   - flutter
-  - animation
   - state-management
 
 environment:
@@ -21,6 +20,3 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-
-flutter:
-  uses-material-design: true

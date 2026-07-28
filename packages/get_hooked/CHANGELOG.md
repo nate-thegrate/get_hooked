@@ -1,3 +1,8 @@
+## 0.5.3
+- Add `isRepaintBoundary` to `RefPaint`
+- Improve `RefAlign` performance
+- Ensure that `RefPaint` is updated properly
+
 ## 0.5.2
 - Update `RefElement` / compute elements so they correctly compile for web (DDC/dart2js)
 - Fix `RefElement` unmount cleanup so all subscriptions are cleared
