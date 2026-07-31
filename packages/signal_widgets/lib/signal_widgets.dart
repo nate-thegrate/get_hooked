@@ -19,10 +19,6 @@ export 'package:signals_flutter/signals_flutter.dart'
         StatelessElementConvertExtension,
         StatelessWidgetConvertWidgetExtension,
         //
-        // Element subtypes
-        SignalElement,
-        SignalStatefulElement,
-        //
         // APIs with replacements from this package
         SignalCustomPaint,
         SignalCustomPainter,
